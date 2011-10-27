@@ -10,9 +10,25 @@
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <Security/Security.h>
-#include <CoreServices/CoreServices.h>
-
 #include <QDebug>
+
+template <typename T>
+struct Releaser {
+    explicit Releaser( const T& v ) : value( v ) {}
+    ~Releaser() {
+        CFRelease( value );
+    }
+
+    const T value;
+};
+
+static QString strForStatus( OSStatus os ) {
+    const Releaser<CFStringRef> str( SecCopyErrorMessageString( os, 0 ) );
+    const char * const buf = CFStringGetCStringPtr( str.value,  kCFStringEncodingUTF8 );
+    if ( !buf )
+        return QString();
+    return QString::fromUtf8( buf, strlen( buf ) );
+}
 
 static OSStatus readPw( QString* pw,
                         const QString& service,
@@ -37,6 +53,8 @@ static OSStatus readPw( QString* pw,
     if ( ret == noErr ) {
         *pw = QString::fromUtf8( reinterpret_cast<const char*>( data ), len );
         const OSStatus ret2 = SecKeychainItemFreeContent ( 0, data );
+        if ( ret2 != noErr )
+            qWarning() << "Could not free item content: " << strForStatus( ret2 );
     }
     return ret;
 }
@@ -55,7 +73,7 @@ Keychain::Error Keychain::Private::readPasswordImpl( QString* pw,
         *err = tr("Password not found");
         return PasswordNotFound;
     default:
-        *err = QString::number( ret );
+        *err = strForStatus( ret );
         return OtherError;
     }
 }
@@ -93,7 +111,7 @@ Keychain::Error Keychain::Private::writePasswordImpl( const QString& account,
                 return writePasswordImpl( account, password, ov, err );
         }
         default:
-            *err = QString::number( ret );
+            *err = strForStatus( ret );
             return OtherError;
         }
     }
@@ -102,21 +120,25 @@ Keychain::Error Keychain::Private::writePasswordImpl( const QString& account,
 }
 
 Keychain::Error Keychain::Private::deletePasswordImpl( const QString& account,
-                                                       QString* errorString ) {
+                                                       QString* err ) {
     SecKeychainItemRef ref;
     QString pw;
     const OSStatus ret1 = readPw( &pw, service, account, &ref );
     if ( ret1 == errSecItemNotFound )
         return NoError; // No item stored, we're done
     if ( ret1 != noErr ) {
+        *err = strForStatus( ret1 );
         //TODO map error code, set errstr
         return OtherError;
     }
+    const Releaser<SecKeychainItemRef> releaser( ref );
+
     const OSStatus ret2 = SecKeychainItemDelete( ref );
-    CFRelease(ref);
+
     if ( ret2 == noErr )
         return NoError;
-    //TODO map error code, set errstr
+    //TODO map error code
+    *err = strForStatus( ret2 );
     return CouldNotDeletePassword;
 }
 
