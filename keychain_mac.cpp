@@ -88,7 +88,7 @@ Keychain::Error Keychain::Private::writePasswordImpl( const QString& account,
             }
             Error derr = deletePasswordImpl( account, err );
             if ( derr != NoError )
-                return CouldNotDeleteExistingPassword;
+                return CouldNotDeletePassword;
             else
                 return writePasswordImpl( account, password, ov, err );
         }
@@ -107,7 +107,7 @@ Keychain::Error Keychain::Private::deletePasswordImpl( const QString& account,
     QString pw;
     const OSStatus ret1 = readPw( &pw, service, account, &ref );
     if ( ret1 == errSecItemNotFound )
-        return NoError;
+        return NoError; // No item stored, we're done
     if ( ret1 != noErr ) {
         //TODO map error code, set errstr
         return OtherError;
@@ -117,6 +117,6 @@ Keychain::Error Keychain::Private::deletePasswordImpl( const QString& account,
     if ( ret2 == noErr )
         return NoError;
     //TODO map error code, set errstr
-    return OtherError;
+    return CouldNotDeletePassword;
 }
 
