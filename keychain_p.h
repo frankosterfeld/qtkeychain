@@ -19,15 +19,15 @@ class Keychain::Private {
 public:
     explicit Private( const QString& s ) : service( s ) {}
 
-    Keychain::Error writePasswordImpl( const QString& account,
-                                       const QString& password,
-                                       Keychain::OverwriteMode,
-                                       QString* errorString );
-    Keychain::Error deletePasswordImpl( const QString& account,
-                                        QString* errorString );
-    Keychain::Error readPasswordImpl( QString* password,
-                                      const QString& account,
-                                      QString* errorString );
+    Keychain::Error writeEntryImpl( const QString& account,
+                                    const QByteArray& data,
+                                    Keychain::OverwriteMode,
+                                    QString* errorString );
+    Keychain::Error deleteEntryImpl( const QString& account,
+                                     QString* errorString );
+    Keychain::Error readEntryImpl( QByteArray* password,
+                                   const QString& account,
+                                   QString* errorString );
 
     const QString service;
     Keychain::Error error;

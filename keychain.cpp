@@ -32,28 +32,37 @@ QString Keychain::errorString() const {
     return d->errorString;
 }
 
-void Keychain::writePassword( const QString& account, const QString& password, OverwriteMode om ) {
+void Keychain::writePassword( const QString &key, const QString &password, OverwriteMode om ) {
+    writeEntry( key, password.toUtf8(), om );
+}
+
+void Keychain::writeEntry( const QString& key, const QByteArray& ba, OverwriteMode om ) {
     QString err;
-    const Error ret = d->writePasswordImpl( account, password, om, &err );
+    const Error ret = d->writeEntryImpl( key, ba, om, &err );
     d->error = ret;
     d->errorString = err;
 }
 
-QString Keychain::readPassword( const QString& account ) {
+QString Keychain::readPassword( const QString& key ) {
+    const QByteArray ba = readEntry( key );
+    return QString::fromUtf8( ba.constData(), ba.size() );
+}
+
+QByteArray Keychain::readEntry( const QString& key ) {
     QString err;
-    QString pw;
-    const Error ret = d->readPasswordImpl( &pw, account, &err );
+    QByteArray pw;
+    const Error ret = d->readEntryImpl( &pw, key, &err );
     d->error = ret;
     d->errorString = err;
     if ( ret != NoError )
-        return QString();
+        return QByteArray();
     else
         return pw;
 }
 
-void Keychain::deletePassword( const QString& account ) {
+void Keychain::deleteEntry( const QString& key ) {
     QString err;
-    const Error ret = d->deletePasswordImpl( account, &err );
+    const Error ret = d->deleteEntryImpl( key, &err );
     d->error = ret;
     d->errorString = err;
 }

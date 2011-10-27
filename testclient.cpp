@@ -66,7 +66,7 @@ int main( int argc, char** argv ) {
         if ( ++it != args.constEnd() )
             return printUsage();
         Keychain k( QLatin1String("qtkeychain-testclient") );
-        k.deletePassword( acc );
+        k.deleteEntry( acc );
         if ( k.error() ) {
             std::cerr << "Deleting password failed: " << qPrintable(k.errorString()) << std::endl;
             return 1;

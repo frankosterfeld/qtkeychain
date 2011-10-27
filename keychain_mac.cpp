@@ -32,7 +32,7 @@ static QString strForStatus( OSStatus os ) {
     return QString::fromUtf8( buf, strlen( buf ) );
 }
 
-static OSStatus readPw( QString* pw,
+static OSStatus readPw( QByteArray* pw,
                         const QString& service,
                         const QString& account,
                         SecKeychainItemRef* ref ) {
@@ -53,7 +53,7 @@ static OSStatus readPw( QString* pw,
                                                          &data,
                                                          ref );
     if ( ret == noErr ) {
-        *pw = QString::fromUtf8( reinterpret_cast<const char*>( data ), len );
+        *pw = QByteArray( reinterpret_cast<const char*>( data ), len );
         const OSStatus ret2 = SecKeychainItemFreeContent ( 0, data );
         if ( ret2 != noErr )
             qWarning() << "Could not free item content: " << strForStatus( ret2 );
@@ -61,9 +61,9 @@ static OSStatus readPw( QString* pw,
     return ret;
 }
 
-Keychain::Error Keychain::Private::readPasswordImpl( QString* pw,
-                                                     const QString& account,
-                                                     QString* err ) {
+Keychain::Error Keychain::Private::readEntryImpl( QByteArray* pw,
+                                                  const QString& account,
+                                                  QString* err ) {
     Q_ASSERT( pw );
     Q_ASSERT( err );
     err->clear();
@@ -73,29 +73,28 @@ Keychain::Error Keychain::Private::readPasswordImpl( QString* pw,
         return NoError;
     case errSecItemNotFound:
         *err = tr("Password not found");
-        return PasswordNotFound;
+        return EntryNotFound;
     default:
         *err = strForStatus( ret );
         return OtherError;
     }
 }
 
-Keychain::Error Keychain::Private::writePasswordImpl( const QString& account,
-                                                      const QString& password,
-                                                      Keychain::OverwriteMode ov,
-                                                      QString* err ) {
+Keychain::Error Keychain::Private::writeEntryImpl( const QString& account,
+                                                   const QByteArray& data,
+                                                   Keychain::OverwriteMode ov,
+                                                   QString* err ) {
     Q_ASSERT( err );
     err->clear();
     const QByteArray serviceData = service.toUtf8();
     const QByteArray accountData = account.toUtf8();
-    const QByteArray passwordData = password.toUtf8();
     const OSStatus ret = SecKeychainAddGenericPassword( NULL, //default keychain
                                                         serviceData.size(),
                                                         serviceData.constData(),
                                                         accountData.size(),
                                                         accountData.constData(),
-                                                        passwordData.size(),
-                                                        passwordData.constData(),
+                                                        data.size(),
+                                                        data.constData(),
                                                         NULL //item reference
                                                         );
     if ( ret != noErr ) {
@@ -106,11 +105,11 @@ Keychain::Error Keychain::Private::writePasswordImpl( const QString& account,
                 *err = tr("Entry already exists");
                 return EntryAlreadyExists;
             }
-            Error derr = deletePasswordImpl( account, err );
+            Error derr = deleteEntryImpl( account, err );
             if ( derr != NoError )
-                return CouldNotDeletePassword;
+                return CouldNotDeleteEntry;
             else
-                return writePasswordImpl( account, password, ov, err );
+                return writeEntryImpl( account, data, ov, err );
         }
         default:
             *err = strForStatus( ret );
@@ -121,10 +120,10 @@ Keychain::Error Keychain::Private::writePasswordImpl( const QString& account,
     return NoError;
 }
 
-Keychain::Error Keychain::Private::deletePasswordImpl( const QString& account,
-                                                       QString* err ) {
+Keychain::Error Keychain::Private::deleteEntryImpl( const QString& account,
+                                                    QString* err ) {
     SecKeychainItemRef ref;
-    QString pw;
+    QByteArray pw;
     const OSStatus ret1 = readPw( &pw, service, account, &ref );
     if ( ret1 == errSecItemNotFound )
         return NoError; // No item stored, we're done
@@ -141,6 +140,6 @@ Keychain::Error Keychain::Private::deletePasswordImpl( const QString& account,
         return NoError;
     //TODO map error code
     *err = strForStatus( ret2 );
-    return CouldNotDeletePassword;
+    return CouldNotDeleteEntry;
 }
 
