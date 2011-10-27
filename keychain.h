@@ -11,6 +11,7 @@
 
 #include <QtCore/QString>
 
+namespace QKeychain {
 /**
  *
  */
@@ -98,5 +99,7 @@ private:
     Private* const d;
     Q_DISABLE_COPY(Keychain)
 };
+
+}
 
 #endif

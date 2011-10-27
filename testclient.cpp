@@ -12,6 +12,7 @@
 #include "keychain.h"
 #include <iostream>
 
+using namespace QKeychain;
 
 int printUsage() {
     std::cerr << "testclient store <account> <password>" << std::endl;

@@ -9,6 +9,8 @@
 #include "keychain.h"
 #include "keychain_p.h"
 
+using namespace QKeychain;
+
 Keychain::Keychain( const QString& service )
     : d( new Private( service ) )
 {

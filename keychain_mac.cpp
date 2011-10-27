@@ -12,6 +12,8 @@
 #include <Security/Security.h>
 #include <QDebug>
 
+using namespace QKeychain;
+
 template <typename T>
 struct Releaser {
     explicit Releaser( const T& v ) : value( v ) {}

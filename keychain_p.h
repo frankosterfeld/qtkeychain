@@ -13,6 +13,7 @@
 
 #include "keychain.h"
 
+namespace QKeychain {
 class Keychain::Private {
     Q_DECLARE_TR_FUNCTIONS(Keychain::Private)
 public:
@@ -32,5 +33,7 @@ public:
     Keychain::Error error;
     QString errorString;
 };
+
+}
 
 #endif // KEYCHAIN_P_H
