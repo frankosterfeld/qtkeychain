@@ -138,3 +138,25 @@ Keychain::Error Keychain::Private::deleteEntryImpl( const QString& account,
     return CouldNotDeleteEntry;
 }
 
+
+Keychain::Error Keychain::Private::entryExistsImpl( bool* exists,
+                                                    const QString& account,
+                                                    QString* err ) {
+    Q_ASSERT( exists );
+    *exists = false;
+    SecKeychainItemRef ref;
+    QByteArray pw;
+    const OSStatus ret1 = readPw( &pw, service, account, &ref );
+    if ( ret1 == errSecItemNotFound ) {
+        return NoError;
+    }
+    if ( ret1 != noErr ) {
+        *err = strForStatus( ret1 );
+        //TODO map error code, set errstr
+        return OtherError;
+    }
+
+    CFRelease( ref );
+    *exists = true;
+    return NoError;
+}

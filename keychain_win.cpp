@@ -8,11 +8,42 @@
  *****************************************************************************/
 #include "keychain_p.h"
 
-QString Keychain::Private::readPasswordImpl( const QString& account ) const {
-    throw KeychainException( QLatin1String("not implemented") );
+using namespace QKeychain;
+
+Keychain::Error Keychain::Private::readEntryImpl( QByteArray* pw,
+                                                  const QString& account,
+                                                  QString* err ) {
+    Q_ASSERT( pw );
+    Q_ASSERT( err );
+    err->clear();
+    *err = tr("Not implemented");
+    return OtherError;
 }
 
-void Keychain::Private::writePasswordImpl( const QString& account, const QString& password ) {
-    throw KeychainException( QLatin1String("not implemented") );
+Keychain::Error Keychain::Private::writeEntryImpl( const QString& account,
+                                                   const QByteArray& data,
+                                                   QString* err ) {
+    Q_ASSERT( err );
+    err->clear();
+    *err = tr("Not implemented");
+    return OtherError;
 }
 
+Keychain::Error Keychain::Private::deleteEntryImpl( const QString& account,
+                                                    QString* err ) {
+    Q_ASSERT( err );
+    err->clear();
+    *err = tr("Not implemented");
+    return OtherError;
+}
+
+
+Keychain::Error Keychain::Private::entryExistsImpl( bool* exists,
+                                                    const QString& account,
+                                                    QString* err ) {
+    Q_ASSERT( exists );
+    Q_ASSERT( err );
+    err->clear();
+    *err = tr("Not implemented");
+    return OtherError;
+}

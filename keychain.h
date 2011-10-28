@@ -91,7 +91,7 @@ public:
      * Reads the password for a given @p key from the keychain.
      * error() and errorString() hold the result of the read operation.
      *
-     * @param key the key ot read the password for
+     * @param key the key to read the password for
      */
     QString readPassword( const QString& key );
 
@@ -99,9 +99,17 @@ public:
      * Reads data for a given @p key from the keychain.
      * error() and errorString() hold the result of the read operation.
      *
-     * @param key the key ot read the password for
+     * @param key the key to read the password for
      */
     QByteArray readEntry( const QString& key );
+
+    /**
+     * Returns whether the keychain has an entry with key @p key
+     * error() and errorString() hold the result of the read operation.
+     *
+     * @param key the key to check for
+     */
+    bool entryExists( const QString& key );
 
     /**
      * Deletes the data for a @p key from the keychain.

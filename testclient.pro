@@ -7,5 +7,6 @@ QT -= gui
 CONFIG += console
 macx:CONFIG -= app_bundle
 
-LIBS += -L$$OUT_PWD -lqtkeychain
+win32:LIBS += -Llib -lqtkeychain
+unix:LIBS += -L$$OUT_PWD -lqtkeychain
 

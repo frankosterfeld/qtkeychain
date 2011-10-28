@@ -60,6 +60,15 @@ QByteArray Keychain::readEntry( const QString& key ) {
         return pw;
 }
 
+bool Keychain::entryExists( const QString& key ) {
+    QString err;
+    bool exists = false;
+    const Error ret = d->entryExistsImpl( &exists, key, &err );
+    d->error = ret;
+    d->errorString = err;
+    return exists;
+}
+
 void Keychain::deleteEntry( const QString& key ) {
     QString err;
     const Error ret = d->deleteEntryImpl( key, &err );

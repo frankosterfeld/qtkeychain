@@ -27,7 +27,9 @@ public:
     Keychain::Error readEntryImpl( QByteArray* password,
                                    const QString& account,
                                    QString* errorString );
-
+    Keychain::Error entryExistsImpl( bool* exists,
+                                     const QString& key,
+                                     QString* errorString );
     const QString service;
     Keychain::Error error;
     QString errorString;
