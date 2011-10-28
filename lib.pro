@@ -3,9 +3,8 @@ TARGET = qtkeychain
 DEPENDPATH += .
 INCLUDEPATH += .
 
-# Input
 HEADERS += keychain.h \
-    keychain_p.h
+           keychain_p.h
 SOURCES += keychain.cpp
 
 macx {
