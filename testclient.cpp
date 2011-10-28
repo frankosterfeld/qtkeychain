@@ -14,7 +14,7 @@
 
 using namespace QKeychain;
 
-int printUsage() {
+static int printUsage() {
     std::cerr << "testclient store <account> <password>" << std::endl;
     std::cerr << "testclient restore <account>" << std::endl;
     std::cerr << "testclient delete <account>" << std::endl;
