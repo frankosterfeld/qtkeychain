@@ -17,7 +17,7 @@ namespace QKeychain {
 class Keychain::Private {
     Q_DECLARE_TR_FUNCTIONS(Keychain::Private)
 public:
-    explicit Private( const QString& s ) : service( s ) {}
+    explicit Private( const QString& s ) : service( s ), error( NoError ) {}
 
     Keychain::Error writeEntryImpl( const QString& account,
                                     const QByteArray& data,

@@ -16,5 +16,6 @@ macx {
 win32 {
     DESTDIR = lib
     DLLDESTDIR = lib
+    LIBS += -lCrypt32
     SOURCES += keychain_win.cpp
 }
