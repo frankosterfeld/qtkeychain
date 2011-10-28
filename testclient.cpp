@@ -40,7 +40,7 @@ int main( int argc, char** argv ) {
         if ( ++it != args.constEnd() )
             return printUsage();
         Keychain k( QLatin1String("qtkeychain-testclient") );
-        k.writePassword( acc, pass, Keychain::ForceOverwrite );
+        k.writePassword( acc, pass );
         if ( k.error() ) {
             std::cerr << "Storing password failed: " << qPrintable(k.errorString()) << std::endl;
             return 1;

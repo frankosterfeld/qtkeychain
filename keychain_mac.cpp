@@ -82,7 +82,6 @@ Keychain::Error Keychain::Private::readEntryImpl( QByteArray* pw,
 
 Keychain::Error Keychain::Private::writeEntryImpl( const QString& account,
                                                    const QByteArray& data,
-                                                   Keychain::OverwriteMode ov,
                                                    QString* err ) {
     Q_ASSERT( err );
     err->clear();
@@ -101,15 +100,11 @@ Keychain::Error Keychain::Private::writeEntryImpl( const QString& account,
         switch ( ret ) {
         case errSecDuplicateItem:
         {
-            if ( ov == Keychain::DoNotOverwrite ) {
-                *err = tr("Entry already exists");
-                return EntryAlreadyExists;
-            }
             Error derr = deleteEntryImpl( account, err );
             if ( derr != NoError )
                 return CouldNotDeleteEntry;
             else
-                return writeEntryImpl( account, data, ov, err );
+                return writeEntryImpl( account, data, err );
         }
         default:
             *err = strForStatus( ret );

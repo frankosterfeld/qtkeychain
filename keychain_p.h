@@ -21,7 +21,6 @@ public:
 
     Keychain::Error writeEntryImpl( const QString& account,
                                     const QByteArray& data,
-                                    Keychain::OverwriteMode,
                                     QString* errorString );
     Keychain::Error deleteEntryImpl( const QString& account,
                                      QString* errorString );

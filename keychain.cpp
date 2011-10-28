@@ -32,13 +32,13 @@ QString Keychain::errorString() const {
     return d->errorString;
 }
 
-void Keychain::writePassword( const QString &key, const QString &password, OverwriteMode om ) {
-    writeEntry( key, password.toUtf8(), om );
+void Keychain::writePassword( const QString &key, const QString &password ) {
+    writeEntry( key, password.toUtf8() );
 }
 
-void Keychain::writeEntry( const QString& key, const QByteArray& ba, OverwriteMode om ) {
+void Keychain::writeEntry( const QString& key, const QByteArray& ba ) {
     QString err;
-    const Error ret = d->writeEntryImpl( key, ba, om, &err );
+    const Error ret = d->writeEntryImpl( key, ba, &err );
     d->error = ret;
     d->errorString = err;
 }

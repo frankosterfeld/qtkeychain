@@ -51,14 +51,6 @@ public:
     };
 
     /**
-     * Overwrite mode when writing passwords to the keychain
-     */
-    enum OverwriteMode {
-        DoNotOverwrite, /**< Do not overwrite existing entries */
-        ForceOverwrite  /**< Replace old data by new one */
-    };
-
-    /**
      * The service name used as identifier.
      */
     QString service() const;
@@ -82,8 +74,7 @@ public:
      * @param om Whether to overwrite existing passwords
      */
     void writePassword( const QString& key,
-                        const QString& password,
-                        OverwriteMode om=DoNotOverwrite );
+                        const QString& password );
 
     /**
      * Stores @p data in the keychain, for a given @p key.
@@ -94,8 +85,7 @@ public:
      * @param om Whether to overwrite existing passwords
      */
     void writeEntry( const QString& key,
-                     const QByteArray& data,
-                     OverwriteMode om=DoNotOverwrite );
+                     const QByteArray& data );
 
     /**
      * Reads the password for a given @p key from the keychain.
