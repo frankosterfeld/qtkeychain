@@ -28,7 +28,7 @@ public:
      * Creates a Keychain object.
      *
      * @param service The service name of your service/application. Used as identifier,
-     *        to disambiguate and avoid clashes with other applications.
+     *        to disambiguate keys and avoid clashes with other applications.
      */
     explicit Keychain( const QString& service );
 
@@ -41,21 +41,21 @@ public:
      * Error codes
      */
     enum Error {
-        NoError=0, /*< No error occurred, operation was successful */
-        EntryNotFound, /*< For the given key no data was found */
-        CouldNotDeleteEntry, /*< Could not delete existing secret data */
-        AccessDeniedByUser, /*< User denied access to keychain */
-        AccessDenied, /*< Access denied for other reasons */
-        EntryAlreadyExists, /*< There is already an entry for the given key and overwriting was not enforced */
-        OtherError /*< Something else went wrong (errorString() might provide details) */
+        NoError=0, /**< No error occurred, operation was successful */
+        EntryNotFound, /**< For the given key no data was found */
+        CouldNotDeleteEntry, /**< Could not delete existing secret data */
+        AccessDeniedByUser, /**< User denied access to keychain */
+        AccessDenied, /**< Access denied for other reasons */
+        EntryAlreadyExists, /**< There is already an entry for the given key and overwriting was not enforced */
+        OtherError /**< Something else went wrong (errorString() might provide details) */
     };
 
     /**
      * Overwrite mode when writing passwords to the keychain
      */
     enum OverwriteMode {
-        DoNotOverwrite, /*< Do not overwrite existing entries */
-        ForceOverwrite  /*< Replace old data by new one */
+        DoNotOverwrite, /**< Do not overwrite existing entries */
+        ForceOverwrite  /**< Replace old data by new one */
     };
 
     /**
