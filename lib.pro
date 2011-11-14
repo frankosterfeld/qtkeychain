@@ -13,6 +13,11 @@ macx {
     LIBS += -framework Security -framework CoreFoundation
     SOURCES += keychain_mac.cpp
 }
+
+unix:!macx {
+   SOURCES += keychain_dbus.cpp
+}
+
 win32 {
     DESTDIR = lib
     DLLDESTDIR = lib
