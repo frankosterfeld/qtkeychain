@@ -13,6 +13,8 @@
 #include <Windows.h>
 #include <WinCrypt.h>
 
+#include <memory>
+
 using namespace QKeychain;
 
 Keychain::Error Keychain::Private::readEntryImpl( QByteArray* pw,
@@ -22,8 +24,11 @@ Keychain::Error Keychain::Private::readEntryImpl( QByteArray* pw,
     Q_ASSERT( err );
     err->clear();
 
-    QSettings settings( service );
-    QByteArray encrypted = settings.value( key ).toByteArray();
+    //Use settings member if there, create local settings object if not
+    std::auto_ptr<QSettings> local( !settings ? new QSettings( service ) : 0 );
+    QSettings* actual = settings ? settings.data() : local.get();
+
+    QByteArray encrypted = actual->value( key ).toByteArray();
     if ( encrypted.isNull() ) {
         *err = tr("Entry not found");
         return EntryNotFound;
@@ -75,11 +80,13 @@ Keychain::Error Keychain::Private::writeEntryImpl( const QString& key,
     const QByteArray encrypted( reinterpret_cast<char*>( blob_out.pbData ), blob_out.cbData );
     LocalFree( blob_out.pbData );
 
-    QSettings settings( service );
-    settings.setValue( key, encrypted );
-    settings.sync();
-    if ( settings.status() != QSettings::NoError ) {
-        *err = settings.status() == QSettings::AccessError
+    //Use settings member if there, create local settings object if not
+    std::auto_ptr<QSettings> local( !settings ? new QSettings( service ) : 0 );
+    QSettings* actual = settings ? settings.data() : local.get();
+    actual->setValue( key, encrypted );
+    actual->sync();
+    if ( actual->status() != QSettings::NoError ) {
+        *err = actual->status() == QSettings::AccessError
                 ? tr("Could not store encrypted data in settings: access error")
                 : tr("Could not store encrypted data in settings: format error");
         return OtherError;
@@ -92,11 +99,12 @@ Keychain::Error Keychain::Private::deleteEntryImpl( const QString& key,
                                                     QString* err ) {
     Q_ASSERT( err );
     err->clear();
-    QSettings settings( service );
-    settings.remove( key );
-    settings.sync();
-    if ( settings.status() != QSettings::NoError ) {
-        *err = settings.status() == QSettings::AccessError
+    std::auto_ptr<QSettings> local( !settings ? new QSettings( service ) : 0 );
+    QSettings* actual = settings ? settings.data() : local.get();
+    actual->remove( key );
+    actual->sync();
+    if ( actual->status() != QSettings::NoError ) {
+        *err = actual->status() == QSettings::AccessError
                 ? tr("Could not delete encrypted data from settings: access error")
                 : tr("Could not delete encrypted data from settings: format error");
         return OtherError;
@@ -113,10 +121,11 @@ Keychain::Error Keychain::Private::entryExistsImpl( bool* exists,
     Q_ASSERT( err );
     err->clear();
     *exists = false;
-    QSettings settings( service );
-    const bool ex = settings.contains( key );
-    if ( settings.status() != QSettings::NoError ) {
-        *err = settings.status() == QSettings::AccessError
+    std::auto_ptr<QSettings> local( !settings ? new QSettings( service ) : 0 );
+    QSettings* actual = settings ? settings.data() : local.get();
+    const bool ex = actual->contains( key );
+    if ( actual->status() != QSettings::NoError ) {
+        *err = actual->status() == QSettings::AccessError
                 ? tr("Could not read settings: access error")
                 : tr("Could not read settings: format error");
         return OtherError;

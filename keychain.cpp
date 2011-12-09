@@ -11,9 +11,10 @@
 
 using namespace QKeychain;
 
-Keychain::Keychain( const QString& service )
-    : d( new Private( service ) )
+Keychain::Keychain( const QString& service, QSettings* settings )
+    : d( new Private( service, settings ) )
 {
+    Q_ASSERT( !service.isEmpty() );
 }
 
 Keychain::~Keychain() {

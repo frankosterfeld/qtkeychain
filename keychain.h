@@ -13,6 +13,8 @@
 
 #include <QtCore/QString>
 
+class QSettings;
+
 namespace QKeychain {
 /**
  * Provides access to platform-specific key stores for secure persistence of
@@ -31,8 +33,12 @@ public:
      *
      * @param service The service name of your service/application. Used as identifier,
      *        to disambiguate keys and avoid clashes with other applications.
+     *        Must not be empty.
+     * @param settings An optional settings object that is used to store the encrypted data
+     *        if no keychain is available on the platform. Currently only used on Windows.
+     *        If 0, a default-constructed QSettings object will be used.
      */
-    explicit Keychain( const QString& service );
+    explicit Keychain( const QString& service, QSettings* settings=0 );
 
     /**
      * Destructor

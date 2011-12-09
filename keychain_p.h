@@ -10,6 +10,8 @@
 #define KEYCHAIN_P_H
 
 #include <QCoreApplication>
+#include <QPointer>
+#include <QSettings>
 
 #include "keychain.h"
 
@@ -17,7 +19,7 @@ namespace QKeychain {
 class Keychain::Private {
     Q_DECLARE_TR_FUNCTIONS(Keychain::Private)
 public:
-    explicit Private( const QString& s ) : service( s ), error( NoError ) {}
+    explicit Private( const QString& service_, QSettings* settings_ ) : service( service_ ), settings( settings_ ), error( NoError ) {}
 
     Keychain::Error writeEntryImpl( const QString& account,
                                     const QByteArray& data,
@@ -31,6 +33,7 @@ public:
                                      const QString& key,
                                      QString* errorString );
     const QString service;
+    QPointer<QSettings> settings;
     Keychain::Error error;
     QString errorString;
 };
