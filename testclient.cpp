@@ -39,10 +39,16 @@ int main( int argc, char** argv ) {
         const QString pass = *it;
         if ( ++it != args.constEnd() )
             return printUsage();
-        Keychain k( QLatin1String("qtkeychain-testclient") );
-        k.writePassword( acc, pass );
-        if ( k.error() ) {
-            std::cerr << "Storing password failed: " << qPrintable(k.errorString()) << std::endl;
+        WritePasswordJob job( QLatin1String("qtkeychain-testclient") );
+        job.setAutoDelete( false );
+        job.setKey( acc );
+        job.setTextData( pass );
+        QEventLoop loop;
+        job.connect( &job, SIGNAL(finished(QKeychain::Job*)), &loop, SLOT(quit()) );
+        job.start();
+        loop.exec();
+     if ( job.error() ) {
+            std::cerr << "Storing password failed: " << qPrintable(job.errorString()) << std::endl;
             return 1;
         }
         std::cout << "Password stored successfully" << std::endl;
@@ -52,10 +58,17 @@ int main( int argc, char** argv ) {
         const QString acc = *it;
         if ( ++it != args.constEnd() )
             return printUsage();
-        Keychain k( QLatin1String("qtkeychain-testclient") );
-        const QString pw = k.readPassword( acc );
-        if ( k.error() ) {
-            std::cerr << "Restoring password failed: " << qPrintable(k.errorString()) << std::endl;
+        ReadPasswordJob job( QLatin1String("qtkeychain-testclient") );
+        job.setAutoDelete( false );
+        job.setKey( acc );
+        QEventLoop loop;
+        job.connect( &job, SIGNAL(finished(QKeychain::Job*)), &loop, SLOT(quit()) );
+        job.start();
+        loop.exec();
+
+        const QString pw = job.textData();
+        if ( job.error() ) {
+            std::cerr << "Restoring password failed: " << qPrintable(job.errorString()) << std::endl;
             return 1;
         }
         std::cout << qPrintable(pw) << std::endl;
@@ -65,10 +78,16 @@ int main( int argc, char** argv ) {
         const QString acc = *it;
         if ( ++it != args.constEnd() )
             return printUsage();
-        Keychain k( QLatin1String("qtkeychain-testclient") );
-        k.deleteEntry( acc );
-        if ( k.error() ) {
-            std::cerr << "Deleting password failed: " << qPrintable(k.errorString()) << std::endl;
+        WritePasswordJob job( QLatin1String("qtkeychain-testclient") );
+        job.setAutoDelete( false );
+        job.setKey( acc );
+        QEventLoop loop;
+        job.connect( &job, SIGNAL(finished(QKeychain::Job*)), &loop, SLOT(quit()) );
+        job.start();
+        loop.exec();
+
+        if ( job.error() ) {
+            std::cerr << "Deleting password failed: " << qPrintable(job.errorString()) << std::endl;
             return 1;
         }
         std::cout << "Password deleted successfully" << std::endl;

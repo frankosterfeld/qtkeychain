@@ -61,62 +61,29 @@ static OSStatus readPw( QByteArray* pw,
     return ret;
 }
 
-Keychain::Error Keychain::Private::readEntryImpl( QByteArray* pw,
-                                                  const QString& account,
-                                                  QString* err ) {
-    Q_ASSERT( pw );
-    Q_ASSERT( err );
-    err->clear();
-    const OSStatus ret = readPw( pw, service, account, 0 );
+void ReadPasswordJob::Private::doStart()
+{
+    QString errorString;
+    Error error = NoError;
+    const OSStatus ret = readPw( &data, q->service(), q->key(), 0 );
+
     switch ( ret ) {
     case noErr:
-        return NoError;
+        break;
     case errSecItemNotFound:
-        *err = tr("Password not found");
-        return EntryNotFound;
+        errorString = tr("Password not found");
+        error = EntryNotFound;
+        break;
     default:
-        *err = strForStatus( ret );
-        return OtherError;
+        errorString = strForStatus( ret );
+        error = OtherError;
+        break;
     }
+    q->emitFinishedWithError( error, errorString );
 }
 
-Keychain::Error Keychain::Private::writeEntryImpl( const QString& account,
-                                                   const QByteArray& data,
-                                                   QString* err ) {
-    Q_ASSERT( err );
-    err->clear();
-    const QByteArray serviceData = service.toUtf8();
-    const QByteArray accountData = account.toUtf8();
-    const OSStatus ret = SecKeychainAddGenericPassword( NULL, //default keychain
-                                                        serviceData.size(),
-                                                        serviceData.constData(),
-                                                        accountData.size(),
-                                                        accountData.constData(),
-                                                        data.size(),
-                                                        data.constData(),
-                                                        NULL //item reference
-                                                        );
-    if ( ret != noErr ) {
-        switch ( ret ) {
-        case errSecDuplicateItem:
-        {
-            Error derr = deleteEntryImpl( account, err );
-            if ( derr != NoError )
-                return CouldNotDeleteEntry;
-            else
-                return writeEntryImpl( account, data, err );
-        }
-        default:
-            *err = strForStatus( ret );
-            return OtherError;
-        }
-    }
 
-    return NoError;
-}
-
-Keychain::Error Keychain::Private::deleteEntryImpl( const QString& account,
-                                                    QString* err ) {
+static QKeychain::Error deleteEntryImpl( const QString& service, const QString& account, QString* err ) {
     SecKeychainItemRef ref;
     QByteArray pw;
     const OSStatus ret1 = readPw( &pw, service, account, &ref );
@@ -138,25 +105,55 @@ Keychain::Error Keychain::Private::deleteEntryImpl( const QString& account,
     return CouldNotDeleteEntry;
 }
 
-
-Keychain::Error Keychain::Private::entryExistsImpl( bool* exists,
-                                                    const QString& account,
-                                                    QString* err ) {
-    Q_ASSERT( exists );
-    *exists = false;
-    SecKeychainItemRef ref;
-    QByteArray pw;
-    const OSStatus ret1 = readPw( &pw, service, account, &ref );
-    if ( ret1 == errSecItemNotFound ) {
-        return NoError;
+static QKeychain::Error writeEntryImpl( const QString& service,
+                                        const QString& account,
+                                        const QByteArray& data,
+                                        QString* err ) {
+    Q_ASSERT( err );
+    err->clear();
+    const QByteArray serviceData = service.toUtf8();
+    const QByteArray accountData = account.toUtf8();
+    const OSStatus ret = SecKeychainAddGenericPassword( NULL, //default keychain
+                                                        serviceData.size(),
+                                                        serviceData.constData(),
+                                                        accountData.size(),
+                                                        accountData.constData(),
+                                                        data.size(),
+                                                        data.constData(),
+                                                        NULL //item reference
+                                                        );
+    if ( ret != noErr ) {
+        switch ( ret ) {
+        case errSecDuplicateItem:
+        {
+            Error derr = deleteEntryImpl( service, account, err );
+            if ( derr != NoError )
+                return CouldNotDeleteEntry;
+            else
+                return writeEntryImpl( service, account, data, err );
+        }
+        default:
+            *err = strForStatus( ret );
+            return OtherError;
+        }
     }
-    if ( ret1 != noErr ) {
-        *err = strForStatus( ret1 );
-        //TODO map error code, set errstr
-        return OtherError;
-    }
 
-    CFRelease( ref );
-    *exists = true;
     return NoError;
+}
+
+void WritePasswordJob::Private::doStart()
+{
+    QString errorString;
+    Error error = NoError;
+
+    if ( mode == Delete ) {
+        const Error derr = deleteEntryImpl( q->service(), key, &errorString );
+        if ( derr != NoError )
+            error = CouldNotDeleteEntry;
+        q->emitFinishedWithError( error, errorString );
+        return;
+    }
+    const QByteArray data = mode == Text ?  textData.toUtf8() : binaryData;
+    error = writeEntryImpl( q->service(), key, data, &errorString );
+    q->emitFinishedWithError( error, errorString );
 }

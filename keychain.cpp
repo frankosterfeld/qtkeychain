@@ -11,9 +11,130 @@
 
 using namespace QKeychain;
 
+Job::Job( const QString& service, QObject *parent )
+    : QObject( parent )
+    , d ( new Private( service ) ) {
+}
+
+Job::~Job() {
+    delete d;
+}
+
+QString Job::service() const {
+    return d->service;
+}
+
+QSettings* Job::settings() const {
+    return d->settings;
+}
+
+void Job::setSettings( QSettings* settings ) {
+    d->settings = settings;
+}
+
+void Job::start() {
+    QMetaObject::invokeMethod( this, "doStart", Qt::QueuedConnection );
+}
+
+bool Job::autoDelete() const {
+    return d->autoDelete;
+}
+
+void Job::setAutoDelete( bool autoDelete ) {
+    d->autoDelete = autoDelete;
+}
+
+void Job::emitFinished() {
+    emit finished( this );
+    if ( d->autoDelete )
+        deleteLater();
+}
+
+void Job::emitFinishedWithError( Error error, const QString& errorString ) {
+    d->error = error;
+    d->errorString = errorString;
+    emitFinished();
+}
+
+Error Job::error() const {
+    return d->error;
+}
+
+QString Job::errorString() const {
+    return d->errorString;
+}
+
+void Job::setError( Error error ) {
+    d->error = error;
+}
+
+void Job::setErrorString( const QString& errorString ) {
+    d->errorString = errorString;
+}
+
+ReadPasswordJob::ReadPasswordJob( const QString& service, QObject* parent )
+    : Job( service, parent )
+    , d( new Private( this ) )
+{}
+
+ReadPasswordJob::~ReadPasswordJob() {
+    delete d;
+}
+
+QString ReadPasswordJob::textData() const {
+    return QString::fromUtf8( d->data );
+}
+
+QByteArray ReadPasswordJob::binaryData() const {
+    return d->data;
+}
+
+QString ReadPasswordJob::key() const {
+    return d->key;
+}
+
+void ReadPasswordJob::setKey( const QString& key ) {
+    d->key = key;
+}
+
+void ReadPasswordJob::doStart() {
+    d->doStart();
+}
+
+WritePasswordJob::WritePasswordJob( const QString& service, QObject* parent )
+    : Job( service, parent )
+    , d( new Private( this ) ) {
+}
+
+WritePasswordJob::~WritePasswordJob() {
+    delete d;
+}
+
+QString WritePasswordJob::key() const {
+    return d->key;
+}
+
+void WritePasswordJob::setKey( const QString& key ) {
+    d->key = key;
+}
+
+void WritePasswordJob::setBinaryData( const QByteArray& data ) {
+    d->binaryData = data;
+    d->mode = Private::Binary;
+}
+
+void WritePasswordJob::setTextData( const QString& data ) {
+    d->textData = data;
+    d->mode = Private::Text;
+}
+
+void WritePasswordJob::doStart() {
+    d->doStart();
+}
+
+#if 0
 Keychain::Keychain( const QString& service, QSettings* settings )
-    : d( new Private( service, settings ) )
-{
+    : d( new Private( service, settings ) ) {
     Q_ASSERT( !service.isEmpty() );
 }
 
@@ -25,7 +146,7 @@ QString Keychain::service() const {
     return d->service;
 }
 
-Keychain::Error Keychain::error() const {
+QKeychain::Error Keychain::error() const {
     return d->error;
 }
 
@@ -76,3 +197,5 @@ void Keychain::deleteEntry( const QString& key ) {
     d->error = ret;
     d->errorString = err;
 }
+
+#endif

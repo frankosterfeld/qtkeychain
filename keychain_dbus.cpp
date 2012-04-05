@@ -12,7 +12,7 @@
 
 using namespace QKeychain;
 
-Keychain::Error Keychain::Private::readEntryImpl( QByteArray* pw,
+QKeychain::Error Keychain::Private::readEntryImpl( QByteArray* pw,
                                                   const QString& key,
                                                   QString* err ) {
     Q_UNUSED( key )
@@ -21,14 +21,14 @@ Keychain::Error Keychain::Private::readEntryImpl( QByteArray* pw,
     return NotImplemented;
 }
 
-Keychain::Error Keychain::Private::writeEntryImpl( const QString& key,
+QKeychain::Error Keychain::Private::writeEntryImpl( const QString& key,
                                                    const QByteArray& data_,
                                                    QString* err ) {
     Q_ASSERT( err );
     return NotImplemented;
 }
 
-Keychain::Error Keychain::Private::deleteEntryImpl( const QString& key,
+QKeychain::Error Keychain::Private::deleteEntryImpl( const QString& key,
                                                     QString* err ) {
     Q_ASSERT( err );
     err->clear();
@@ -36,7 +36,7 @@ Keychain::Error Keychain::Private::deleteEntryImpl( const QString& key,
 }
 
 
-Keychain::Error Keychain::Private::entryExistsImpl( bool* exists,
+QKeychain::Error Keychain::Private::entryExistsImpl( bool* exists,
                                                     const QString& key,
                                                     QString* err ) {
     Q_ASSERT( exists );

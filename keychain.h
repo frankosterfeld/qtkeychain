@@ -11,127 +11,100 @@
 
 #include "qkeychain_export.h"
 
+#include <QtCore/QObject>
 #include <QtCore/QString>
 
 class QSettings;
 
 namespace QKeychain {
+
 /**
- * Provides access to platform-specific key stores for secure persistence of
- * passwords and other sensitive user data.
- *
- * On Windows, TODO
- * On Mac OS X, the OS X keychain is used.
- * On other Unixes, TODO
- *
- * TODO we don't guarantee anything
+ * Error codes
  */
-class QKEYCHAIN_EXPORT Keychain {
+enum Error {
+    NoError=0, /**< No error occurred, operation was successful */
+    EntryNotFound, /**< For the given key no data was found */
+    CouldNotDeleteEntry, /**< Could not delete existing secret data */
+    AccessDeniedByUser, /**< User denied access to keychain */
+    AccessDenied, /**< Access denied for other reasons */
+    EntryAlreadyExists, /**< There is already an entry for the given key and overwriting was not enforced */
+    NotImplemented, /**< Not implemented on platform */
+    OtherError /**< Something else went wrong (errorString() might provide details) */
+};
+
+class QKEYCHAIN_EXPORT Job : public QObject {
+    Q_OBJECT
 public:
-    /**
-     * Creates a Keychain object.
-     *
-     * @param service The service name of your service/application. Used as identifier,
-     *        to disambiguate keys and avoid clashes with other applications.
-     *        Must not be empty.
-     * @param settings An optional settings object that is used to store the encrypted data
-     *        if no keychain is available on the platform. Currently only used on Windows.
-     *        If 0, a default-constructed QSettings object will be used.
-     */
-    explicit Keychain( const QString& service, QSettings* settings=0 );
+    explicit Job( const QString& service, QObject* parent=0 );
+    ~Job();
 
-    /**
-     * Destructor
-     */
-    ~Keychain();
+    QSettings* settings() const;
+    void setSettings( QSettings* settings );
 
-    /**
-     * Error codes
-     */
-    enum Error {
-        NoError=0, /**< No error occurred, operation was successful */
-        EntryNotFound, /**< For the given key no data was found */
-        CouldNotDeleteEntry, /**< Could not delete existing secret data */
-        AccessDeniedByUser, /**< User denied access to keychain */
-        AccessDenied, /**< Access denied for other reasons */
-        EntryAlreadyExists, /**< There is already an entry for the given key and overwriting was not enforced */
-        NotImplemented, /**< Not implemented on platform */
-        OtherError /**< Something else went wrong (errorString() might provide details) */
-    };
+    void start();
 
-    /**
-     * The service name used as identifier.
-     */
     QString service() const;
 
-    /**
-     * The error code of the last operation.
-     */
     Error error() const;
-
-    /**
-     * Human-readable error description of the last operation.
-     */
     QString errorString() const;
 
-    /**
-     * Stores a @p password in the keychain, for a given @p key.
-     * error() and errorString() hold the result of the write operation.
-     *
-     * @param key the key to store a password for
-     * @param password the password to store
-     * @param om Whether to overwrite existing passwords
-     */
-    void writePassword( const QString& key,
-                        const QString& password );
+    bool autoDelete() const;
+    void setAutoDelete( bool autoDelete );
 
-    /**
-     * Stores @p data in the keychain, for a given @p key.
-     * error() and errorString() hold the result of the write operation.
-     *
-     * @param key the key to store a password for
-     * @param data the data to store
-     * @param om Whether to overwrite existing passwords
-     */
-    void writeEntry( const QString& key,
-                     const QByteArray& data );
+Q_SIGNALS:
+    void finished( QKeychain::Job* );
 
-    /**
-     * Reads the password for a given @p key from the keychain.
-     * error() and errorString() hold the result of the read operation.
-     *
-     * @param key the key to read the password for
-     */
-    QString readPassword( const QString& key );
+protected:
+    Q_INVOKABLE virtual void doStart() = 0;
 
-    /**
-     * Reads data for a given @p key from the keychain.
-     * error() and errorString() hold the result of the read operation.
-     *
-     * @param key the key to read the password for
-     */
-    QByteArray readEntry( const QString& key );
-
-    /**
-     * Returns whether the keychain has an entry with key @p key
-     * error() and errorString() hold the result of the read operation.
-     *
-     * @param key the key to check for
-     */
-    bool entryExists( const QString& key );
-
-    /**
-     * Deletes the data for a @p key from the keychain.
-     * error() and errorString() hold the result of the delete operation.
-     *
-     * @param key The key to delete the data for
-     */
-    void deleteEntry( const QString& key );
+    void setError( Error error );
+    void setErrorString( const QString& errorString );
+    void emitFinished();
+    void emitFinishedWithError(Error, const QString& errorString);
 
 private:
     class Private;
     Private* const d;
-    Q_DISABLE_COPY(Keychain)
+};
+
+class QKEYCHAIN_EXPORT ReadPasswordJob : public Job {
+    Q_OBJECT
+public:
+    explicit ReadPasswordJob( const QString& service, QObject* parent=0 );
+    ~ReadPasswordJob();
+
+    QString key() const;
+    void setKey( const QString& key );
+
+    QByteArray binaryData() const;
+    QString textData() const;
+
+protected:
+    void doStart();
+
+private:
+    class Private;
+    Private* const d;
+};
+
+class QKEYCHAIN_EXPORT WritePasswordJob : public Job {
+    Q_OBJECT
+public:
+    explicit WritePasswordJob( const QString& service, QObject* parent=0 );
+    ~WritePasswordJob();
+
+    QString key() const;
+    void setKey( const QString& key );
+
+    void setBinaryData( const QByteArray& data );
+    void setTextData( const QString& data );
+
+protected:
+    void doStart();
+
+private:
+    class Private;
+    Private* const d;
 };
 
 }

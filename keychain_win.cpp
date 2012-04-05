@@ -17,7 +17,7 @@
 
 using namespace QKeychain;
 
-Keychain::Error Keychain::Private::readEntryImpl( QByteArray* pw,
+QtKeychain::Error Keychain::Private::readEntryImpl( QByteArray* pw,
                                                   const QString& key,
                                                   QString* err ) {
     Q_ASSERT( pw );
@@ -56,7 +56,7 @@ Keychain::Error Keychain::Private::readEntryImpl( QByteArray* pw,
     return NoError;
 }
 
-Keychain::Error Keychain::Private::writeEntryImpl( const QString& key,
+QtKeychain::Error Keychain::Private::writeEntryImpl( const QString& key,
                                                    const QByteArray& data_,
                                                    QString* err ) {
     Q_ASSERT( err );
@@ -95,7 +95,7 @@ Keychain::Error Keychain::Private::writeEntryImpl( const QString& key,
     return NoError;
 }
 
-Keychain::Error Keychain::Private::deleteEntryImpl( const QString& key,
+QtKeychain::Error Keychain::Private::deleteEntryImpl( const QString& key,
                                                     QString* err ) {
     Q_ASSERT( err );
     err->clear();
@@ -114,7 +114,7 @@ Keychain::Error Keychain::Private::deleteEntryImpl( const QString& key,
 }
 
 
-Keychain::Error Keychain::Private::entryExistsImpl( bool* exists,
+QtKeychain::Error Keychain::Private::entryExistsImpl( bool* exists,
                                                     const QString& key,
                                                     QString* err ) {
     Q_ASSERT( exists );
