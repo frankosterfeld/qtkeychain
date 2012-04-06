@@ -10,8 +10,8 @@
 
 #include <QSettings>
 
-#include <Windows.h>
-#include <WinCrypt.h>
+#include <windows.h>
+#include <wincrypt.h>
 
 #include <memory>
 
