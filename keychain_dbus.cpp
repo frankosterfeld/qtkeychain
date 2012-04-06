@@ -12,36 +12,10 @@
 
 using namespace QKeychain;
 
-QKeychain::Error Keychain::Private::readEntryImpl( QByteArray* pw,
-                                                  const QString& key,
-                                                  QString* err ) {
-    Q_UNUSED( key )
-    Q_ASSERT( pw );
-    Q_ASSERT( err );
-    return NotImplemented;
+void ReadPasswordJob::Private::doStart() {
+    q->emitFinishedWithError( NotImplemented, QString() );
 }
 
-QKeychain::Error Keychain::Private::writeEntryImpl( const QString& key,
-                                                   const QByteArray& data_,
-                                                   QString* err ) {
-    Q_ASSERT( err );
-    return NotImplemented;
-}
-
-QKeychain::Error Keychain::Private::deleteEntryImpl( const QString& key,
-                                                    QString* err ) {
-    Q_ASSERT( err );
-    err->clear();
-    return NotImplemented;
-}
-
-
-QKeychain::Error Keychain::Private::entryExistsImpl( bool* exists,
-                                                    const QString& key,
-                                                    QString* err ) {
-    Q_ASSERT( exists );
-    Q_ASSERT( err );
-    err->clear();
-    *exists = false;
-    return NotImplemented;
+void WritePasswordJob::Private::doStart() {
+    q->emitFinishedWithError( NotImplemented, QString() );
 }
