@@ -16,6 +16,8 @@ set(qtkeychain_SOURCES
 if(WIN32)
     list(APPEND qtkeychain_SOURCES keychain_win.cpp)
     list(APPEND qtkeychain_LIBRARIES crypt32)
+    #FIXME: only needed on mingw? otherwise getting undefined refs to RtlSecureZeroMemory there
+    add_definitions( -O2 )
 endif()
 
 if(APPLE)
