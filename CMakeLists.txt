@@ -36,12 +36,14 @@ if(UNIX AND NOT APPLE)
     list(APPEND qtkeychain_SOURCES keychain_dbus.cpp)
 endif()
 
+QT4_WRAP_CPP(qtkeychain_MOC_OUTFILES keychain.h keychain_p.h)
+
 if(NOT QTKEYCHAIN_STATIC)
-    add_library(qtkeychain SHARED ${qtkeychain_SOURCES})
+    add_library(qtkeychain SHARED ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES})
     set_target_properties(qtkeychain PROPERTIES COMPILE_DEFINITIONS QKEYCHAIN_BUILD_QKEYCHAIN_LIB)
     target_link_libraries(qtkeychain ${qtkeychain_LIBRARIES})
 else()
-    add_library(qtkeychain STATIC ${qtkeychain_SOURCES})
+    add_library(qtkeychain STATIC ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES})
     set_target_properties(qtkeychain PROPERTIES COMPILE_DEFINITIONS QKEYCHAIN_STATICLIB)
 endif()
 
