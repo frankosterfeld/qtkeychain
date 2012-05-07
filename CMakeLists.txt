@@ -59,3 +59,6 @@ install(TARGETS qtkeychain
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+
+add_executable( testclient testclient.cpp )
+target_link_libraries( testclient qtkeychain)
