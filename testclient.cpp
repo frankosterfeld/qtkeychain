@@ -78,7 +78,7 @@ int main( int argc, char** argv ) {
         const QString acc = *it;
         if ( ++it != args.constEnd() )
             return printUsage();
-        WritePasswordJob job( QLatin1String("qtkeychain-testclient") );
+        DeletePasswordJob job( QLatin1String("qtkeychain-testclient") );
         job.setAutoDelete( false );
         job.setKey( acc );
         QEventLoop loop;

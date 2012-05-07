@@ -131,3 +131,35 @@ void WritePasswordJob::setTextData( const QString& data ) {
 void WritePasswordJob::doStart() {
     d->doStart();
 }
+
+DeletePasswordJob::DeletePasswordJob( const QString& service, QObject* parent )
+    : Job( service, parent )
+    , d( new Private( this ) ) {
+}
+
+DeletePasswordJob::~DeletePasswordJob() {
+    delete d;
+}
+
+void DeletePasswordJob::doStart() {
+    //Internally, to delete a password we just execute a write job with no data set (null byte array).
+    //In all current implementations, this deletes the entry so this is sufficient
+    WritePasswordJob* job = new WritePasswordJob( service(), this );
+    connect( job, SIGNAL(finished(QKeychain::Job*)), d, SLOT(jobFinished(QKeychain::Job*)) );
+    job->setKey( d->key );
+    job->start();
+}
+
+QString DeletePasswordJob::key() const {
+    return d->key;
+}
+
+void DeletePasswordJob::setKey( const QString& key ) {
+    d->key = key;
+}
+
+void DeletePasswordJob::Private::jobFinished( Job* job ) {
+    q->setError( job->error() );
+    q->setErrorString( job->errorString() );
+    q->emitFinished();
+}

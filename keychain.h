@@ -107,6 +107,23 @@ private:
     Private* const d;
 };
 
-}
+class QKEYCHAIN_EXPORT DeletePasswordJob : public Job {
+    Q_OBJECT
+public:
+    explicit DeletePasswordJob( const QString& service, QObject* parent=0 );
+    ~DeletePasswordJob();
+
+    QString key() const;
+    void setKey( const QString& key );
+
+protected:
+    void doStart();
+
+private:
+    class Private;
+    Private* const d;
+};
+
+} // namespace QtKeychain
 
 #endif

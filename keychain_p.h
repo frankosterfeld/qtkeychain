@@ -60,6 +60,17 @@ public:
     QString textData;
 };
 
+class DeletePasswordJob::Private : public QObject {
+    Q_OBJECT
+public:
+    explicit Private( DeletePasswordJob* qq ) : q( qq ) {}
+    void doStart();
+    DeletePasswordJob* const q;
+    QString key;
+private Q_SLOTS:
+    void jobFinished( QKeychain::Job* );
+};
+
 }
 
 #endif // KEYCHAIN_P_H
