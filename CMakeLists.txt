@@ -4,8 +4,13 @@ project(qtkeychain)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake/Modules")
 include(GNUInstallDirs)
 
-find_package(Qt4 COMPONENTS QtCore REQUIRED)
-include_directories(${QT_INCLUDES})
+if(UNIX AND NOT APPLE)
+  find_package(Qt4 COMPONENTS QtCore QtDBus REQUIRED)
+else()
+  find_package(Qt4 COMPONENTS QtCore REQUIRED)
+endif()
+
+include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 
 list(APPEND qtkeychain_LIBRARIES ${QT_QTCORE_LIBRARY})
 set(qtkeychain_SOURCES
@@ -34,6 +39,8 @@ endif()
 
 if(UNIX AND NOT APPLE)
     list(APPEND qtkeychain_SOURCES keychain_dbus.cpp)
+    qt4_add_dbus_interface(qtkeychain_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/org.kde.KWallet.xml kwallet_interface KWalletInterface)
+    list(APPEND qtkeychain_LIBRARIES ${QT_QTDBUS_LIBRARY})
 endif()
 
 QT4_WRAP_CPP(qtkeychain_MOC_OUTFILES keychain.h keychain_p.h)

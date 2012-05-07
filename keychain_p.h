@@ -14,6 +14,13 @@
 #include <QPointer>
 #include <QSettings>
 
+#if defined (Q_OS_UNIX) && (!defined(Q_WS_DARWIN))
+
+#include <QDBusPendingCallWatcher>
+
+#include "kwallet_interface.h"
+#endif
+
 #include "keychain.h"
 
 namespace QKeychain {
@@ -58,6 +65,14 @@ public:
     QString key;
     QByteArray binaryData;
     QString textData;
+
+#if defined (Q_OS_UNIX) && (!defined(Q_WS_DARWIN))
+    org::kde::KWallet* iface;
+
+private Q_SLOTS:
+    void kwalletOpenFinished( QDBusPendingCallWatcher* watcher );
+    void kwalletWriteFinished( QDBusPendingCallWatcher* watcher );
+#endif
 };
 
 class DeletePasswordJob::Private : public QObject {
