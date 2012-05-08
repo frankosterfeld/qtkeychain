@@ -33,6 +33,11 @@ void ReadPasswordJob::Private::kwalletOpenFinished( QDBusPendingCallWatcher* wat
 
     walletHandle = reply.value();
 
+    if ( walletHandle < 0 ) {
+        q->emitFinishedWithError( AccessDenied, tr("Access to keychain denied") );
+        return;
+    }
+
     const QDBusPendingReply<int> nextReply = iface->entryType( walletHandle, q->service(), key, q->service() );
     QDBusPendingCallWatcher* nextWatcher = new QDBusPendingCallWatcher( nextReply, this );
     connect( nextWatcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletEntryTypeFinished(QDBusPendingCallWatcher*)) );
@@ -92,6 +97,11 @@ void WritePasswordJob::Private::kwalletOpenFinished( QDBusPendingCallWatcher* wa
     }
 
     const int handle = reply.value();
+
+    if ( handle < 0 ) {
+        q->emitFinishedWithError( AccessDenied, tr("Access to keychain denied") );
+        return;
+    }
 
     QDBusPendingReply<int> nextReply;
 
