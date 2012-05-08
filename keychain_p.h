@@ -43,11 +43,27 @@ public:
 class ReadPasswordJob::Private : public QObject {
     Q_OBJECT
 public:
-    explicit Private( ReadPasswordJob* qq ) : q( qq ) {}
+    explicit Private( ReadPasswordJob* qq ) : q( qq ), walletHandle( 0 ), dataType( Text ) {}
     void doStart();
     ReadPasswordJob* const q;
     QByteArray data;
     QString key;
+    int walletHandle;
+    enum DataType {
+        Binary,
+        Text
+    };
+    DataType dataType;
+
+#if defined (Q_OS_UNIX) && (!defined(Q_WS_DARWIN))
+    org::kde::KWallet* iface;
+
+private Q_SLOTS:
+    void kwalletOpenFinished( QDBusPendingCallWatcher* watcher );
+    void kwalletEntryTypeFinished( QDBusPendingCallWatcher* watcher );
+    void kwalletReadFinished( QDBusPendingCallWatcher* watcher );
+#endif
+
 };
 
 class WritePasswordJob::Private : public QObject {

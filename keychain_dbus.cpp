@@ -13,7 +13,63 @@
 using namespace QKeychain;
 
 void ReadPasswordJob::Private::doStart() {
-    q->emitFinishedWithError( NotImplemented, QString() );
+    iface = new org::kde::KWallet( QLatin1String("org.kde.kwalletd"), QLatin1String("/modules/kwalletd"), QDBusConnection::sessionBus(), this );
+    const QDBusPendingReply<int> reply = iface->open( QLatin1String("kdewallet"), 0, q->service() );
+    QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher( reply, this );
+    connect( watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletOpenFinished(QDBusPendingCallWatcher*)) );
+}
+
+void ReadPasswordJob::Private::kwalletOpenFinished( QDBusPendingCallWatcher* watcher ) {
+    watcher->deleteLater();
+    const QDBusPendingReply<int> reply = *watcher;
+    if ( reply.isError() ) {
+        const QDBusError err = reply.error();
+        q->emitFinishedWithError( OtherError, tr("Could not open wallet: %1; %2").arg( QDBusError::errorString( err.type() ), err.message() ) );
+        return;
+    }
+
+    walletHandle = reply.value();
+
+    const QDBusPendingReply<int> nextReply = iface->entryType( walletHandle, q->service(), key, q->service() );
+    QDBusPendingCallWatcher* nextWatcher = new QDBusPendingCallWatcher( nextReply, this );
+    connect( nextWatcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletEntryTypeFinished(QDBusPendingCallWatcher*)) );
+}
+
+void ReadPasswordJob::Private::kwalletEntryTypeFinished( QDBusPendingCallWatcher* watcher ) {
+    watcher->deleteLater();
+    if ( watcher->isError() ) {
+        const QDBusError err = watcher->error();
+        q->emitFinishedWithError( OtherError, tr("Could not determine data type: %1; %2").arg( QDBusError::errorString( err.type() ), err.message() ) );
+        return;
+    }
+
+    const QDBusPendingReply<int> reply = *watcher;
+
+    dataType = reply.value() == 1/*Password*/ ? Text : Binary;
+
+    const QDBusPendingCall nextReply = dataType == Text
+        ? QDBusPendingCall( iface->readPassword( walletHandle, q->service(), key, q->service() ) )
+        : QDBusPendingCall( iface->readEntry( walletHandle, q->service(), key, q->service() ) );
+    QDBusPendingCallWatcher* nextWatcher = new QDBusPendingCallWatcher( nextReply, this );
+    connect( nextWatcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletReadFinished(QDBusPendingCallWatcher*)) );
+}
+
+void ReadPasswordJob::Private::kwalletReadFinished( QDBusPendingCallWatcher* watcher ) {
+    watcher->deleteLater();
+    if ( watcher->isError() ) {
+        const QDBusError err = watcher->error();
+        q->emitFinishedWithError( OtherError, tr("Could not read password: %1; %2").arg( QDBusError::errorString( err.type() ), err.message() ) );
+        return;
+    }
+
+    if ( dataType == Binary ) {
+        QDBusPendingReply<QByteArray> reply = *watcher;
+        data = reply.value();
+    } else {
+        QDBusPendingReply<QString> reply = *watcher;
+        data = reply.value().toUtf8();
+    }
+    q->emitFinished();
 }
 
 void WritePasswordJob::Private::doStart() {
@@ -21,7 +77,6 @@ void WritePasswordJob::Private::doStart() {
     const QDBusPendingReply<int> reply = iface->open( QLatin1String("kdewallet"), 0, q->service() );
     QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher( reply, this );
     connect( watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletOpenFinished(QDBusPendingCallWatcher*)) );
-    //q->emitFinishedWithError( NotImplemented, QString() );
 }
 
 void WritePasswordJob::Private::kwalletOpenFinished( QDBusPendingCallWatcher* watcher ) {
