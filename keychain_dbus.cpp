@@ -24,7 +24,10 @@ void ReadPasswordJob::Private::kwalletOpenFinished( QDBusPendingCallWatcher* wat
     const QDBusPendingReply<int> reply = *watcher;
     if ( reply.isError() ) {
         const QDBusError err = reply.error();
-        q->emitFinishedWithError( OtherError, tr("Could not open wallet: %1; %2").arg( QDBusError::errorString( err.type() ), err.message() ) );
+        if ( err.type() == QDBusError::ServiceUnknown ) //KWalletd not running
+            q->emitFinishedWithError( NoBackendAvailable, tr("No keychain service available") );
+        else
+            q->emitFinishedWithError( OtherError, tr("Could not open wallet: %1; %2").arg( QDBusError::errorString( err.type() ), err.message() ) );
         return;
     }
 

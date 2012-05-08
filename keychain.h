@@ -27,6 +27,7 @@ enum Error {
     CouldNotDeleteEntry, /**< Could not delete existing secret data */
     AccessDeniedByUser, /**< User denied access to keychain */
     AccessDenied, /**< Access denied for other reasons */
+    NoBackendAvailable, /**< No platform-specific keychain service available */
     NotImplemented, /**< Not implemented on platform */
     OtherError /**< Something else went wrong (errorString() might provide details) */
 };
