@@ -14,11 +14,15 @@
 #include <QPointer>
 #include <QSettings>
 
-#if defined (Q_OS_UNIX) && (!defined(Q_WS_DARWIN))
+#if defined(Q_OS_UNIX) && !defined(Q_WS_MAC)
 
 #include <QDBusPendingCallWatcher>
 
 #include "kwallet_interface.h"
+#else
+
+class QDBusPendingCallWatcher;
+
 #endif
 
 #include "keychain.h"
@@ -55,13 +59,18 @@ public:
     };
     DataType dataType;
 
-#if defined (Q_OS_UNIX) && (!defined(Q_WS_DARWIN))
+#if defined(Q_OS_UNIX) && !defined(Q_WS_MAC)
     org::kde::KWallet* iface;
 
 private Q_SLOTS:
     void kwalletOpenFinished( QDBusPendingCallWatcher* watcher );
     void kwalletEntryTypeFinished( QDBusPendingCallWatcher* watcher );
     void kwalletReadFinished( QDBusPendingCallWatcher* watcher );
+#else //moc's too dumb to respect above macros, so just define empty slot implementations
+private Q_SLOTS:
+    void kwalletOpenFinished( QDBusPendingCallWatcher* ) {}
+    void kwalletEntryTypeFinished( QDBusPendingCallWatcher* ) {}
+    void kwalletReadFinished( QDBusPendingCallWatcher* ) {}
 #endif
 
 };
@@ -82,12 +91,16 @@ public:
     QByteArray binaryData;
     QString textData;
 
-#if defined (Q_OS_UNIX) && (!defined(Q_WS_DARWIN))
+#if defined(Q_OS_UNIX) && !defined(Q_WS_MAC)
     org::kde::KWallet* iface;
 
 private Q_SLOTS:
     void kwalletOpenFinished( QDBusPendingCallWatcher* watcher );
     void kwalletWriteFinished( QDBusPendingCallWatcher* watcher );
+#else
+private Q_SLOTS:
+    void kwalletOpenFinished( QDBusPendingCallWatcher* ) {}
+    void kwalletWriteFinished( QDBusPendingCallWatcher* ) {}
 #endif
 };
 
