@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 2.8)
 project(qtkeychain)
 
+###
+
+set(QTKEYCHAIN_VERSION 0)
+set(QTKEYCHAIN_SOVERSION 0)
+
+###
+
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake/Modules")
 include(GNUInstallDirs)
 
@@ -56,15 +63,16 @@ else()
 endif()
 
 set_target_properties(qtkeychain PROPERTIES
-    VERSION 0
-    SOVERSION 0
+    VERSION ${QTKEYCHAIN_VERSION}
+    SOVERSION ${QTKEYCHAIN_SOVERSION}
 )
 
-install(FILES keychain.h
+install(FILES keychain.h qkeychain_export.h
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qtkeychain/
 )
 
 install(TARGETS qtkeychain
+  EXPORT QtKeychainLibraryDepends
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -72,3 +80,27 @@ install(TARGETS qtkeychain
 
 add_executable( testclient testclient.cpp )
 target_link_libraries( testclient qtkeychain)
+
+
+###
+### CMake config file
+###
+
+export(TARGETS qtkeychain FILE "${PROJECT_BINARY_DIR}/QtKeychainLibraryDepends.cmake")
+export(PACKAGE QtKeychain)
+
+configure_file(QtKeychainBuildTreeSettings.cmake.in
+  "${PROJECT_BINARY_DIR}/QtKeychainBuildTreeSettings.cmake" @ONLY)
+configure_file(QtKeychainConfig.cmake.in
+  "${PROJECT_BINARY_DIR}/QtKeychainConfig.cmake" @ONLY)
+configure_file(QtKeychainConfigVersion.cmake.in
+  "${PROJECT_BINARY_DIR}/QtKeychainConfigVersion.cmake" @ONLY)
+
+install(EXPORT QtKeychainLibraryDepends
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QtKeychain"
+)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/QtKeychainConfig.cmake
+              ${CMAKE_CURRENT_BINARY_DIR}/QtKeychainConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/QtKeychain
+)
