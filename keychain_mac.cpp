@@ -61,7 +61,7 @@ static OSStatus readPw( QByteArray* pw,
     return ret;
 }
 
-void ReadPasswordJob::Private::doStart()
+void ReadPasswordJobPrivate::doStart()
 {
     QString errorString;
     Error error = NoError;
@@ -141,7 +141,7 @@ static QKeychain::Error writeEntryImpl( const QString& service,
     return NoError;
 }
 
-void WritePasswordJob::Private::doStart()
+void WritePasswordJobPrivate::doStart()
 {
     QString errorString;
     Error error = NoError;

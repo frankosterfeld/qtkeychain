@@ -13,7 +13,7 @@ using namespace QKeychain;
 
 Job::Job( const QString& service, QObject *parent )
     : QObject( parent )
-    , d ( new Private( service ) ) {
+    , d ( new JobPrivate( service ) ) {
 }
 
 Job::~Job() {
@@ -74,7 +74,7 @@ void Job::setErrorString( const QString& errorString ) {
 
 ReadPasswordJob::ReadPasswordJob( const QString& service, QObject* parent )
     : Job( service, parent )
-    , d( new Private( this ) )
+    , d( new ReadPasswordJobPrivate( this ) )
 {}
 
 ReadPasswordJob::~ReadPasswordJob() {
@@ -103,7 +103,7 @@ void ReadPasswordJob::doStart() {
 
 WritePasswordJob::WritePasswordJob( const QString& service, QObject* parent )
     : Job( service, parent )
-    , d( new Private( this ) ) {
+    , d( new WritePasswordJobPrivate( this ) ) {
 }
 
 WritePasswordJob::~WritePasswordJob() {
@@ -120,12 +120,12 @@ void WritePasswordJob::setKey( const QString& key ) {
 
 void WritePasswordJob::setBinaryData( const QByteArray& data ) {
     d->binaryData = data;
-    d->mode = Private::Binary;
+    d->mode = WritePasswordJobPrivate::Binary;
 }
 
 void WritePasswordJob::setTextData( const QString& data ) {
     d->textData = data;
-    d->mode = Private::Text;
+    d->mode = WritePasswordJobPrivate::Text;
 }
 
 void WritePasswordJob::doStart() {
@@ -134,7 +134,7 @@ void WritePasswordJob::doStart() {
 
 DeletePasswordJob::DeletePasswordJob( const QString& service, QObject* parent )
     : Job( service, parent )
-    , d( new Private( this ) ) {
+    , d( new DeletePasswordJobPrivate( this ) ) {
 }
 
 DeletePasswordJob::~DeletePasswordJob() {
@@ -158,7 +158,7 @@ void DeletePasswordJob::setKey( const QString& key ) {
     d->key = key;
 }
 
-void DeletePasswordJob::Private::jobFinished( Job* job ) {
+void DeletePasswordJobPrivate::jobFinished( Job* job ) {
     q->setError( job->error() );
     q->setErrorString( job->errorString() );
     q->emitFinished();

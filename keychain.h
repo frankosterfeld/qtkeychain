@@ -32,6 +32,9 @@ enum Error {
     OtherError /**< Something else went wrong (errorString() might provide details) */
 };
 
+class JobExecutor;
+class JobPrivate;
+
 class QKEYCHAIN_EXPORT Job : public QObject {
     Q_OBJECT
 public:
@@ -63,9 +66,10 @@ protected:
     void emitFinishedWithError(Error, const QString& errorString);
 
 private:
-    class Private;
-    Private* const d;
+    JobPrivate* const d;
 };
+
+class ReadPasswordJobPrivate;
 
 class QKEYCHAIN_EXPORT ReadPasswordJob : public Job {
     Q_OBJECT
@@ -83,9 +87,12 @@ protected:
     void doStart();
 
 private:
-    class Private;
-    Private* const d;
+    friend class QKeychain::ReadPasswordJobPrivate;
+    friend class QKeychain::JobExecutor;
+    ReadPasswordJobPrivate* const d;
 };
+
+class WritePasswordJobPrivate;
 
 class QKEYCHAIN_EXPORT WritePasswordJob : public Job {
     Q_OBJECT
@@ -103,9 +110,12 @@ protected:
     void doStart();
 
 private:
-    class Private;
-    Private* const d;
+    friend class QKeychain::JobExecutor;
+    friend class QKeychain::WritePasswordJobPrivate;
+    WritePasswordJobPrivate* const d;
 };
+
+class DeletePasswordJobPrivate;
 
 class QKEYCHAIN_EXPORT DeletePasswordJob : public Job {
     Q_OBJECT
@@ -120,8 +130,8 @@ protected:
     void doStart();
 
 private:
-    class Private;
-    Private* const d;
+    friend class QKeychain::DeletePasswordJobPrivate;
+    DeletePasswordJobPrivate* const d;
 };
 
 } // namespace QtKeychain

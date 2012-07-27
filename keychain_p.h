@@ -29,10 +29,12 @@ class QDBusPendingCallWatcher;
 
 namespace QKeychain {
 
-class Job::Private : public QObject {
+class JobExecutor;
+
+class JobPrivate : public QObject {
     Q_OBJECT
 public:
-    Private( const QString& service_ )
+    JobPrivate( const QString& service_ )
         : error( NoError )
         , service( service_ )
         , autoDelete( true ) {}
@@ -44,10 +46,10 @@ public:
     QPointer<QSettings> settings;
 };
 
-class ReadPasswordJob::Private : public QObject {
+class ReadPasswordJobPrivate : public QObject {
     Q_OBJECT
 public:
-    explicit Private( ReadPasswordJob* qq ) : q( qq ), walletHandle( 0 ), dataType( Text ) {}
+    explicit ReadPasswordJobPrivate( ReadPasswordJob* qq ) : q( qq ), walletHandle( 0 ), dataType( Text ) {}
     void doStart();
     ReadPasswordJob* const q;
     QByteArray data;
@@ -61,6 +63,8 @@ public:
 
 #if defined(Q_OS_UNIX) && !defined(Q_WS_MAC)
     org::kde::KWallet* iface;
+    friend class QKeychain::JobExecutor;
+    void scheduledStart();
 
 private Q_SLOTS:
     void kwalletOpenFinished( QDBusPendingCallWatcher* watcher );
@@ -75,10 +79,10 @@ private Q_SLOTS:
 
 };
 
-class WritePasswordJob::Private : public QObject {
+class WritePasswordJobPrivate : public QObject {
     Q_OBJECT
 public:
-    explicit Private( WritePasswordJob* qq ) : q( qq ), mode( Delete ) {}
+    explicit WritePasswordJobPrivate( WritePasswordJob* qq ) : q( qq ), mode( Delete ) {}
     void doStart();
     enum Mode {
         Delete,
@@ -93,6 +97,8 @@ public:
 
 #if defined(Q_OS_UNIX) && !defined(Q_WS_MAC)
     org::kde::KWallet* iface;
+    friend class QKeychain::JobExecutor;
+    void scheduledStart();
 
 private Q_SLOTS:
     void kwalletOpenFinished( QDBusPendingCallWatcher* watcher );
@@ -104,10 +110,10 @@ private Q_SLOTS:
 #endif
 };
 
-class DeletePasswordJob::Private : public QObject {
+class DeletePasswordJobPrivate : public QObject {
     Q_OBJECT
 public:
-    explicit Private( DeletePasswordJob* qq ) : q( qq ) {}
+    explicit DeletePasswordJobPrivate( DeletePasswordJob* qq ) : q( qq ) {}
     void doStart();
     DeletePasswordJob* const q;
     QString key;
