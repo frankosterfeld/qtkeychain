@@ -37,12 +37,14 @@ public:
     JobPrivate( const QString& service_ )
         : error( NoError )
         , service( service_ )
-        , autoDelete( true ) {}
+        , autoDelete( true )
+        , insecureFallback( false ) {}
 
     QKeychain::Error error;
     QString errorString;
     QString service;
     bool autoDelete;
+    bool insecureFallback;
     QPointer<QSettings> settings;
 };
 

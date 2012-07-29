@@ -44,6 +44,14 @@ void Job::setAutoDelete( bool autoDelete ) {
     d->autoDelete = autoDelete;
 }
 
+bool Job::insecureFallback() const {
+    return d->insecureFallback;
+}
+
+void Job::setInsecureFallback( bool insecureFallback ) {
+    d->insecureFallback = insecureFallback;
+}
+
 void Job::emitFinished() {
     emit finished( this );
     if ( d->autoDelete )

@@ -54,6 +54,9 @@ public:
     bool autoDelete() const;
     void setAutoDelete( bool autoDelete );
 
+    bool insecureFallback() const;
+    void setInsecureFallback( bool insecureFallback );
+
 Q_SIGNALS:
     void finished( QKeychain::Job* );
 
