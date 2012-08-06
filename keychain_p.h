@@ -13,6 +13,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QSettings>
+#include <QVector>
 
 #if defined(Q_OS_UNIX) && !defined(Q_WS_MAC)
 
@@ -52,7 +53,8 @@ class ReadPasswordJobPrivate : public QObject {
     Q_OBJECT
 public:
     explicit ReadPasswordJobPrivate( ReadPasswordJob* qq ) : q( qq ), walletHandle( 0 ), dataType( Text ) {}
-    void doStart();
+    void scheduledStart();
+
     ReadPasswordJob* const q;
     QByteArray data;
     QString key;
@@ -66,7 +68,6 @@ public:
 #if defined(Q_OS_UNIX) && !defined(Q_WS_MAC)
     org::kde::KWallet* iface;
     friend class QKeychain::JobExecutor;
-    void scheduledStart();
 
 private Q_SLOTS:
     void kwalletOpenFinished( QDBusPendingCallWatcher* watcher );
@@ -85,7 +86,8 @@ class WritePasswordJobPrivate : public QObject {
     Q_OBJECT
 public:
     explicit WritePasswordJobPrivate( WritePasswordJob* qq ) : q( qq ), mode( Delete ) {}
-    void doStart();
+    void scheduledStart();
+
     enum Mode {
         Delete,
         Text,
@@ -100,7 +102,7 @@ public:
 #if defined(Q_OS_UNIX) && !defined(Q_WS_MAC)
     org::kde::KWallet* iface;
     friend class QKeychain::JobExecutor;
-    void scheduledStart();
+
 
 private Q_SLOTS:
     void kwalletOpenFinished( QDBusPendingCallWatcher* watcher );
@@ -121,6 +123,28 @@ public:
     QString key;
 private Q_SLOTS:
     void jobFinished( QKeychain::Job* );
+};
+
+class JobExecutor : public QObject {
+    Q_OBJECT
+public:
+
+    static JobExecutor* instance();
+
+    void enqueue( Job* job );
+
+private:
+    explicit JobExecutor();
+    void startNextIfNoneRunning();
+
+private Q_SLOTS:
+    void jobFinished( QKeychain::Job* );
+    void jobDestroyed( QObject* object );
+
+private:
+    static JobExecutor* s_instance;
+    Job* m_runningJob;
+    QVector<QPointer<Job> > m_queue;
 };
 
 }

@@ -17,7 +17,7 @@
 
 using namespace QKeychain;
 
-void ReadPasswordJobPrivate::doStart() {
+void ReadPasswordJobPrivate::scheduledStart() {
     //Use settings member if there, create local settings object if not
     std::auto_ptr<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
     QSettings* actual = q->settings() ? q->settings() : local.get();
@@ -52,7 +52,7 @@ void ReadPasswordJobPrivate::doStart() {
     q->emitFinished();
 }
 
-void WritePasswordJobPrivate::doStart() {
+void WritePasswordJobPrivate::scheduledStart() {
     if ( mode == Delete ) {
         //Use settings member if there, create local settings object if not
         std::auto_ptr<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );

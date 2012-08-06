@@ -48,10 +48,9 @@ if(UNIX AND NOT APPLE)
     list(APPEND qtkeychain_SOURCES keychain_dbus.cpp)
     qt4_add_dbus_interface(qtkeychain_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/org.kde.KWallet.xml kwallet_interface KWalletInterface)
     list(APPEND qtkeychain_LIBRARIES ${QT_QTDBUS_LIBRARY})
-    list(APPEND qtkeychain_EXTRA_MOC_HEADERS keychain_dbus_p.h)
 endif()
 
-QT4_WRAP_CPP(qtkeychain_MOC_OUTFILES keychain.h keychain_p.h ${qtkeychain_EXTRA_MOC_HEADERS})
+QT4_WRAP_CPP(qtkeychain_MOC_OUTFILES keychain.h keychain_p.h)
 
 if(NOT QTKEYCHAIN_STATIC)
     add_library(qtkeychain SHARED ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES})

@@ -7,71 +7,12 @@
  * details, check the accompanying file 'COPYING'.                            *
  *****************************************************************************/
 #include "keychain_p.h"
-#include "keychain_dbus_p.h"
 
 #include <QSettings>
 
 #include <auto_ptr.h>
 
 using namespace QKeychain;
-
-JobExecutor::JobExecutor()
-    : QObject( 0 )
-    , m_runningJob( 0 )
-{
-}
-
-void JobExecutor::enqueue( Job* job ) {
-    m_queue.append( job );
-    startNextIfNoneRunning();
-}
-
-void JobExecutor::startNextIfNoneRunning() {
-    if ( m_queue.isEmpty() || m_runningJob )
-        return;
-    QPointer<Job> next;
-    while ( !next && !m_queue.isEmpty() ) {
-        next = m_queue.first();
-        m_queue.pop_front();
-    }
-    if ( next ) {
-        connect( next, SIGNAL(finished(QKeychain::Job*)), this, SLOT(jobFinished(QKeychain::Job*)) );
-        connect( next, SIGNAL(destroyed(QObject*)), this, SLOT(jobDestroyed(QObject*)) );
-        m_runningJob = next;
-        if ( ReadPasswordJob* rpj = qobject_cast<ReadPasswordJob*>( m_runningJob ) )
-            rpj->d->scheduledStart();
-        else if ( WritePasswordJob* wpj = qobject_cast<WritePasswordJob*>( m_runningJob) )
-            wpj->d->scheduledStart();
-    }
-}
-
-void JobExecutor::jobDestroyed( QObject* object ) {
-    Q_UNUSED( object ) // for release mode
-    Q_ASSERT( object == m_runningJob );
-    m_runningJob->disconnect( this );
-    m_runningJob = 0;
-    startNextIfNoneRunning();
-}
-
-void JobExecutor::jobFinished( Job* job ) {
-    Q_UNUSED( job ) // for release mode
-    Q_ASSERT( job == m_runningJob );
-    m_runningJob->disconnect( this );
-    m_runningJob = 0;
-    startNextIfNoneRunning();
-}
-
-JobExecutor* JobExecutor::s_instance = 0;
-
-JobExecutor* JobExecutor::instance() {
-    if ( !s_instance )
-        s_instance = new JobExecutor;
-    return s_instance;
-}
-
-void ReadPasswordJobPrivate::doStart() {
-    JobExecutor::instance()->enqueue( q );
-}
 
 void ReadPasswordJobPrivate::scheduledStart() {
     iface = new org::kde::KWallet( QLatin1String("org.kde.kwalletd"), QLatin1String("/modules/kwalletd"), QDBusConnection::sessionBus(), this );
@@ -185,10 +126,6 @@ void ReadPasswordJobPrivate::kwalletReadFinished( QDBusPendingCallWatcher* watch
         data = reply.value().toUtf8();
     }
     q->emitFinished();
-}
-
-void WritePasswordJobPrivate::doStart() {
-    JobExecutor::instance()->enqueue( q );
 }
 
 void WritePasswordJobPrivate::scheduledStart() {
