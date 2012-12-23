@@ -11,15 +11,52 @@ set(QTKEYCHAIN_SOVERSION 0)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake/Modules")
 include(GNUInstallDirs)
 
-if(UNIX AND NOT APPLE)
-  find_package(Qt4 COMPONENTS QtCore QtDBus REQUIRED)
+# try Qt5 first, and prefer that if found
+find_package(Qt5Core QUIET)
+if (Qt5Core_FOUND)
+  if(UNIX AND NOT APPLE)
+    find_package(Qt5DBus REQUIRED)
+    include_directories(${Qt5DBus_INCLUDE_DIRS})
+    set(QTDBUS_LIBRARIES ${Qt5DBus_LIBRARIES})
+    macro(qt_add_dbus_interface)
+      qt5_add_dbus_interface(${ARGN})
+    endmacro()
+  endif()
+  macro(qt_wrap_cpp)
+    qt5_wrap_cpp(${ARGN})
+  endmacro()
+
+  set(QTCORE_LIBRARIES ${Qt5Core_LIBRARIES})
+  include_directories(${Qt5Core_INCLUDE_DIRS})
+
+  if (Qt5_POSITION_INDEPENDENT_CODE)
+    if (CMAKE_VERSION VERSION_LESS 2.8.9) # TODO remove once we increase the cmake requirement
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+    else()
+      set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    endif()
+  endif()
 else()
-  find_package(Qt4 COMPONENTS QtCore REQUIRED)
+  if(UNIX AND NOT APPLE)
+    find_package(Qt4 COMPONENTS QtCore QtDBus REQUIRED)
+    macro(qt_add_dbus_interface)
+      qt4_add_dbus_interface(${ARGN})
+    endmacro()
+    macro(qt_wrap_cpp)
+      qt4_wrap_cpp(${ARGN})
+    endmacro()
+    set(QTDBUS_LIBRARIES ${QT_QTDBUS_LIBRARY})
+  else()
+    find_package(Qt4 COMPONENTS QtCore REQUIRED)
+  endif()
+  include_directories(${QT_INCLUDES})
+  set(QTCORE_LIBRARIES ${QT_QTCORE_LIBRARY})
 endif()
 
-include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 
-list(APPEND qtkeychain_LIBRARIES ${QT_QTCORE_LIBRARY})
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+list(APPEND qtkeychain_LIBRARIES ${QTCORE_LIBRARIES})
 set(qtkeychain_SOURCES
     keychain.cpp
 )
@@ -46,11 +83,11 @@ endif()
 
 if(UNIX AND NOT APPLE)
     list(APPEND qtkeychain_SOURCES keychain_dbus.cpp)
-    qt4_add_dbus_interface(qtkeychain_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/org.kde.KWallet.xml kwallet_interface KWalletInterface)
-    list(APPEND qtkeychain_LIBRARIES ${QT_QTDBUS_LIBRARY})
+    qt_add_dbus_interface(qtkeychain_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/org.kde.KWallet.xml kwallet_interface KWalletInterface)
+    list(APPEND qtkeychain_LIBRARIES ${QTDBUS_LIBRARIES})
 endif()
 
-QT4_WRAP_CPP(qtkeychain_MOC_OUTFILES keychain.h keychain_p.h)
+QT_WRAP_CPP(qtkeychain_MOC_OUTFILES keychain.h keychain_p.h)
 
 if(NOT QTKEYCHAIN_STATIC)
     add_library(qtkeychain SHARED ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES})
@@ -103,3 +140,4 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/QtKeychainConfig.cmake
               ${CMAKE_CURRENT_BINARY_DIR}/QtKeychainConfigVersion.cmake
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/QtKeychain
 )
+
