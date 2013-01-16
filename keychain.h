@@ -16,6 +16,8 @@
 
 class QSettings;
 
+#define QTKEYCHAIN_VERSION 0x000100
+
 namespace QKeychain {
 
 /**
