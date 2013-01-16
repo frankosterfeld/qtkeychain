@@ -1,8 +1,7 @@
-# - Config file for the FooBar package
+# - Config file for the QtKeychain package
 # It defines the following variables
-#  FOOBAR_INCLUDE_DIRS - include directories for FooBar
-#  FOOBAR_LIBRARIES    - libraries to link against
-#  FOOBAR_EXECUTABLE   - the bar executable
+#  QTKEYCHAIN_INCLUDE_DIRS - include directories for QtKeychain
+#  QTKEYCHAIN_LIBRARIES    - libraries to link against
 
 # Compute paths
 get_filename_component(QTKEYCHAIN_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
