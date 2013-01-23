@@ -15,7 +15,7 @@
 #include <QSettings>
 #include <QVector>
 
-#if defined(Q_OS_UNIX) && !defined(Q_WS_MAC)
+#if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
 
 #include <QDBusPendingCallWatcher>
 
@@ -65,7 +65,7 @@ public:
     };
     DataType dataType;
 
-#if defined(Q_OS_UNIX) && !defined(Q_WS_MAC)
+#if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
     org::kde::KWallet* iface;
     friend class QKeychain::JobExecutor;
 
@@ -99,7 +99,7 @@ public:
     QByteArray binaryData;
     QString textData;
 
-#if defined(Q_OS_UNIX) && !defined(Q_WS_MAC)
+#if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
     org::kde::KWallet* iface;
     friend class QKeychain::JobExecutor;
 
