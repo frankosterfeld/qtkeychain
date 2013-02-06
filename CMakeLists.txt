@@ -61,7 +61,6 @@ set(qtkeychain_SOURCES
     keychain.cpp
 )
 
-
 if(WIN32)
     list(APPEND qtkeychain_SOURCES keychain_win.cpp)
     list(APPEND qtkeychain_LIBRARIES crypt32)
@@ -89,12 +88,25 @@ endif()
 
 QT_WRAP_CPP(qtkeychain_MOC_OUTFILES keychain.h keychain_p.h)
 
+set(qtkeychain_TR_FILES
+      translations/qtkeychain_de.ts
+)
+
+file(GLOB qtkeychain_TR_SOURCES *.cpp *.h *.ui)
+qt4_create_translation(qtkeychain_MESSAGES ${qtkeychain_TR_SOURCES} ${qtkeychain_TR_FILES})
+qt4_add_translation(qtkeychain_QM_FILES ${qtkeychain_TR_FILES})
+add_custom_target(messages DEPENDS ${qtkeychain_MESSAGES})
+add_custom_target(translations DEPENDS ${qtkeychain_QM_FILES})
+
+install(FILES ${qtkeychain_QM_FILES}
+         DESTINATION ${QT_TRANSLATIONS_DIR})
+
 if(NOT QTKEYCHAIN_STATIC)
-    add_library(qtkeychain SHARED ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES})
+    add_library(qtkeychain SHARED ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
     set_target_properties(qtkeychain PROPERTIES COMPILE_DEFINITIONS QKEYCHAIN_BUILD_QKEYCHAIN_LIB)
     target_link_libraries(qtkeychain ${qtkeychain_LIBRARIES})
 else()
-    add_library(qtkeychain STATIC ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES})
+    add_library(qtkeychain STATIC ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
     set_target_properties(qtkeychain PROPERTIES COMPILE_DEFINITIONS QKEYCHAIN_STATICLIB)
 endif()
 
