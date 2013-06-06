@@ -68,7 +68,10 @@ public:
 #if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
     org::kde::KWallet* iface;
     friend class QKeychain::JobExecutor;
+    void fallbackOnError(const QDBusError& err);
 
+    const QString typeKey();
+    const QString dataKey();
 private Q_SLOTS:
     void kwalletOpenFinished( QDBusPendingCallWatcher* watcher );
     void kwalletEntryTypeFinished( QDBusPendingCallWatcher* watcher );
@@ -102,7 +105,7 @@ public:
 #if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
     org::kde::KWallet* iface;
     friend class QKeychain::JobExecutor;
-
+    void fallbackOnError(const QDBusError& err);
 
 private Q_SLOTS:
     void kwalletOpenFinished( QDBusPendingCallWatcher* watcher );
