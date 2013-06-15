@@ -15,10 +15,49 @@
 using namespace QKeychain;
 
 void ReadPasswordJobPrivate::scheduledStart() {
-    iface = new org::kde::KWallet( QLatin1String("org.kde.kwalletd"), QLatin1String("/modules/kwalletd"), QDBusConnection::sessionBus(), this );
-    const QDBusPendingReply<int> reply = iface->open( QLatin1String("kdewallet"), 0, q->service() );
-    QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher( reply, this );
-    connect( watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletOpenFinished(QDBusPendingCallWatcher*)) );
+    if ( QDBusConnection::sessionBus().isConnected() )
+    {
+        iface = new org::kde::KWallet( QLatin1String("org.kde.kwalletd"), QLatin1String("/modules/kwalletd"), QDBusConnection::sessionBus(), this );
+        const QDBusPendingReply<int> reply = iface->open( QLatin1String("kdewallet"), 0, q->service() );
+        QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher( reply, this );
+        connect( watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletOpenFinished(QDBusPendingCallWatcher*)) );
+    }
+    else
+    {
+        // D-Bus is not reachable so none can tell us something about KWalletd
+        QDBusError err( QDBusError::NoServer, "D-Bus is not running" );
+        fallbackOnError( err );
+    }
+}
+
+void ReadPasswordJobPrivate::fallbackOnError(const QDBusError& err )
+{
+    std::auto_ptr<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
+    QSettings* actual = q->settings() ? q->settings() : local.get();
+    WritePasswordJobPrivate::Mode mode;
+
+    if ( q->insecureFallback() && actual->contains( dataKey() ) ) {
+
+        mode = (WritePasswordJobPrivate::Mode)actual->value( typeKey() ).toInt();
+        data = actual->value( dataKey() ).toByteArray();
+
+        q->emitFinished();
+    } else {
+        if ( err.type() == QDBusError::ServiceUnknown ) //KWalletd not running
+            q->emitFinishedWithError( NoBackendAvailable, tr("No keychain service available") );
+        else
+            q->emitFinishedWithError( OtherError, tr("Could not open wallet: %1; %2").arg( QDBusError::errorString( err.type() ), err.message() ) );
+    }
+}
+
+const QString ReadPasswordJobPrivate::typeKey()
+{
+    return QString( "%1/type" ).arg( key );
+}
+
+const QString ReadPasswordJobPrivate::dataKey()
+{
+    return QString( "%1/data" ).arg( key );
 }
 
 void ReadPasswordJobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watcher ) {
@@ -29,35 +68,17 @@ void ReadPasswordJobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watch
     QSettings* actual = q->settings() ? q->settings() : local.get();
     WritePasswordJobPrivate::Mode mode;
 
-    const QString typeKey = QString( "%1/type" ).arg( key );
-    const QString dataKey = QString( "%1/data" ).arg( key );
     if ( reply.isError() ) {
-        const QDBusError err = reply.error();
-
-        if ( q->insecureFallback() && actual->contains( dataKey ) ) {
-
-            mode = (WritePasswordJobPrivate::Mode)actual->value( typeKey ).toInt();
-            data = actual->value( dataKey ).toByteArray();
-
-            q->emitFinished();
-
-            return;
-        } else {
-            if ( err.type() == QDBusError::ServiceUnknown ) //KWalletd not running
-                q->emitFinishedWithError( NoBackendAvailable, tr("No keychain service available") );
-            else
-                q->emitFinishedWithError( OtherError, tr("Could not open wallet: %1; %2").arg( QDBusError::errorString( err.type() ), err.message() ) );
-
-            return;
-        }
+        fallbackOnError( reply.error() );
+        return;
     }
 
-    if ( actual->contains( dataKey ) ) {
+    if ( actual->contains( dataKey() ) ) {
         // We previously stored data in the insecure QSettings, but now have KWallet available.
         // Do the migration
 
-        data = actual->value( dataKey ).toByteArray();
-        mode = (WritePasswordJobPrivate::Mode)actual->value( typeKey ).toInt();
+        data = actual->value( dataKey() ).toByteArray();
+        mode = (WritePasswordJobPrivate::Mode)actual->value( typeKey() ).toInt();
         actual->remove( key );
 
         q->emitFinished();
@@ -129,10 +150,46 @@ void ReadPasswordJobPrivate::kwalletReadFinished( QDBusPendingCallWatcher* watch
 }
 
 void WritePasswordJobPrivate::scheduledStart() {
-    iface = new org::kde::KWallet( QLatin1String("org.kde.kwalletd"), QLatin1String("/modules/kwalletd"), QDBusConnection::sessionBus(), this );
-    const QDBusPendingReply<int> reply = iface->open( QLatin1String("kdewallet"), 0, q->service() );
-    QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher( reply, this );
-    connect( watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletOpenFinished(QDBusPendingCallWatcher*)) );
+    if ( QDBusConnection::sessionBus().isConnected() )
+    {
+        iface = new org::kde::KWallet( QLatin1String("org.kde.kwalletd"), QLatin1String("/modules/kwalletd"), QDBusConnection::sessionBus(), this );
+        const QDBusPendingReply<int> reply = iface->open( QLatin1String("kdewallet"), 0, q->service() );
+        QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher( reply, this );
+        connect( watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletOpenFinished(QDBusPendingCallWatcher*)) );
+    }
+    else
+    {
+        // D-Bus is not reachable so none can tell us something about KWalletd
+        QDBusError err( QDBusError::NoServer, "D-Bus is not running" );
+        fallbackOnError( err );
+    }
+}
+
+void WritePasswordJobPrivate::fallbackOnError(const QDBusError &err)
+{
+    std::auto_ptr<QSettings> local( !q->settings() ? new QSettings(  q->service() ) : 0 );
+    QSettings* actual = q->settings() ? q->settings() : local.get();
+
+    if ( q->insecureFallback() ) {
+        if ( mode == Delete ) {
+            actual->remove( key );
+            actual->sync();
+
+            q->emitFinished();
+            return;
+        }
+
+        actual->setValue( QString( "%1/type" ).arg( key ), (int)mode );
+        if ( mode == Text )
+            actual->setValue( QString( "%1/data" ).arg( key ), textData.toUtf8() );
+        else if ( mode == Binary )
+            actual->setValue( QString( "%1/data" ).arg( key ), binaryData );
+        actual->sync();
+
+        q->emitFinished();
+    } else {
+        q->emitFinishedWithError( OtherError, tr("Could not open wallet: %1; %2").arg( QDBusError::errorString( err.type() ), err.message() ) );
+    }
 }
 
 void WritePasswordJobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watcher ) {
@@ -143,27 +200,7 @@ void WritePasswordJobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watc
     QSettings* actual = q->settings() ? q->settings() : local.get();
 
     if ( reply.isError() ) {
-        if ( q->insecureFallback() ) {
-            if ( mode == Delete ) {
-                actual->remove( key );
-                actual->sync();
-
-                q->emitFinished();
-                return;
-            }
-
-            actual->setValue( QString( "%1/type" ).arg( key ), (int)mode );
-            if ( mode == Text )
-                actual->setValue( QString( "%1/data" ).arg( key ), textData.toUtf8() );
-            else if ( mode == Binary )
-                actual->setValue( QString( "%1/data" ).arg( key ), binaryData );
-            actual->sync();
-
-            q->emitFinished();
-        } else {
-            const QDBusError err = reply.error();
-            q->emitFinishedWithError( OtherError, tr("Could not open wallet: %1; %2").arg( QDBusError::errorString( err.type() ), err.message() ) );
-        }
+        fallbackOnError( reply.error() );
         return;
     }
 
