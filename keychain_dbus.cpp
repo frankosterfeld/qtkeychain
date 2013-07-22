@@ -388,26 +388,27 @@ void WritePasswordJobPrivate::fallbackOnError(const QDBusError &err)
     std::auto_ptr<QSettings> local( !q->settings() ? new QSettings(  q->service() ) : 0 );
     QSettings* actual = q->settings() ? q->settings() : local.get();
 
-    if ( q->insecureFallback() ) {
-        if ( mode == Delete ) {
-            actual->remove( key );
-            actual->sync();
+    if ( !q->insecureFallback() ) {
+        q->emitFinishedWithError( OtherError, tr("Could not open wallet: %1; %2").arg( QDBusError::errorString( err.type() ), err.message() ) );
+        return;
+    }
 
-            q->emitFinished();
-            return;
-        }
-
-        actual->setValue( QString( "%1/type" ).arg( key ), (int)mode );
-        if ( mode == Text )
-            actual->setValue( QString( "%1/data" ).arg( key ), textData.toUtf8() );
-        else if ( mode == Binary )
-            actual->setValue( QString( "%1/data" ).arg( key ), binaryData );
+    if ( mode == Delete ) {
+        actual->remove( key );
         actual->sync();
 
         q->emitFinished();
-    } else {
-        q->emitFinishedWithError( OtherError, tr("Could not open wallet: %1; %2").arg( QDBusError::errorString( err.type() ), err.message() ) );
-   }
+        return;
+    }
+
+    actual->setValue( QString( "%1/type" ).arg( key ), (int)mode );
+    if ( mode == Text )
+        actual->setValue( QString( "%1/data" ).arg( key ), textData.toUtf8() );
+    else if ( mode == Binary )
+        actual->setValue( QString( "%1/data" ).arg( key ), binaryData );
+    actual->sync();
+
+    q->emitFinished();
 }
 
 void WritePasswordJobPrivate::gnomeKeyring_cb( int result, WritePasswordJobPrivate* self )
