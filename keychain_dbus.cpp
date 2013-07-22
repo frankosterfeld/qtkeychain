@@ -14,9 +14,9 @@
 
 using namespace QKeychain;
 
-class GnomeKeyring: private QLibrary {
+class GnomeKeyring : private QLibrary {
 public:
-    typedef enum {
+    enum Result {
         RESULT_OK,
         RESULT_DENIED,
         RESULT_NO_KEYRING_DAEMON,
@@ -27,19 +27,22 @@ public:
         RESULT_CANCELLED,
         RESULT_KEYRING_ALREADY_EXISTS,
         RESULT_NO_MATCH
-    } Result;
-    typedef enum {
+    };
+
+    enum ItemType {
         ITEM_GENERIC_SECRET = 0,
         ITEM_NETWORK_PASSWORD,
         ITEM_NOTE,
         ITEM_CHAINED_KEYRING_PASSWORD,
         ITEM_ENCRYPTION_KEY_PASSWORD,
         ITEM_PK_STORAGE = 0x100
-    } ItemType;
-    typedef enum {
+    };
+
+    enum AttributeType {
         ATTRIBUTE_TYPE_STRING,
         ATTRIBUTE_TYPE_UINT32
-    } AttributeType;
+    };
+
     typedef char gchar;
     typedef void* gpointer;
     typedef struct {
@@ -49,16 +52,16 @@ public:
             AttributeType type;
         } attributes[32];
     } PasswordSchema;
+
     typedef void ( *OperationGetStringCallback )( Result result, const char* string, gpointer data );
     typedef void ( *OperationDoneCallback )( Result result, gpointer data );
     typedef void ( *GDestroyNotify )( gpointer data );
 
     static const char* GNOME_KEYRING_DEFAULT;
-    static const char* GNOME_KEYRING_SESSION;
 
     static bool isSupported()
     {
-        GnomeKeyring& keyring = instance();
+        const GnomeKeyring& keyring = instance();
         return keyring.isLoaded() &&
                keyring.NETWORK_PASSWORD &&
                keyring.find_password &&
@@ -71,30 +74,30 @@ public:
                                             OperationDoneCallback callback, gpointer data, GDestroyNotify destroy_data )
     {
         if ( !isSupported() )
-            return NULL;
+            return 0;
         return instance().store_password( instance().NETWORK_PASSWORD,
                                           keyring, display_name, password, callback, data, destroy_data,
-                                          "user", user, "server", server, NULL );
+                                          "user", user, "server", server, 0 );
     }
 
     static gpointer find_network_password( const gchar* user, const gchar* server,
                                            OperationGetStringCallback callback, gpointer data, GDestroyNotify destroy_data )
     {
         if ( !isSupported() )
-            return NULL;
+            return 0;
         return instance().find_password( instance().NETWORK_PASSWORD,
                                          callback, data, destroy_data,
-                                         "user", user, "server", server, NULL );
+                                         "user", user, "server", server, 0 );
     }
 
     static gpointer delete_network_password( const gchar* user, const gchar* server,
                                              OperationDoneCallback callback, gpointer data, GDestroyNotify destroy_data )
     {
         if ( !isSupported() )
-            return NULL;
+            return 0;
         return instance().delete_password( instance().NETWORK_PASSWORD,
                                            callback, data, destroy_data,
-                                           "user", user, "server", server, NULL );
+                                           "user", user, "server", server, 0 );
     }
 
 private:
@@ -103,8 +106,9 @@ private:
             ITEM_NETWORK_PASSWORD,
             {{ "user",   ATTRIBUTE_TYPE_STRING },
              { "server", ATTRIBUTE_TYPE_STRING },
-             { NULL,     ( AttributeType )0 }}
+             { 0,     static_cast<AttributeType>( 0 ) }}
         };
+
         NETWORK_PASSWORD = &schema;
         find_password =	reinterpret_cast<find_password_fn*>( resolve( "gnome_keyring_find_password" ) );
         store_password = reinterpret_cast<store_password_fn*>(resolve( "gnome_keyring_store_password" ) );
@@ -131,25 +135,26 @@ private:
     store_password_fn* store_password;
     delete_password_fn* delete_password;
 };
-const char* GnomeKeyring::GNOME_KEYRING_DEFAULT = NULL;
-const char* GnomeKeyring::GNOME_KEYRING_SESSION = "session";
 
-namespace QKeychain {
+const char* GnomeKeyring::GNOME_KEYRING_DEFAULT = NULL;
+
 enum KeyringBackend {
     Backend_GnomeKeyring,
     Backend_Kwallet
 };
+
 static KeyringBackend detectKeyringBackend()
 {
     if ( getenv( "GNOME_KEYRING_CONTROL" ) && GnomeKeyring::isSupported() )
         return Backend_GnomeKeyring;
-    return Backend_Kwallet;
+    else
+        return Backend_Kwallet;
 }
+
 static KeyringBackend getKeyringBackend()
 {
     static KeyringBackend backend = detectKeyringBackend();
     return backend;
-}
 }
 
 void ReadPasswordJobPrivate::scheduledStart() {
@@ -157,7 +162,7 @@ void ReadPasswordJobPrivate::scheduledStart() {
     case Backend_GnomeKeyring:
         if ( !GnomeKeyring::find_network_password( key.toUtf8().constData(), q->service().toUtf8().constData(),
                                                    reinterpret_cast<GnomeKeyring::OperationGetStringCallback>( &ReadPasswordJobPrivate::gnomeKeyring_cb ),
-                                                   this, NULL ) )
+                                                   this, 0 ) )
             q->emitFinishedWithError( OtherError, tr("Unknown error") );
         break;
 
@@ -181,7 +186,7 @@ void ReadPasswordJobPrivate::scheduledStart() {
 
 void ReadPasswordJobPrivate::gnomeKeyring_cb( int result, const char* string, ReadPasswordJobPrivate* self )
 {
-    switch ( (GnomeKeyring::Result)result ) {
+    switch ( result ) {
     case GnomeKeyring::RESULT_OK:
         if ( self->dataType == ReadPasswordJobPrivate::Text )
             self->data = string;
@@ -348,7 +353,7 @@ void WritePasswordJobPrivate::scheduledStart() {
         if ( mode == WritePasswordJobPrivate::Delete ) {
             if ( !GnomeKeyring::delete_network_password( key.toUtf8().constData(), q->service().toUtf8().constData(),
                                                          reinterpret_cast<GnomeKeyring::OperationDoneCallback>( &WritePasswordJobPrivate::gnomeKeyring_cb ),
-                                                         this, NULL ) )
+                                                         this, 0 ) )
                 q->emitFinishedWithError( OtherError, tr("Unknown error") );
         } else {
             QByteArray password = mode == WritePasswordJobPrivate::Text ? textData.toUtf8() : binaryData.toBase64();
@@ -356,7 +361,7 @@ void WritePasswordJobPrivate::scheduledStart() {
             if ( !GnomeKeyring::store_network_password( GnomeKeyring::GNOME_KEYRING_DEFAULT, service.constData(),
                                                         key.toUtf8().constData(), service.constData(), password.constData(),
                                                         reinterpret_cast<GnomeKeyring::OperationDoneCallback>( &WritePasswordJobPrivate::gnomeKeyring_cb ),
-                                                        this, NULL ) )
+                                                        this, 0 ) )
                 q->emitFinishedWithError( OtherError, tr("Unknown error") );
         }
         break;
@@ -407,7 +412,7 @@ void WritePasswordJobPrivate::fallbackOnError(const QDBusError &err)
 
 void WritePasswordJobPrivate::gnomeKeyring_cb( int result, WritePasswordJobPrivate* self )
 {
-    switch ( (GnomeKeyring::Result)result ) {
+    switch ( result ) {
     case GnomeKeyring::RESULT_OK:
         self->q->emitFinished();
         break;
