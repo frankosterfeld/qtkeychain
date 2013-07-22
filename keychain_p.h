@@ -67,6 +67,7 @@ public:
 
 #if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
     org::kde::KWallet* iface;
+    static void gnomeKeyring_cb( int result, const char* string, ReadPasswordJobPrivate* data );
     friend class QKeychain::JobExecutor;
     void fallbackOnError(const QDBusError& err);
 
@@ -104,6 +105,7 @@ public:
 
 #if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
     org::kde::KWallet* iface;
+    static void gnomeKeyring_cb( int result, WritePasswordJobPrivate* self );
     friend class QKeychain::JobExecutor;
     void fallbackOnError(const QDBusError& err);
 
