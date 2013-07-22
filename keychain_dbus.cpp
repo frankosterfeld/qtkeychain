@@ -184,47 +184,47 @@ void ReadPasswordJobPrivate::scheduledStart() {
     }
 }
 
+static QPair<Error, QString> mapGnomeKeyringError( int result )
+{
+    Q_ASSERT( result != GnomeKeyring::RESULT_OK );
+
+    switch ( result ) {
+    case GnomeKeyring::RESULT_DENIED:
+        return qMakePair( AccessDenied, QObject::tr("Access to keychain denied") );
+    case GnomeKeyring::RESULT_NO_KEYRING_DAEMON:
+        return qMakePair( NoBackendAvailable, QObject::tr("No keyring daemon") );
+    case GnomeKeyring::RESULT_ALREADY_UNLOCKED:
+        return qMakePair( OtherError, QObject::tr("Already unlocked") );
+    case GnomeKeyring::RESULT_NO_SUCH_KEYRING:
+        return qMakePair( OtherError, QObject::tr("No such keyring") );
+    case GnomeKeyring::RESULT_BAD_ARGUMENTS:
+        return qMakePair( OtherError, QObject::tr("Bad arguments") );
+    case GnomeKeyring::RESULT_IO_ERROR:
+        return qMakePair( OtherError, QObject::tr("I/O error") );
+    case GnomeKeyring::RESULT_CANCELLED:
+        return qMakePair( OtherError, QObject::tr("Cancelled") );
+    case GnomeKeyring::RESULT_KEYRING_ALREADY_EXISTS:
+        return qMakePair( OtherError, QObject::tr("Keyring already exists") );
+    case GnomeKeyring::RESULT_NO_MATCH:
+        return qMakePair(  EntryNotFound, QObject::tr("No match") );
+    default:
+        break;
+    }
+
+    return qMakePair( OtherError, QObject::tr("Unknown error") );
+}
+
 void ReadPasswordJobPrivate::gnomeKeyring_cb( int result, const char* string, ReadPasswordJobPrivate* self )
 {
-    switch ( result ) {
-    case GnomeKeyring::RESULT_OK:
+    if ( result == GnomeKeyring::RESULT_OK ) {
         if ( self->dataType == ReadPasswordJobPrivate::Text )
             self->data = string;
         else
             self->data = QByteArray::fromBase64( string );
         self->q->emitFinished();
-        break;
-
-    case GnomeKeyring::RESULT_DENIED:
-        self->q->emitFinishedWithError( AccessDenied, tr("Access to keychain denied") );
-        break;
-    case GnomeKeyring::RESULT_NO_KEYRING_DAEMON:
-        self->q->emitFinishedWithError( NoBackendAvailable, tr("No keyring daemon") );
-        break;
-    case GnomeKeyring::RESULT_ALREADY_UNLOCKED:
-        self->q->emitFinishedWithError( OtherError, tr("Already unlocked") );
-        break;
-    case GnomeKeyring::RESULT_NO_SUCH_KEYRING:
-        self->q->emitFinishedWithError( OtherError, tr("No such keyring") );
-        break;
-    case GnomeKeyring::RESULT_BAD_ARGUMENTS:
-        self->q->emitFinishedWithError( OtherError, tr("Bad arguments") );
-        break;
-    case GnomeKeyring::RESULT_IO_ERROR:
-        self->q->emitFinishedWithError( OtherError, tr("I/O error") );
-        break;
-    case GnomeKeyring::RESULT_CANCELLED:
-        self->q->emitFinishedWithError( OtherError, tr("Cancelled") );
-        break;
-    case GnomeKeyring::RESULT_KEYRING_ALREADY_EXISTS:
-        self->q->emitFinishedWithError( OtherError, tr("Keyring already exists") );
-        break;
-    case GnomeKeyring::RESULT_NO_MATCH:
-        self->q->emitFinishedWithError(  EntryNotFound, tr("No match") );
-        break;
-    default:
-        self->q->emitFinishedWithError( OtherError, tr("Unknown error") );
-        break;
+    } else {
+        const QPair<Error, QString> errorResult = mapGnomeKeyringError( result );
+        self->q->emitFinishedWithError( errorResult.first, errorResult.second );
     }
 }
 
@@ -399,7 +399,7 @@ void WritePasswordJobPrivate::fallbackOnError(const QDBusError &err)
 
         q->emitFinished();
         return;
-    }
+   }
 
     actual->setValue( QString( "%1/type" ).arg( key ), (int)mode );
     if ( mode == Text )
@@ -413,40 +413,11 @@ void WritePasswordJobPrivate::fallbackOnError(const QDBusError &err)
 
 void WritePasswordJobPrivate::gnomeKeyring_cb( int result, WritePasswordJobPrivate* self )
 {
-    switch ( result ) {
-    case GnomeKeyring::RESULT_OK:
+    if ( result == GnomeKeyring::RESULT_OK ) {
         self->q->emitFinished();
-        break;
-    case GnomeKeyring::RESULT_DENIED:
-        self->q->emitFinishedWithError( AccessDenied, tr("Access to keychain denied") );
-        break;
-    case GnomeKeyring::RESULT_NO_KEYRING_DAEMON:
-        self->q->emitFinishedWithError( NoBackendAvailable, tr("No keyring daemon") );
-        break;
-    case GnomeKeyring::RESULT_ALREADY_UNLOCKED:
-        self->q->emitFinishedWithError( OtherError, tr("Already unlocked") );
-        break;
-    case GnomeKeyring::RESULT_NO_SUCH_KEYRING:
-        self->q->emitFinishedWithError( OtherError, tr("No such keyring") );
-        break;
-    case GnomeKeyring::RESULT_BAD_ARGUMENTS:
-        self->q->emitFinishedWithError( OtherError, tr("Bad arguments") );
-        break;
-    case GnomeKeyring::RESULT_IO_ERROR:
-        self->q->emitFinishedWithError( OtherError, tr("I/O error") );
-        break;
-    case GnomeKeyring::RESULT_CANCELLED:
-        self->q->emitFinishedWithError( OtherError, tr("Cancelled") );
-        break;
-    case GnomeKeyring::RESULT_KEYRING_ALREADY_EXISTS:
-        self->q->emitFinishedWithError( OtherError, tr("Keyring already exists") );
-        break;
-    case GnomeKeyring::RESULT_NO_MATCH:
-        self->q->emitFinishedWithError(  EntryNotFound, tr("No match") );
-        break;
-    default:
-        self->q->emitFinishedWithError( OtherError, tr("Unknown error") );
-        break;
+    } else {
+        const QPair<Error, QString> errorResult = mapGnomeKeyringError( result );
+        self->q->emitFinishedWithError( errorResult.first, errorResult.second );
     }
 }
 
