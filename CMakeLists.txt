@@ -11,8 +11,13 @@ set(QTKEYCHAIN_SOVERSION 0)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake/Modules")
 include(GNUInstallDirs)
 
-# try Qt5 first, and prefer that if found
-find_package(Qt5Core QUIET)
+option(BUILD_WITH_QT4 "Build qtkeychain with Qt4 no matter if Qt5 was found" OFF)
+
+if( NOT BUILD_WITH_QT4 )
+    # try Qt5 first, and prefer that if found
+    find_package(Qt5Core QUIET)
+endif()
+
 if (Qt5Core_FOUND)
   if(UNIX AND NOT APPLE)
     find_package(Qt5DBus REQUIRED)
