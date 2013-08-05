@@ -77,7 +77,7 @@ public:
             return 0;
         return instance().store_password( instance().NETWORK_PASSWORD,
                                           keyring, display_name, password, callback, data, destroy_data,
-                                          "user", user, "server", server, 0 );
+                                          "user", user, "server", server, static_cast<char*>(0) );
     }
 
     static gpointer find_network_password( const gchar* user, const gchar* server,
@@ -87,7 +87,7 @@ public:
             return 0;
         return instance().find_password( instance().NETWORK_PASSWORD,
                                          callback, data, destroy_data,
-                                         "user", user, "server", server, 0 );
+                                         "user", user, "server", server, static_cast<char*>(0) );
     }
 
     static gpointer delete_network_password( const gchar* user, const gchar* server,
@@ -97,7 +97,7 @@ public:
             return 0;
         return instance().delete_password( instance().NETWORK_PASSWORD,
                                            callback, data, destroy_data,
-                                           "user", user, "server", server, 0 );
+                                           "user", user, "server", server, static_cast<char*>(0) );
     }
 
 private:
