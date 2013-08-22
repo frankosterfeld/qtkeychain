@@ -170,9 +170,9 @@ void ReadPasswordJobPrivate::scheduledStart() {
         if ( QDBusConnection::sessionBus().isConnected() )
         {
             iface = new org::kde::KWallet( QLatin1String("org.kde.kwalletd"), QLatin1String("/modules/kwalletd"), QDBusConnection::sessionBus(), this );
-            const QDBusPendingReply<int> reply = iface->open( QLatin1String("kdewallet"), 0, q->service() );
+            const QDBusPendingReply<QString> reply = iface->networkWallet();
             QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher( reply, this );
-            connect( watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletOpenFinished(QDBusPendingCallWatcher*)) );
+            connect( watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletWalletFound(QDBusPendingCallWatcher*)) );
         }
         else
         {
@@ -182,6 +182,15 @@ void ReadPasswordJobPrivate::scheduledStart() {
         }
         break;
     }
+}
+
+void ReadPasswordJobPrivate::kwalletWalletFound(QDBusPendingCallWatcher *watcher)
+{
+    watcher->deleteLater();
+    const QDBusPendingReply<QString> reply = *watcher;
+    const QDBusPendingReply<int> pendingReply = iface->open( reply.value(), 0, q->service() );
+    QDBusPendingCallWatcher* pendingWatcher = new QDBusPendingCallWatcher( pendingReply, this );
+    connect( pendingWatcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletOpenFinished(QDBusPendingCallWatcher*)) );
 }
 
 static QPair<Error, QString> mapGnomeKeyringError( int result )
