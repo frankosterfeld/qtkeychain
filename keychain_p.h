@@ -80,6 +80,7 @@ private Q_SLOTS:
     void kwalletReadFinished( QDBusPendingCallWatcher* watcher );
 #else //moc's too dumb to respect above macros, so just define empty slot implementations
 private Q_SLOTS:
+    void kwalletWalletFound( QDBusPendingCallWatcher* ) {}
     void kwalletOpenFinished( QDBusPendingCallWatcher* ) {}
     void kwalletEntryTypeFinished( QDBusPendingCallWatcher* ) {}
     void kwalletReadFinished( QDBusPendingCallWatcher* ) {}
