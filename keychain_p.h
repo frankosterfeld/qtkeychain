@@ -71,8 +71,6 @@ public:
     friend class QKeychain::JobExecutor;
     void fallbackOnError(const QDBusError& err);
 
-    const QString typeKey();
-    const QString dataKey();
 private Q_SLOTS:
     void kwalletWalletFound( QDBusPendingCallWatcher* watcher );
     void kwalletOpenFinished( QDBusPendingCallWatcher* watcher );

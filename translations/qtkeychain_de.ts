@@ -4,32 +4,47 @@
 <context>
     <name>QKeychain::ReadPasswordJobPrivate</name>
     <message>
-        <location filename="../keychain_dbus.cpp" line="166"/>
+        <location filename="../keychain_dbus.cpp" line="176"/>
         <source>Unknown error</source>
         <translation>Unbekannter Fehler</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="245"/>
+        <location filename="../keychain_dbus.cpp" line="190"/>
+        <source>D-Bus is not running</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../keychain_dbus.cpp" line="264"/>
         <source>No keychain service available</source>
         <translation>Kein Schlüsselbund-Dienst verfügbar</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="247"/>
+        <location filename="../keychain_dbus.cpp" line="266"/>
         <source>Could not open wallet: %1; %2</source>
         <translation>Konnte Brieftasche nicht öffnen: %1; %2</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="304"/>
+        <location filename="../keychain_dbus.cpp" line="313"/>
         <source>Access to keychain denied</source>
         <translation>Zugriff auf Schlüsselbund verweigert</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="317"/>
+        <location filename="../keychain_dbus.cpp" line="334"/>
         <source>Could not determine data type: %1; %2</source>
         <translation>Datentyp kann nicht ermittelt werden: %1: %2</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="336"/>
+        <location filename="../keychain_dbus.cpp" line="352"/>
+        <source>Unsupported entry type &apos;Map&apos;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../keychain_dbus.cpp" line="355"/>
+        <source>Unknown kwallet entry type &apos;%1&apos;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../keychain_dbus.cpp" line="370"/>
         <source>Could not read password: %1; %2</source>
         <translation>Passwort konnte nicht ausgelesen werden: %1; %2</translation>
     </message>
@@ -39,6 +54,7 @@
         <translation>Passwort nicht gefunden</translation>
     </message>
     <message>
+        <location filename="../keychain_dbus.cpp" line="343"/>
         <location filename="../keychain_win.cpp" line="27"/>
         <source>Entry not found</source>
         <translation>Eintrag nicht gefunden</translation>
@@ -52,19 +68,24 @@
 <context>
     <name>QKeychain::WritePasswordJobPrivate</name>
     <message>
-        <location filename="../keychain_dbus.cpp" line="357"/>
-        <location filename="../keychain_dbus.cpp" line="365"/>
+        <location filename="../keychain_dbus.cpp" line="391"/>
+        <location filename="../keychain_dbus.cpp" line="399"/>
         <source>Unknown error</source>
         <translation>Unbekannter Fehler</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="392"/>
-        <location filename="../keychain_dbus.cpp" line="468"/>
+        <location filename="../keychain_dbus.cpp" line="414"/>
+        <source>D-Bus is not running</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../keychain_dbus.cpp" line="426"/>
+        <location filename="../keychain_dbus.cpp" line="502"/>
         <source>Could not open wallet: %1; %2</source>
         <translation>Konnte Brieftasche nicht öffnen: %1; %2</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="446"/>
+        <location filename="../keychain_dbus.cpp" line="480"/>
         <source>Access to keychain denied</source>
         <translation>Zugriff auf Schlüsselbund verweigert</translation>
     </message>
@@ -97,52 +118,52 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../keychain_dbus.cpp" line="193"/>
+        <location filename="../keychain_dbus.cpp" line="212"/>
         <source>Access to keychain denied</source>
         <translation>Zugriff auf Schlüsselbund verweigert</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="195"/>
+        <location filename="../keychain_dbus.cpp" line="214"/>
         <source>No keyring daemon</source>
         <translation>Kein Schlüsselbund-Dienst </translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="197"/>
+        <location filename="../keychain_dbus.cpp" line="216"/>
         <source>Already unlocked</source>
         <translation>Bereits entsperrt</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="199"/>
+        <location filename="../keychain_dbus.cpp" line="218"/>
         <source>No such keyring</source>
         <translation>Kein solcher Schlüsselbund</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="201"/>
+        <location filename="../keychain_dbus.cpp" line="220"/>
         <source>Bad arguments</source>
         <translation>Ungültige Argumente</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="203"/>
+        <location filename="../keychain_dbus.cpp" line="222"/>
         <source>I/O error</source>
         <translation>Ein-/Ausgabe-Fehler</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="205"/>
+        <location filename="../keychain_dbus.cpp" line="224"/>
         <source>Cancelled</source>
         <translation>Abgebrochen</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="207"/>
+        <location filename="../keychain_dbus.cpp" line="226"/>
         <source>Keyring already exists</source>
         <translation>Schlüsselbund existiert bereits</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="209"/>
+        <location filename="../keychain_dbus.cpp" line="228"/>
         <source>No match</source>
         <translation>Kein Treffer</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="214"/>
+        <location filename="../keychain_dbus.cpp" line="233"/>
         <source>Unknown error</source>
         <translation>Unbekannter Fehler</translation>
     </message>

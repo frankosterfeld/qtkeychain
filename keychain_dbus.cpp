@@ -14,6 +14,16 @@
 
 using namespace QKeychain;
 
+static QString typeKey( const QString& key )
+{
+    return QString::fromLatin1( "%1/type" ).arg( key );
+}
+
+static QString dataKey( const QString& key )
+{
+    return QString::fromLatin1( "%1/data" ).arg( key );
+}
+
 class GnomeKeyring : private QLibrary {
 public:
     enum Result {
@@ -111,7 +121,7 @@ private:
 
         NETWORK_PASSWORD = &schema;
         find_password =	reinterpret_cast<find_password_fn*>( resolve( "gnome_keyring_find_password" ) );
-        store_password = reinterpret_cast<store_password_fn*>(resolve( "gnome_keyring_store_password" ) );
+        store_password = reinterpret_cast<store_password_fn*>( resolve( "gnome_keyring_store_password" ) );
         delete_password = reinterpret_cast<delete_password_fn*>( resolve( "gnome_keyring_delete_password" ) );
     }
 
@@ -145,7 +155,7 @@ enum KeyringBackend {
 
 static KeyringBackend detectKeyringBackend()
 {
-    if ( getenv( "GNOME_KEYRING_CONTROL" ) && GnomeKeyring::isSupported() )
+    if ( !qgetenv( "GNOME_KEYRING_CONTROL" ).isNull() && GnomeKeyring::isSupported() )
         return Backend_GnomeKeyring;
     else
         return Backend_Kwallet;
@@ -177,7 +187,7 @@ void ReadPasswordJobPrivate::scheduledStart() {
         else
         {
         // D-Bus is not reachable so none can tell us something about KWalletd
-            QDBusError err( QDBusError::NoServer, "D-Bus is not running" );
+            QDBusError err( QDBusError::NoServer, tr("D-Bus is not running") );
             fallbackOnError( err );
         }
         break;
@@ -243,10 +253,10 @@ void ReadPasswordJobPrivate::fallbackOnError(const QDBusError& err )
     QSettings* actual = q->settings() ? q->settings() : local.get();
     WritePasswordJobPrivate::Mode mode;
 
-    if ( q->insecureFallback() && actual->contains( dataKey() ) ) {
+    if ( q->insecureFallback() && actual->contains( dataKey( key ) ) ) {
 
-        mode = (WritePasswordJobPrivate::Mode)actual->value( typeKey() ).toInt();
-        data = actual->value( dataKey() ).toByteArray();
+        mode = (WritePasswordJobPrivate::Mode)actual->value( typeKey( key ) ).toInt();
+        data = actual->value( dataKey( key ) ).toByteArray();
 
         q->emitFinished();
     } else {
@@ -255,16 +265,6 @@ void ReadPasswordJobPrivate::fallbackOnError(const QDBusError& err )
         else
             q->emitFinishedWithError( OtherError, tr("Could not open wallet: %1; %2").arg( QDBusError::errorString( err.type() ), err.message() ) );
     }
-}
-
-const QString ReadPasswordJobPrivate::typeKey()
-{
-    return QString( "%1/type" ).arg( key );
-}
-
-const QString ReadPasswordJobPrivate::dataKey()
-{
-    return QString( "%1/data" ).arg( key );
 }
 
 void ReadPasswordJobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watcher ) {
@@ -280,12 +280,12 @@ void ReadPasswordJobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watch
         return;
     }
 
-    if ( actual->contains( dataKey() ) ) {
+    if ( actual->contains( dataKey( key ) ) ) {
         // We previously stored data in the insecure QSettings, but now have KWallet available.
         // Do the migration
 
-        data = actual->value( dataKey() ).toByteArray();
-        mode = (WritePasswordJobPrivate::Mode)actual->value( typeKey() ).toInt();
+        data = actual->value( dataKey( key ) ).toByteArray();
+        mode = (WritePasswordJobPrivate::Mode)actual->value( typeKey( key ) ).toInt();
         actual->remove( key );
 
         q->emitFinished();
@@ -411,7 +411,7 @@ void WritePasswordJobPrivate::scheduledStart() {
         else
         {
             // D-Bus is not reachable so none can tell us something about KWalletd
-            QDBusError err( QDBusError::NoServer, "D-Bus is not running" );
+            QDBusError err( QDBusError::NoServer, tr("D-Bus is not running") );
             fallbackOnError( err );
         }
     }
@@ -435,11 +435,11 @@ void WritePasswordJobPrivate::fallbackOnError(const QDBusError &err)
         return;
    }
 
-    actual->setValue( QString( "%1/type" ).arg( key ), (int)mode );
+    actual->setValue( QString::fromLatin1( "%1/type" ).arg( key ), (int)mode );
     if ( mode == Text )
-        actual->setValue( QString( "%1/data" ).arg( key ), textData.toUtf8() );
+        actual->setValue( QString::fromLatin1( "%1/data" ).arg( key ), textData.toUtf8() );
     else if ( mode == Binary )
-        actual->setValue( QString( "%1/data" ).arg( key ), binaryData );
+        actual->setValue( QString::fromLatin1( "%1/data" ).arg( key ), binaryData );
     actual->sync();
 
     q->emitFinished();
