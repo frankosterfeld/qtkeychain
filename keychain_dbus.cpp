@@ -319,6 +319,14 @@ void ReadPasswordJobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watch
     connect( nextWatcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletEntryTypeFinished(QDBusPendingCallWatcher*)) );
 }
 
+//Must be in sync with KWallet::EntryType (kwallet.h)
+enum KWalletEntryType {
+    Unknown=0,
+    Password,
+    Stream,
+    Map
+};
+
 void ReadPasswordJobPrivate::kwalletEntryTypeFinished( QDBusPendingCallWatcher* watcher ) {
     watcher->deleteLater();
     if ( watcher->isError() ) {
@@ -328,8 +336,25 @@ void ReadPasswordJobPrivate::kwalletEntryTypeFinished( QDBusPendingCallWatcher* 
     }
 
     const QDBusPendingReply<int> reply = *watcher;
+    const int value = reply.value();
 
-    dataType = reply.value() == 1/*Password*/ ? Text : Binary;
+    switch ( value ) {
+    case Unknown:
+        q->emitFinishedWithError( EntryNotFound, tr("Entry not found") );
+        return;
+    case Password:
+        dataType = Text;
+        break;
+    case Stream:
+        dataType = Binary;
+        break;
+    case Map:
+        q->emitFinishedWithError( EntryNotFound, tr("Unsupported entry type 'Map'") );
+        return;
+    default:
+        q->emitFinishedWithError( OtherError, tr("Unknown kwallet entry type '%1'").arg( value ) );
+        return;
+    }
 
     const QDBusPendingCall nextReply = dataType == Text
         ? QDBusPendingCall( iface->readPassword( walletHandle, q->service(), key, q->service() ) )
