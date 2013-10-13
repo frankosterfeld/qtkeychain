@@ -10,7 +10,7 @@
 
 #include <QSettings>
 
-#include <auto_ptr.h>
+#include <QScopedPointer>
 
 using namespace QKeychain;
 
@@ -249,8 +249,8 @@ void ReadPasswordJobPrivate::gnomeKeyring_cb( int result, const char* string, Re
 
 void ReadPasswordJobPrivate::fallbackOnError(const QDBusError& err )
 {
-    std::auto_ptr<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
-    QSettings* actual = q->settings() ? q->settings() : local.get();
+    QScopedPointer<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
+    QSettings* actual = q->settings() ? q->settings() : local.data();
     WritePasswordJobPrivate::Mode mode;
 
     if ( q->insecureFallback() && actual->contains( dataKey( key ) ) ) {
@@ -271,8 +271,8 @@ void ReadPasswordJobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watch
     watcher->deleteLater();
     const QDBusPendingReply<int> reply = *watcher;
 
-    std::auto_ptr<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
-    QSettings* actual = q->settings() ? q->settings() : local.get();
+    QScopedPointer<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
+    QSettings* actual = q->settings() ? q->settings() : local.data();
     WritePasswordJobPrivate::Mode mode;
 
     if ( reply.isError() ) {
@@ -419,8 +419,8 @@ void WritePasswordJobPrivate::scheduledStart() {
 
 void WritePasswordJobPrivate::fallbackOnError(const QDBusError &err)
 {
-    std::auto_ptr<QSettings> local( !q->settings() ? new QSettings(  q->service() ) : 0 );
-    QSettings* actual = q->settings() ? q->settings() : local.get();
+    QScopedPointer<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
+    QSettings* actual = q->settings() ? q->settings() : local.data();
 
     if ( !q->insecureFallback() ) {
         q->emitFinishedWithError( OtherError, tr("Could not open wallet: %1; %2").arg( QDBusError::errorString( err.type() ), err.message() ) );
@@ -459,8 +459,8 @@ void WritePasswordJobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watc
     watcher->deleteLater();
     QDBusPendingReply<int> reply = *watcher;
 
-    std::auto_ptr<QSettings> local( !q->settings() ? new QSettings(  q->service() ) : 0 );
-    QSettings* actual = q->settings() ? q->settings() : local.get();
+    QScopedPointer<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
+    QSettings* actual = q->settings() ? q->settings() : local.data();
 
     if ( reply.isError() ) {
         fallbackOnError( reply.error() );
