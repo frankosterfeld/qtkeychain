@@ -443,7 +443,7 @@ WritePasswordJobPrivate::Mode WritePasswordJobPrivate::stringToMode(const QStrin
     if (s == QLatin1String("Binary") || s == QLatin1String("2"))
         return Binary;
 
-    qCritical("Unexpected mode string '%1'", qPrintable(s));
+    qCritical("Unexpected mode string '%s'", qPrintable(s));
 
     return Text;
 }
