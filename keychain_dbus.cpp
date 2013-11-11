@@ -251,11 +251,14 @@ void ReadPasswordJobPrivate::fallbackOnError(const QDBusError& err )
 {
     QScopedPointer<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
     QSettings* actual = q->settings() ? q->settings() : local.data();
-    WritePasswordJobPrivate::Mode mode;
 
     if ( q->insecureFallback() && actual->contains( dataKey( key ) ) ) {
 
-        mode = (WritePasswordJobPrivate::Mode)actual->value( typeKey( key ) ).toInt();
+        const WritePasswordJobPrivate::Mode mode = WritePasswordJobPrivate::stringToMode( actual->value( typeKey( key ) ).toString() );
+        if (mode == WritePasswordJobPrivate::Binary)
+           dataType = Binary;
+        else
+            dataType = Text;
         data = actual->value( dataKey( key ) ).toByteArray();
 
         q->emitFinished();
@@ -273,7 +276,6 @@ void ReadPasswordJobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watch
 
     QScopedPointer<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
     QSettings* actual = q->settings() ? q->settings() : local.data();
-    WritePasswordJobPrivate::Mode mode;
 
     if ( reply.isError() ) {
         fallbackOnError( reply.error() );
@@ -285,7 +287,7 @@ void ReadPasswordJobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watch
         // Do the migration
 
         data = actual->value( dataKey( key ) ).toByteArray();
-        mode = (WritePasswordJobPrivate::Mode)actual->value( typeKey( key ) ).toInt();
+        const WritePasswordJobPrivate::Mode mode = WritePasswordJobPrivate::stringToMode( actual->value( typeKey( key ) ).toString() );
         actual->remove( key );
 
         q->emitFinished();
@@ -417,6 +419,35 @@ void WritePasswordJobPrivate::scheduledStart() {
     }
 }
 
+QString WritePasswordJobPrivate::modeToString(Mode m)
+{
+    switch (m) {
+    case Delete:
+        return QLatin1String("Delete");
+    case Text:
+        return QLatin1String("Text");
+    case Binary:
+        return QLatin1String("Binary");
+    }
+
+    Q_ASSERT_X(false, Q_FUNC_INFO, "Unhandled Mode value");
+    return QString();
+}
+
+WritePasswordJobPrivate::Mode WritePasswordJobPrivate::stringToMode(const QString& s)
+{
+    if (s == QLatin1String("Delete") || s == QLatin1String("0"))
+        return Delete;
+    if (s == QLatin1String("Text") || s == QLatin1String("1"))
+        return Text;
+    if (s == QLatin1String("Binary") || s == QLatin1String("2"))
+        return Binary;
+
+    qCritical("Unexpected mode string '%1'", qPrintable(s));
+
+    return Text;
+}
+
 void WritePasswordJobPrivate::fallbackOnError(const QDBusError &err)
 {
     QScopedPointer<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
@@ -435,7 +466,7 @@ void WritePasswordJobPrivate::fallbackOnError(const QDBusError &err)
         return;
    }
 
-    actual->setValue( QString::fromLatin1( "%1/type" ).arg( key ), (int)mode );
+    actual->setValue( QString::fromLatin1( "%1/type" ).arg( key ), mode );
     if ( mode == Text )
         actual->setValue( QString::fromLatin1( "%1/data" ).arg( key ), textData.toUtf8() );
     else if ( mode == Binary )

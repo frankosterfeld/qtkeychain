@@ -97,6 +97,10 @@ public:
         Text,
         Binary
     };
+
+    static QString modeToString(Mode m);
+    static Mode stringToMode(const QString& s);
+
     WritePasswordJob* const q;
     Mode mode;
     QString key;
