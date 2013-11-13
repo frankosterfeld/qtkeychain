@@ -16,6 +16,6 @@ endif()
 include("${QTKEYCHAIN_CMAKE_DIR}/QtKeychainLibraryDepends.cmake")
 
 # These are IMPORTED targets created by FooBarLibraryDepends.cmake
-set(QTKEYCHAIN_LIBRARIES qtkeychain)
+set(QTKEYCHAIN_LIBRARIES "@QTKEYCHAIN_TARGET_NAME@")
 
 set(QTKEYCHAIN_FOUND TRUE)
