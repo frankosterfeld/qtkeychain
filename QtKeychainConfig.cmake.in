@@ -7,15 +7,15 @@
 get_filename_component(QTKEYCHAIN_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 if(EXISTS "${QTKEYCHAIN_CMAKE_DIR}/CMakeCache.txt")
    # In build tree
-   include("${QTKEYCHAIN_CMAKE_DIR}/QtKeychainBuildTreeSettings.cmake")
+   include("${QTKEYCHAIN_CMAKE_DIR}/Qt@QTKEYCHAIN_VERSION_INFIX@KeychainBuildTreeSettings.cmake")
 else()
    set(QTKEYCHAIN_INCLUDE_DIRS "@CMAKE_INSTALL_FULL_INCLUDEDIR@")
 endif()
 
 # Our library dependencies (contains definitions for IMPORTED targets)
-include("${QTKEYCHAIN_CMAKE_DIR}/QtKeychainLibraryDepends.cmake")
+include("${QTKEYCHAIN_CMAKE_DIR}/Qt@QTKEYCHAIN_VERSION_INFIX@KeychainLibraryDepends.cmake")
 
 # These are IMPORTED targets created by FooBarLibraryDepends.cmake
-set(QTKEYCHAIN_LIBRARIES qtkeychain)
+set(QTKEYCHAIN_LIBRARIES "@QTKEYCHAIN_TARGET_NAME@")
 
 set(QTKEYCHAIN_FOUND TRUE)
