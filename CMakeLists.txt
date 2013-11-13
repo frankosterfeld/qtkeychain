@@ -15,12 +15,12 @@ option(BUILD_WITH_QT4 "Build qtkeychain with Qt4 no matter if Qt5 was found" OFF
 
 
 if( NOT BUILD_WITH_QT4 )
-    set(version_infix 5)
+    set(QTKEYCHAIN_VERSION_INFIX 5)
     # try Qt5 first, and prefer that if found
     find_package(Qt5Core QUIET)
 endif()
 
-set(QTKEYCHAIN_TARGET_NAME qt${version_infix}keychain)
+set(QTKEYCHAIN_TARGET_NAME qt${QTKEYCHAIN_VERSION_INFIX}keychain)
 
 if (Qt5Core_FOUND)
   if(UNIX AND NOT APPLE)
@@ -142,7 +142,7 @@ install(FILES keychain.h qkeychain_export.h
 )
 
 install(TARGETS ${QTKEYCHAIN_TARGET_NAME}
-  EXPORT Qt${version_infix}KeychainLibraryDepends
+  EXPORT Qt${QTKEYCHAIN_VERSION_INFIX}KeychainLibraryDepends
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -156,22 +156,22 @@ target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME})
 ### CMake config file
 ###
 
-export(TARGETS ${QTKEYCHAIN_TARGET_NAME} FILE "${PROJECT_BINARY_DIR}/Qt${version_infix}KeychainLibraryDepends.cmake")
-export(PACKAGE Qt${version_infix}Keychain)
+export(TARGETS ${QTKEYCHAIN_TARGET_NAME} FILE "${PROJECT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainLibraryDepends.cmake")
+export(PACKAGE Qt${QTKEYCHAIN_VERSION_INFIX}Keychain)
 
 configure_file(QtKeychainBuildTreeSettings.cmake.in
-  "${PROJECT_BINARY_DIR}/Qt${version_infix}KeychainBuildTreeSettings.cmake" @ONLY)
+  "${PROJECT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainBuildTreeSettings.cmake" @ONLY)
 configure_file(QtKeychainConfig.cmake.in
-  "${PROJECT_BINARY_DIR}/Qt${version_infix}KeychainConfig.cmake" @ONLY)
+  "${PROJECT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfig.cmake" @ONLY)
 configure_file(QtKeychainConfigVersion.cmake.in
-  "${PROJECT_BINARY_DIR}/Qt${version_infix}KeychainConfigVersion.cmake" @ONLY)
+  "${PROJECT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfigVersion.cmake" @ONLY)
 
-install(EXPORT Qt${version_infix}KeychainLibraryDepends
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Qt${version_infix}Keychain"
+install(EXPORT Qt${QTKEYCHAIN_VERSION_INFIX}KeychainLibraryDepends
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Qt${QTKEYCHAIN_VERSION_INFIX}Keychain"
 )
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Qt${version_infix}KeychainConfig.cmake
-              ${CMAKE_CURRENT_BINARY_DIR}/Qt${version_infix}KeychainConfigVersion.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Qt${version_infix}Keychain
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfig.cmake
+              ${CMAKE_CURRENT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Qt${QTKEYCHAIN_VERSION_INFIX}Keychain
 )
 
