@@ -28,8 +28,9 @@ static QString strForStatus( OSStatus os ) {
     const Releaser<CFStringRef> str( SecCopyErrorMessageString( os, 0 ) );
     const char * const buf = CFStringGetCStringPtr( str.value,  kCFStringEncodingUTF8 );
     if ( !buf )
-        return QString();
-    return QString::fromUtf8( buf, strlen( buf ) );
+        return QObject::tr( "OSX Keychain OSStatus code %1" ).arg( os );
+    return QObject::tr( "OSX Keychain OSStatus code %1: \"%2\"" ).arg( os )
+            .arg( QString::fromUtf8( buf, strlen( buf ) ) );
 }
 
 static OSStatus readPw( QByteArray* pw,

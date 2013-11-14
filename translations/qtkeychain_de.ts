@@ -14,47 +14,47 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="264"/>
+        <location filename="../keychain_dbus.cpp" line="267"/>
         <source>No keychain service available</source>
         <translation>Kein Schlüsselbund-Dienst verfügbar</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="266"/>
+        <location filename="../keychain_dbus.cpp" line="269"/>
         <source>Could not open wallet: %1; %2</source>
         <translation>Konnte Brieftasche nicht öffnen: %1; %2</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="313"/>
+        <location filename="../keychain_dbus.cpp" line="315"/>
         <source>Access to keychain denied</source>
         <translation>Zugriff auf Schlüsselbund verweigert</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="334"/>
+        <location filename="../keychain_dbus.cpp" line="336"/>
         <source>Could not determine data type: %1; %2</source>
         <translation>Datentyp kann nicht ermittelt werden: %1: %2</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="352"/>
+        <location filename="../keychain_dbus.cpp" line="354"/>
         <source>Unsupported entry type &apos;Map&apos;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="355"/>
+        <location filename="../keychain_dbus.cpp" line="357"/>
         <source>Unknown kwallet entry type &apos;%1&apos;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="370"/>
+        <location filename="../keychain_dbus.cpp" line="372"/>
         <source>Could not read password: %1; %2</source>
         <translation>Passwort konnte nicht ausgelesen werden: %1; %2</translation>
     </message>
     <message>
-        <location filename="../keychain_mac.cpp" line="74"/>
+        <location filename="../keychain_mac.cpp" line="75"/>
         <source>Password not found</source>
         <translation>Passwort nicht gefunden</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="343"/>
+        <location filename="../keychain_dbus.cpp" line="345"/>
         <location filename="../keychain_win.cpp" line="27"/>
         <source>Entry not found</source>
         <translation>Eintrag nicht gefunden</translation>
@@ -68,24 +68,24 @@
 <context>
     <name>QKeychain::WritePasswordJobPrivate</name>
     <message>
-        <location filename="../keychain_dbus.cpp" line="391"/>
-        <location filename="../keychain_dbus.cpp" line="399"/>
+        <location filename="../keychain_dbus.cpp" line="393"/>
+        <location filename="../keychain_dbus.cpp" line="401"/>
         <source>Unknown error</source>
         <translation>Unbekannter Fehler</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="414"/>
+        <location filename="../keychain_dbus.cpp" line="416"/>
         <source>D-Bus is not running</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="426"/>
-        <location filename="../keychain_dbus.cpp" line="502"/>
+        <location filename="../keychain_dbus.cpp" line="457"/>
+        <location filename="../keychain_dbus.cpp" line="533"/>
         <source>Could not open wallet: %1; %2</source>
         <translation>Konnte Brieftasche nicht öffnen: %1; %2</translation>
     </message>
     <message>
-        <location filename="../keychain_dbus.cpp" line="480"/>
+        <location filename="../keychain_dbus.cpp" line="511"/>
         <source>Access to keychain denied</source>
         <translation>Zugriff auf Schlüsselbund verweigert</translation>
     </message>
@@ -166,6 +166,16 @@
         <location filename="../keychain_dbus.cpp" line="233"/>
         <source>Unknown error</source>
         <translation>Unbekannter Fehler</translation>
+    </message>
+    <message>
+        <location filename="../keychain_mac.cpp" line="31"/>
+        <source>OSX Keychain OSStatus code %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../keychain_mac.cpp" line="32"/>
+        <source>OSX Keychain OSStatus code %1: &quot;%2&quot;</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>
