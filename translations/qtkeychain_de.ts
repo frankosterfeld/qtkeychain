@@ -49,7 +49,7 @@
         <translation>Passwort konnte nicht ausgelesen werden: %1; %2</translation>
     </message>
     <message>
-        <location filename="../keychain_mac.cpp" line="75"/>
+        <location filename="../keychain_mac.cpp" line="76"/>
         <source>Password not found</source>
         <translation>Passwort nicht gefunden</translation>
     </message>
@@ -169,12 +169,8 @@
     </message>
     <message>
         <location filename="../keychain_mac.cpp" line="31"/>
-        <source>OSX Keychain OSStatus code %1</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../keychain_mac.cpp" line="32"/>
-        <source>OSX Keychain OSStatus code %1: &quot;%2&quot;</source>
+        <location filename="../keychain_mac.cpp" line="33"/>
+        <source>%1 (OSStatus %2)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
