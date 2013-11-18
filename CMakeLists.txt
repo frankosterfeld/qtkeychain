@@ -120,8 +120,22 @@ qt_add_translation(qtkeychain_QM_FILES ${qtkeychain_TR_FILES})
 add_custom_target(messages DEPENDS ${qtkeychain_MESSAGES})
 add_custom_target(translations DEPENDS ${qtkeychain_QM_FILES})
 
-#install(FILES ${qtkeychain_QM_FILES}
-#        DESTINATION ${QT_TRANSLATIONS_DIR})
+if(NOT QT_TRANSLATIONS_DIR)
+    # If this directory is missing, we are in a Qt5 environment.
+    # Extract the qmake executable location
+    get_target_property(QT5_QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
+    # Ask Qt5 where to put the translations
+    EXEC_PROGRAM( ${QT5_QMAKE_EXECUTABLE}
+        ARGS "-query QT_INSTALL_TRANSLATIONS"
+        OUTPUT_VARIABLE qt_translations_dir )
+    # make sure we have / and not \ as qmake gives on windows
+    FILE(TO_CMAKE_PATH "${qt_translations_dir}" qt_translations_dir)
+    SET(QT_TRANSLATIONS_DIR ${qt_translations_dir} CACHE PATH "The
+    location of the Qt translations" FORCE)
+endif()
+
+install(FILES ${qtkeychain_QM_FILES}
+        DESTINATION ${QT_TRANSLATIONS_DIR})
 
 if(NOT QTKEYCHAIN_STATIC)
     add_library(${QTKEYCHAIN_TARGET_NAME} SHARED ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
