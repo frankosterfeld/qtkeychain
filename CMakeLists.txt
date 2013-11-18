@@ -15,14 +15,12 @@ option(BUILD_WITH_QT4 "Build qtkeychain with Qt4 no matter if Qt5 was found" OFF
 
 
 if( NOT BUILD_WITH_QT4 )
-    set(QTKEYCHAIN_VERSION_INFIX 5)
     # try Qt5 first, and prefer that if found
     find_package(Qt5Core QUIET)
 endif()
 
-set(QTKEYCHAIN_TARGET_NAME qt${QTKEYCHAIN_VERSION_INFIX}keychain)
-
 if (Qt5Core_FOUND)
+  set(QTKEYCHAIN_VERSION_INFIX 5)
   if(UNIX AND NOT APPLE)
     find_package(Qt5DBus REQUIRED)
     include_directories(${Qt5DBus_INCLUDE_DIRS})
@@ -53,6 +51,7 @@ if (Qt5Core_FOUND)
     endif()
   endif()
 else()
+  set(QTKEYCHAIN_VERSION_INFIX "")
   if(UNIX AND NOT APPLE)
     find_package(Qt4 COMPONENTS QtCore QtDBus REQUIRED)
     set(QTDBUS_LIBRARIES ${QT_QTDBUS_LIBRARY})
@@ -123,6 +122,7 @@ add_custom_target(translations DEPENDS ${qtkeychain_QM_FILES})
 #install(FILES ${qtkeychain_QM_FILES}
 #        DESTINATION ${QT_TRANSLATIONS_DIR})
 
+set(QTKEYCHAIN_TARGET_NAME qt${QTKEYCHAIN_VERSION_INFIX}keychain)
 if(NOT QTKEYCHAIN_STATIC)
     add_library(${QTKEYCHAIN_TARGET_NAME} SHARED ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
     set_target_properties(${QTKEYCHAIN_TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS QKEYCHAIN_BUILD_QKEYCHAIN_LIB)
