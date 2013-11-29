@@ -111,6 +111,7 @@ QT_WRAP_CPP(qtkeychain_MOC_OUTFILES keychain.h keychain_p.h)
 
 set(qtkeychain_TR_FILES
       translations/qtkeychain_de.ts
+      translations/qtkeychain_ro.ts
 )
 
 file(GLOB qtkeychain_TR_SOURCES *.cpp *.h *.ui)
