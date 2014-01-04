@@ -102,7 +102,7 @@ if(APPLE)
 endif()
 
 if(UNIX AND NOT APPLE)
-    list(APPEND qtkeychain_SOURCES keychain_dbus.cpp)
+    list(APPEND qtkeychain_SOURCES keychain_unix.cpp gnomekeyring.cpp)
     qt_add_dbus_interface(qtkeychain_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/org.kde.KWallet.xml kwallet_interface KWalletInterface)
     list(APPEND qtkeychain_LIBRARIES ${QTDBUS_LIBRARIES})
 endif()

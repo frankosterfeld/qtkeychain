@@ -7,6 +7,7 @@
  * details, check the accompanying file 'COPYING'.                            *
  *****************************************************************************/
 #include "keychain_p.h"
+#include "gnomekeyring_p.h"
 
 #include <QSettings>
 
@@ -23,130 +24,6 @@ static QString dataKey( const QString& key )
 {
     return QString::fromLatin1( "%1/data" ).arg( key );
 }
-
-class GnomeKeyring : private QLibrary {
-public:
-    enum Result {
-        RESULT_OK,
-        RESULT_DENIED,
-        RESULT_NO_KEYRING_DAEMON,
-        RESULT_ALREADY_UNLOCKED,
-        RESULT_NO_SUCH_KEYRING,
-        RESULT_BAD_ARGUMENTS,
-        RESULT_IO_ERROR,
-        RESULT_CANCELLED,
-        RESULT_KEYRING_ALREADY_EXISTS,
-        RESULT_NO_MATCH
-    };
-
-    enum ItemType {
-        ITEM_GENERIC_SECRET = 0,
-        ITEM_NETWORK_PASSWORD,
-        ITEM_NOTE,
-        ITEM_CHAINED_KEYRING_PASSWORD,
-        ITEM_ENCRYPTION_KEY_PASSWORD,
-        ITEM_PK_STORAGE = 0x100
-    };
-
-    enum AttributeType {
-        ATTRIBUTE_TYPE_STRING,
-        ATTRIBUTE_TYPE_UINT32
-    };
-
-    typedef char gchar;
-    typedef void* gpointer;
-    typedef struct {
-        ItemType item_type;
-        struct {
-            const gchar* name;
-            AttributeType type;
-        } attributes[32];
-    } PasswordSchema;
-
-    typedef void ( *OperationGetStringCallback )( Result result, const char* string, gpointer data );
-    typedef void ( *OperationDoneCallback )( Result result, gpointer data );
-    typedef void ( *GDestroyNotify )( gpointer data );
-
-    static const char* GNOME_KEYRING_DEFAULT;
-
-    static bool isSupported()
-    {
-        const GnomeKeyring& keyring = instance();
-        return keyring.isLoaded() &&
-               keyring.NETWORK_PASSWORD &&
-               keyring.find_password &&
-               keyring.store_password &&
-               keyring.delete_password;
-    }
-
-    static gpointer store_network_password( const gchar* keyring, const gchar* display_name,
-                                            const gchar* user, const gchar* server, const gchar* password,
-                                            OperationDoneCallback callback, gpointer data, GDestroyNotify destroy_data )
-    {
-        if ( !isSupported() )
-            return 0;
-        return instance().store_password( instance().NETWORK_PASSWORD,
-                                          keyring, display_name, password, callback, data, destroy_data,
-                                          "user", user, "server", server, static_cast<char*>(0) );
-    }
-
-    static gpointer find_network_password( const gchar* user, const gchar* server,
-                                           OperationGetStringCallback callback, gpointer data, GDestroyNotify destroy_data )
-    {
-        if ( !isSupported() )
-            return 0;
-        return instance().find_password( instance().NETWORK_PASSWORD,
-                                         callback, data, destroy_data,
-                                         "user", user, "server", server, static_cast<char*>(0) );
-    }
-
-    static gpointer delete_network_password( const gchar* user, const gchar* server,
-                                             OperationDoneCallback callback, gpointer data, GDestroyNotify destroy_data )
-    {
-        if ( !isSupported() )
-            return 0;
-        return instance().delete_password( instance().NETWORK_PASSWORD,
-                                           callback, data, destroy_data,
-                                           "user", user, "server", server, static_cast<char*>(0) );
-    }
-
-private:
-    GnomeKeyring(): QLibrary("gnome-keyring", 0) {
-        static const PasswordSchema schema = {
-            ITEM_NETWORK_PASSWORD,
-            {{ "user",   ATTRIBUTE_TYPE_STRING },
-             { "server", ATTRIBUTE_TYPE_STRING },
-             { 0,     static_cast<AttributeType>( 0 ) }}
-        };
-
-        NETWORK_PASSWORD = &schema;
-        find_password =	reinterpret_cast<find_password_fn*>( resolve( "gnome_keyring_find_password" ) );
-        store_password = reinterpret_cast<store_password_fn*>( resolve( "gnome_keyring_store_password" ) );
-        delete_password = reinterpret_cast<delete_password_fn*>( resolve( "gnome_keyring_delete_password" ) );
-    }
-
-    static GnomeKeyring& instance() {
-        static GnomeKeyring keyring;
-        return keyring;
-    }
-
-    const PasswordSchema* NETWORK_PASSWORD;
-    typedef gpointer ( store_password_fn )( const PasswordSchema* schema, const gchar* keyring,
-                                            const gchar* display_name, const gchar* password,
-                                            OperationDoneCallback callback, gpointer data, GDestroyNotify destroy_data,
-                                            ... );
-    typedef gpointer ( find_password_fn )( const PasswordSchema* schema,
-                                           OperationGetStringCallback callback, gpointer data, GDestroyNotify destroy_data,
-                                           ... );
-    typedef gpointer ( delete_password_fn )( const PasswordSchema* schema,
-                                             OperationDoneCallback callback, gpointer data, GDestroyNotify destroy_data,
-                                             ... );
-    find_password_fn* find_password;
-    store_password_fn* store_password;
-    delete_password_fn* delete_password;
-};
-
-const char* GnomeKeyring::GNOME_KEYRING_DEFAULT = NULL;
 
 enum KeyringBackend {
     Backend_GnomeKeyring,
