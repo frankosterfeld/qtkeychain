@@ -157,7 +157,7 @@ void DeletePasswordJob::doStart() {
     job->setInsecureFallback(true);
     job->setSettings(settings());
     job->setKey( d->key );
-    job->start();
+    job->doStart();
 }
 
 QString DeletePasswordJob::key() const {
