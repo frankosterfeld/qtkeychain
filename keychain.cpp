@@ -154,8 +154,10 @@ void DeletePasswordJob::doStart() {
     //In all current implementations, this deletes the entry so this is sufficient
     WritePasswordJob* job = new WritePasswordJob( service(), this );
     connect( job, SIGNAL(finished(QKeychain::Job*)), d, SLOT(jobFinished(QKeychain::Job*)) );
+    job->setInsecureFallback(true);
+    job->setSettings(settings());
     job->setKey( d->key );
-    job->start();
+    job->doStart();
 }
 
 QString DeletePasswordJob::key() const {

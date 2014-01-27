@@ -117,6 +117,7 @@ protected:
 private:
     friend class QKeychain::JobExecutor;
     friend class QKeychain::WritePasswordJobPrivate;
+    friend class DeletePasswordJob;
     WritePasswordJobPrivate* const d;
 };
 
