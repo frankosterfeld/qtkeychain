@@ -153,7 +153,7 @@ set_target_properties(${QTKEYCHAIN_TARGET_NAME} PROPERTIES
 )
 
 install(FILES keychain.h qkeychain_export.h
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qtkeychain/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt${QTKEYCHAIN_VERSION_INFIX}keychain/
 )
 
 install(TARGETS ${QTKEYCHAIN_TARGET_NAME}
