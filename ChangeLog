@@ -1,6 +1,13 @@
 ChangeLog
 =========
 
+version 0.2.0 (release TODO)
+  * Gnome Keyring supported added (Francois Ferrand <thetypz@gmail.com>)
+  * Improved Qt 5 support 
+  * KWallet: Distinguish empty passwords from non-existing entries
+  * KWallet: Do not use hardcoded wallet name 
+  * German translation (Daniel Molkentin <daniel@molkentin.de>)
+
 version 0.1.0 (release 2013-01-16)
   * Initial release
   
