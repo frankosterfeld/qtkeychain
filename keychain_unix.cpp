@@ -32,7 +32,7 @@ enum KeyringBackend {
 
 static KeyringBackend detectKeyringBackend()
 {
-    if ( !qgetenv( "GNOME_KEYRING_CONTROL" ).isNull() && GnomeKeyring::isSupported() )
+    if ( !( qgetenv( "GNOME_KEYRING_CONTROL" ).isNull() && qgetenv("GNOME_KEYRING_SOCKET").isNull() ) && GnomeKeyring::isSupported() )
         return Backend_GnomeKeyring;
     else
         return Backend_Kwallet;
