@@ -2,21 +2,23 @@
 
 const char* GnomeKeyring::GNOME_KEYRING_DEFAULT = NULL;
 
-bool GnomeKeyring::isSupported()
+bool GnomeKeyring::isAvailable()
 {
     const GnomeKeyring& keyring = instance();
     return keyring.isLoaded() &&
            keyring.NETWORK_PASSWORD &&
+           keyring.is_available &&
            keyring.find_password &&
            keyring.store_password &&
-           keyring.delete_password;
+           keyring.delete_password &&
+           keyring.is_available();
 }
 
 GnomeKeyring::gpointer GnomeKeyring::store_network_password( const gchar* keyring, const gchar* display_name,
                                                const gchar* user, const gchar* server, const gchar* password,
                                                OperationDoneCallback callback, gpointer data, GDestroyNotify destroy_data )
 {
-    if ( !isSupported() )
+    if ( !isAvailable() )
         return 0;
     return instance().store_password( instance().NETWORK_PASSWORD,
                                       keyring, display_name, password, callback, data, destroy_data,
@@ -26,7 +28,7 @@ GnomeKeyring::gpointer GnomeKeyring::store_network_password( const gchar* keyrin
 GnomeKeyring::gpointer GnomeKeyring::find_network_password( const gchar* user, const gchar* server,
                                               OperationGetStringCallback callback, gpointer data, GDestroyNotify destroy_data )
 {
-    if ( !isSupported() )
+    if ( !isAvailable() )
         return 0;
     return instance().find_password( instance().NETWORK_PASSWORD,
                                      callback, data, destroy_data,
@@ -39,7 +41,7 @@ GnomeKeyring::gpointer GnomeKeyring::delete_network_password( const gchar* user,
                                                        gpointer data,
                                                        GDestroyNotify destroy_data )
 {
-    if ( !isSupported() )
+    if ( !isAvailable() )
         return 0;
     return instance().delete_password( instance().NETWORK_PASSWORD,
                                        callback, data, destroy_data,
@@ -57,7 +59,8 @@ GnomeKeyring::GnomeKeyring()
     };
 
     NETWORK_PASSWORD = &schema;
-    find_password =	reinterpret_cast<find_password_fn*>( resolve( "gnome_keyring_find_password" ) );
+    is_available = reinterpret_cast<is_available_fn*>( resolve( "gnome_keyring_is_available" ) );
+    find_password = reinterpret_cast<find_password_fn*>( resolve( "gnome_keyring_find_password" ) );
     store_password = reinterpret_cast<store_password_fn*>( resolve( "gnome_keyring_store_password" ) );
     delete_password = reinterpret_cast<delete_password_fn*>( resolve( "gnome_keyring_delete_password" ) );
 }
