@@ -34,6 +34,7 @@ public:
 
     typedef char gchar;
     typedef void* gpointer;
+    typedef bool gboolean;
     typedef struct {
         ItemType item_type;
         struct {
@@ -48,7 +49,7 @@ public:
 
     static const char* GNOME_KEYRING_DEFAULT;
 
-    static bool isSupported();
+    static bool isAvailable();
 
     static gpointer store_network_password( const gchar* keyring, const gchar* display_name,
                                             const gchar* user, const gchar* server, const gchar* password,
@@ -65,6 +66,7 @@ private:
     static GnomeKeyring& instance();
 
     const PasswordSchema* NETWORK_PASSWORD;
+    typedef gboolean ( is_available_fn )( void );
     typedef gpointer ( store_password_fn )( const PasswordSchema* schema, const gchar* keyring,
                                             const gchar* display_name, const gchar* password,
                                             OperationDoneCallback callback, gpointer data, GDestroyNotify destroy_data,
@@ -75,6 +77,8 @@ private:
     typedef gpointer ( delete_password_fn )( const PasswordSchema* schema,
                                              OperationDoneCallback callback, gpointer data, GDestroyNotify destroy_data,
                                              ... );
+
+    is_available_fn* is_available;
     find_password_fn* find_password;
     store_password_fn* store_password;
     delete_password_fn* delete_password;
