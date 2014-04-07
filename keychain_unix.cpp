@@ -79,6 +79,8 @@ static DesktopEnvironment detectDesktopEnvironment() {
             return DesktopEnv_Kde4;
         }
     }
+
+    return DesktopEnv_Other;
 }
 
 static KeyringBackend detectKeyringBackend()
