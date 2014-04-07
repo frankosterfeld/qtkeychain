@@ -30,12 +30,76 @@ enum KeyringBackend {
     Backend_Kwallet
 };
 
+enum DesktopEnvironment {
+    DesktopEnv_Gnome,
+    DesktopEnv_Kde4,
+    DesktopEnv_Unity,
+    DesktopEnv_Xfce,
+    DesktopEnv_Other
+};
+
+// the following detection algorithm is derived from chromium,
+// licensed under BSD, see base/nix/xdg_util.cc
+
+static const char kKDE4SessionEnvVar[] = "KDE_SESSION_VERSION";
+
+static DesktopEnvironment detectDesktopEnvironment() {
+    QByteArray xdgCurrentDesktop = qgetenv("XDG_CURRENT_DESKTOP");
+    if ( xdgCurrentDesktop == "GNOME" ) {
+        return DesktopEnv_Gnome;
+    } else if ( xdgCurrentDesktop == "Unity" ) {
+            return DesktopEnv_Unity;
+    } else if ( xdgCurrentDesktop == "KDE" ) {
+        return DesktopEnv_Kde4;
+    }
+
+    QByteArray desktopSession = qgetenv("DESKTOP_SESSION");
+    if ( desktopSession == "gnome" ) {
+        return DesktopEnv_Gnome;
+    } else if ( desktopSession == "kde" ) {
+        if ( qgetenv(kKDE4SessionEnvVar).isEmpty() ) {
+            // most likely KDE3
+            return DesktopEnv_Other;
+        } else {
+            return DesktopEnv_Kde4;
+        }
+    } else if ( desktopSession == "kde4" ) {
+        return DesktopEnv_Kde4;
+    } else if ( desktopSession.contains("xfce") || desktopSession == "xubuntu" ) {
+        return DesktopEnv_Xfce;
+    }
+
+    if ( !qgetenv("GNOME_DESKTOP_SESSION_ID").isEmpty() ) {
+        return DesktopEnv_Gnome;
+    } else if ( !qgetenv("KDE_FULL_SESSION").isEmpty() ) {
+        if ( qgetenv(kKDE4SessionEnvVar).isEmpty() ) {
+            // most likely KDE3
+            return DesktopEnv_Other;
+        } else {
+            return DesktopEnv_Kde4;
+        }
+    }
+}
+
 static KeyringBackend detectKeyringBackend()
 {
-    if ( GnomeKeyring::isAvailable() )
-        return Backend_GnomeKeyring;
-    else
+    switch (detectDesktopEnvironment()) {
+    case DesktopEnv_Kde4:
         return Backend_Kwallet;
+        break;
+    // fall through
+    case DesktopEnv_Gnome:
+    case DesktopEnv_Unity:
+    case DesktopEnv_Xfce:
+    case DesktopEnv_Other:
+    default:
+        if ( GnomeKeyring::isAvailable() ) {
+            return Backend_GnomeKeyring;
+        } else {
+            return Backend_Kwallet;
+        }
+    }
+
 }
 
 static KeyringBackend getKeyringBackend()
