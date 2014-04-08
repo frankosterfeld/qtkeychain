@@ -82,6 +82,8 @@ set(qtkeychain_SOURCES
     keychain.cpp
 )
 
+ADD_DEFINITIONS( -Wall )
+
 if(WIN32)
     list(APPEND qtkeychain_SOURCES keychain_win.cpp)
     list(APPEND qtkeychain_LIBRARIES crypt32)
