@@ -114,10 +114,12 @@ public:
     void fallbackOnError(const QDBusError& err);
 
 private Q_SLOTS:
+    void kwalletWalletFound( QDBusPendingCallWatcher* watcher );
     void kwalletOpenFinished( QDBusPendingCallWatcher* watcher );
     void kwalletWriteFinished( QDBusPendingCallWatcher* watcher );
 #else
 private Q_SLOTS:
+    void kwalletWalletFound( QDBusPendingCallWatcher* ) {}
     void kwalletOpenFinished( QDBusPendingCallWatcher* ) {}
     void kwalletWriteFinished( QDBusPendingCallWatcher* ) {}
 #endif
