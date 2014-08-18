@@ -4,48 +4,48 @@
 <context>
     <name>QKeychain::ReadPasswordJobPrivate</name>
     <message>
-        <location filename="../keychain_unix.cpp" line="53"/>
+        <location filename="../keychain_unix.cpp" line="119"/>
         <source>Unknown error</source>
         <translation>Eroare necunoscută</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="67"/>
+        <location filename="../keychain_unix.cpp" line="133"/>
         <source>D-Bus is not running</source>
         <translation>D-Bus nu rulează</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="144"/>
+        <location filename="../keychain_unix.cpp" line="210"/>
         <source>No keychain service available</source>
         <translatorcomment>Nu există niciun serviciu de chei disponibil</translatorcomment>
         <translation>Kein Schlüsselbund-Dienst verfügbar</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="146"/>
+        <location filename="../keychain_unix.cpp" line="212"/>
         <source>Could not open wallet: %1; %2</source>
         <translation>Nu se poate deschide portofelul: %1; %2</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="192"/>
+        <location filename="../keychain_unix.cpp" line="258"/>
         <source>Access to keychain denied</source>
         <translation>Acces interzis la serviciul de chei</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="213"/>
+        <location filename="../keychain_unix.cpp" line="279"/>
         <source>Could not determine data type: %1; %2</source>
         <translation>Nu se poate stabili tipul de date: %1: %2</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="231"/>
+        <location filename="../keychain_unix.cpp" line="297"/>
         <source>Unsupported entry type &apos;Map&apos;</source>
         <translation>Tip de înregistrare nesuportat &apos;Map&apos;</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="234"/>
+        <location filename="../keychain_unix.cpp" line="300"/>
         <source>Unknown kwallet entry type &apos;%1&apos;</source>
         <translation>Tip de înregistrare kwallet necunoscut &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="249"/>
+        <location filename="../keychain_unix.cpp" line="315"/>
         <source>Could not read password: %1; %2</source>
         <translation>Nu se poate citi parola: %1; %2</translation>
     </message>
@@ -55,7 +55,7 @@
         <translation>Parola nu a fost găsită</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="222"/>
+        <location filename="../keychain_unix.cpp" line="288"/>
         <location filename="../keychain_win.cpp" line="27"/>
         <source>Entry not found</source>
         <translation>Înregistrarea nu a fost găsită</translation>
@@ -69,24 +69,24 @@
 <context>
     <name>QKeychain::WritePasswordJobPrivate</name>
     <message>
-        <location filename="../keychain_unix.cpp" line="270"/>
-        <location filename="../keychain_unix.cpp" line="278"/>
+        <location filename="../keychain_unix.cpp" line="336"/>
+        <location filename="../keychain_unix.cpp" line="344"/>
         <source>Unknown error</source>
         <translation>Eroare necunoscută</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="293"/>
+        <location filename="../keychain_unix.cpp" line="359"/>
         <source>D-Bus is not running</source>
         <translation>D-Bus nu rulează</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="334"/>
-        <location filename="../keychain_unix.cpp" line="410"/>
+        <location filename="../keychain_unix.cpp" line="400"/>
+        <location filename="../keychain_unix.cpp" line="485"/>
         <source>Could not open wallet: %1; %2</source>
         <translation>Nu se poate deschide portofelul: %1; %2</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="388"/>
+        <location filename="../keychain_unix.cpp" line="463"/>
         <source>Access to keychain denied</source>
         <translation>Acces interzis la serviciul de chei</translation>
     </message>
@@ -119,52 +119,52 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../keychain_unix.cpp" line="89"/>
+        <location filename="../keychain_unix.cpp" line="155"/>
         <source>Access to keychain denied</source>
         <translation>Acces interzis la serviciul de chei</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="91"/>
+        <location filename="../keychain_unix.cpp" line="157"/>
         <source>No keyring daemon</source>
         <translation>Niciun demon pentru inelul de chei</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="93"/>
+        <location filename="../keychain_unix.cpp" line="159"/>
         <source>Already unlocked</source>
         <translation>Deja deblocat</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="95"/>
+        <location filename="../keychain_unix.cpp" line="161"/>
         <source>No such keyring</source>
         <translation>Nu există astfel de inel de chei</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="97"/>
+        <location filename="../keychain_unix.cpp" line="163"/>
         <source>Bad arguments</source>
         <translation>Argumente greșite</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="99"/>
+        <location filename="../keychain_unix.cpp" line="165"/>
         <source>I/O error</source>
         <translation>Eroare de I/E</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="101"/>
+        <location filename="../keychain_unix.cpp" line="167"/>
         <source>Cancelled</source>
         <translation>Anulat</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="103"/>
+        <location filename="../keychain_unix.cpp" line="169"/>
         <source>Keyring already exists</source>
         <translation>Inelul de chei deja există</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="105"/>
+        <location filename="../keychain_unix.cpp" line="171"/>
         <source>No match</source>
         <translation>Nicio potrivire</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="110"/>
+        <location filename="../keychain_unix.cpp" line="176"/>
         <source>Unknown error</source>
         <translation>Eroare necunoscută</translation>
     </message>
