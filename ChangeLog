@@ -1,6 +1,10 @@
 ChangeLog
 =========
 
+version 0.4.0 (release 2014-09-01)
+  * KWallet: Handle case where no wallet exists yet (Liviu Cristian Mirea Ghiban <contact@liviucmg.com>)
+  * Improved desktop environment detection at runtime (Daniel Molkentin <daniel@molkentin.de>)
+
 version 0.3.0 (release 2014-03-13)
   * Gnome Keyring supported added (Francois Ferrand <thetypz@gmail.com>)
   * Improved Qt 5 support 
