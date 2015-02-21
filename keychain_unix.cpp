@@ -115,6 +115,22 @@ static KeyringBackend getKeyringBackend()
     return backend;
 }
 
+static void kwalletReadPasswordScheduledStartImpl(const char * service, const char * path, ReadPasswordJobPrivate * priv) {
+    if ( QDBusConnection::sessionBus().isConnected() )
+    {
+        priv->iface = new org::kde::KWallet( QLatin1String(service), QLatin1String(path), QDBusConnection::sessionBus(), priv );
+        const QDBusPendingReply<QString> reply = priv->iface->networkWallet();
+        QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher( reply, priv );
+        priv->connect( watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), priv, SLOT(kwalletWalletFound(QDBusPendingCallWatcher*)) );
+    }
+    else
+    {
+    // D-Bus is not reachable so none can tell us something about KWalletd
+        QDBusError err( QDBusError::NoServer, priv->tr("D-Bus is not running") );
+        priv->fallbackOnError( err );
+    }
+}
+
 void ReadPasswordJobPrivate::scheduledStart() {
     switch ( getKeyringBackend() ) {
     case Backend_GnomeKeyring:
@@ -125,21 +141,10 @@ void ReadPasswordJobPrivate::scheduledStart() {
         break;
 
     case Backend_Kwallet4:
-        if ( QDBusConnection::sessionBus().isConnected() )
-        {
-            iface = new org::kde::KWallet( QLatin1String("org.kde.kwalletd"), QLatin1String("/modules/kwalletd"), QDBusConnection::sessionBus(), this );
-            const QDBusPendingReply<QString> reply = iface->networkWallet();
-            QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher( reply, this );
-            connect( watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletWalletFound(QDBusPendingCallWatcher*)) );
-        }
-        else
-        {
-        // D-Bus is not reachable so none can tell us something about KWalletd
-            QDBusError err( QDBusError::NoServer, tr("D-Bus is not running") );
-            fallbackOnError( err );
-        }
+        kwalletReadPasswordScheduledStartImpl("org.kde.kwalletd", "/modules/kwalletd", this);
         break;
     case Backend_Kwallet5:
+        kwalletReadPasswordScheduledStartImpl("org.kde.kwalletd5", "/modules/kwalletd5", this);
         break;
     }
 }
@@ -333,6 +338,22 @@ void ReadPasswordJobPrivate::kwalletReadFinished( QDBusPendingCallWatcher* watch
     q->emitFinished();
 }
 
+static void kwalletWritePasswordScheduledStart( const char * service, const char * path, WritePasswordJobPrivate * priv ) {
+    if ( QDBusConnection::sessionBus().isConnected() )
+    {
+        priv->iface = new org::kde::KWallet( QLatin1String(service), QLatin1String(path), QDBusConnection::sessionBus(), priv );
+        const QDBusPendingReply<QString> reply = priv->iface->networkWallet();
+        QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher( reply, priv );
+        priv->connect( watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), priv, SLOT(kwalletWalletFound(QDBusPendingCallWatcher*)) );
+    }
+    else
+    {
+        // D-Bus is not reachable so none can tell us something about KWalletd
+        QDBusError err( QDBusError::NoServer, priv->tr("D-Bus is not running") );
+        priv->fallbackOnError( err );
+    }
+}
+
 void WritePasswordJobPrivate::scheduledStart() {
     switch ( getKeyringBackend() ) {
     case Backend_GnomeKeyring:
@@ -353,21 +374,10 @@ void WritePasswordJobPrivate::scheduledStart() {
         break;
 
     case Backend_Kwallet4:
-        if ( QDBusConnection::sessionBus().isConnected() )
-        {
-            iface = new org::kde::KWallet( QLatin1String("org.kde.kwalletd"), QLatin1String("/modules/kwalletd"), QDBusConnection::sessionBus(), this );
-            const QDBusPendingReply<QString> reply = iface->networkWallet();
-            QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher( reply, this );
-            connect( watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletWalletFound(QDBusPendingCallWatcher*)) );
-        }
-        else
-        {
-            // D-Bus is not reachable so none can tell us something about KWalletd
-            QDBusError err( QDBusError::NoServer, tr("D-Bus is not running") );
-            fallbackOnError( err );
-        }
+        kwalletWritePasswordScheduledStart("org.kde.kwalletd", "/modules/kwalletd", this);
         break;
     case Backend_Kwallet5:
+        kwalletWritePasswordScheduledStart("org.kde.kwalletd5", "/modules/kwalletd5", this);
         break;
     }
 }
