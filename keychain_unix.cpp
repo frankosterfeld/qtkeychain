@@ -43,28 +43,33 @@ enum DesktopEnvironment {
 // the following detection algorithm is derived from chromium,
 // licensed under BSD, see base/nix/xdg_util.cc
 
-static const char kKDE4SessionEnvVar[] = "KDE_SESSION_VERSION";
+static DesktopEnvironment getKdeVersion() {
+    QString value = qgetenv("KDE_SESSION_VERSION");
+    if ( value == "5" ) {
+        return DesktopEnv_Plasma5;
+    } else if (value == "4" ) {
+        return DesktopEnv_Kde4;
+    } else {
+        // most likely KDE3
+        return DesktopEnv_Other;
+    }
+}
 
 static DesktopEnvironment detectDesktopEnvironment() {
     QByteArray xdgCurrentDesktop = qgetenv("XDG_CURRENT_DESKTOP");
     if ( xdgCurrentDesktop == "GNOME" ) {
         return DesktopEnv_Gnome;
     } else if ( xdgCurrentDesktop == "Unity" ) {
-            return DesktopEnv_Unity;
+        return DesktopEnv_Unity;
     } else if ( xdgCurrentDesktop == "KDE" ) {
-        return DesktopEnv_Kde4;
+        return getKdeVersion();
     }
 
     QByteArray desktopSession = qgetenv("DESKTOP_SESSION");
     if ( desktopSession == "gnome" ) {
         return DesktopEnv_Gnome;
     } else if ( desktopSession == "kde" ) {
-        if ( qgetenv(kKDE4SessionEnvVar).isEmpty() ) {
-            // most likely KDE3
-            return DesktopEnv_Other;
-        } else {
-            return DesktopEnv_Kde4;
-        }
+        return getKdeVersion();
     } else if ( desktopSession == "kde4" ) {
         return DesktopEnv_Kde4;
     } else if ( desktopSession.contains("xfce") || desktopSession == "xubuntu" ) {
@@ -74,12 +79,7 @@ static DesktopEnvironment detectDesktopEnvironment() {
     if ( !qgetenv("GNOME_DESKTOP_SESSION_ID").isEmpty() ) {
         return DesktopEnv_Gnome;
     } else if ( !qgetenv("KDE_FULL_SESSION").isEmpty() ) {
-        if ( qgetenv(kKDE4SessionEnvVar).isEmpty() ) {
-            // most likely KDE3
-            return DesktopEnv_Other;
-        } else {
-            return DesktopEnv_Kde4;
-        }
+        return getKdeVersion();
     }
 
     return DesktopEnv_Other;
