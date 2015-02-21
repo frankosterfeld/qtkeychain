@@ -27,12 +27,14 @@ static QString dataKey( const QString& key )
 
 enum KeyringBackend {
     Backend_GnomeKeyring,
-    Backend_Kwallet
+    Backend_Kwallet4,
+    Backend_Kwallet5
 };
 
 enum DesktopEnvironment {
     DesktopEnv_Gnome,
     DesktopEnv_Kde4,
+    DesktopEnv_Plasma5,
     DesktopEnv_Unity,
     DesktopEnv_Xfce,
     DesktopEnv_Other
@@ -87,7 +89,10 @@ static KeyringBackend detectKeyringBackend()
 {
     switch (detectDesktopEnvironment()) {
     case DesktopEnv_Kde4:
-        return Backend_Kwallet;
+        return Backend_Kwallet4;
+        break;
+    case DesktopEnv_Plasma5:
+        return Backend_Kwallet5;
         break;
     // fall through
     case DesktopEnv_Gnome:
@@ -98,7 +103,7 @@ static KeyringBackend detectKeyringBackend()
         if ( GnomeKeyring::isAvailable() ) {
             return Backend_GnomeKeyring;
         } else {
-            return Backend_Kwallet;
+            return Backend_Kwallet4;
         }
     }
 
@@ -119,7 +124,7 @@ void ReadPasswordJobPrivate::scheduledStart() {
             q->emitFinishedWithError( OtherError, tr("Unknown error") );
         break;
 
-    case Backend_Kwallet:
+    case Backend_Kwallet4:
         if ( QDBusConnection::sessionBus().isConnected() )
         {
             iface = new org::kde::KWallet( QLatin1String("org.kde.kwalletd"), QLatin1String("/modules/kwalletd"), QDBusConnection::sessionBus(), this );
@@ -133,6 +138,8 @@ void ReadPasswordJobPrivate::scheduledStart() {
             QDBusError err( QDBusError::NoServer, tr("D-Bus is not running") );
             fallbackOnError( err );
         }
+        break;
+    case Backend_Kwallet5:
         break;
     }
 }
@@ -345,7 +352,7 @@ void WritePasswordJobPrivate::scheduledStart() {
         }
         break;
 
-    case Backend_Kwallet:
+    case Backend_Kwallet4:
         if ( QDBusConnection::sessionBus().isConnected() )
         {
             iface = new org::kde::KWallet( QLatin1String("org.kde.kwalletd"), QLatin1String("/modules/kwalletd"), QDBusConnection::sessionBus(), this );
@@ -359,6 +366,9 @@ void WritePasswordJobPrivate::scheduledStart() {
             QDBusError err( QDBusError::NoServer, tr("D-Bus is not running") );
             fallbackOnError( err );
         }
+        break;
+    case Backend_Kwallet5:
+        break;
     }
 }
 
