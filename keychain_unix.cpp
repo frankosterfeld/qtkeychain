@@ -27,12 +27,14 @@ static QString dataKey( const QString& key )
 
 enum KeyringBackend {
     Backend_GnomeKeyring,
-    Backend_Kwallet
+    Backend_Kwallet4,
+    Backend_Kwallet5
 };
 
 enum DesktopEnvironment {
     DesktopEnv_Gnome,
     DesktopEnv_Kde4,
+    DesktopEnv_Plasma5,
     DesktopEnv_Unity,
     DesktopEnv_Xfce,
     DesktopEnv_Other
@@ -41,28 +43,33 @@ enum DesktopEnvironment {
 // the following detection algorithm is derived from chromium,
 // licensed under BSD, see base/nix/xdg_util.cc
 
-static const char kKDE4SessionEnvVar[] = "KDE_SESSION_VERSION";
+static DesktopEnvironment getKdeVersion() {
+    QString value = qgetenv("KDE_SESSION_VERSION");
+    if ( value == "5" ) {
+        return DesktopEnv_Plasma5;
+    } else if (value == "4" ) {
+        return DesktopEnv_Kde4;
+    } else {
+        // most likely KDE3
+        return DesktopEnv_Other;
+    }
+}
 
 static DesktopEnvironment detectDesktopEnvironment() {
     QByteArray xdgCurrentDesktop = qgetenv("XDG_CURRENT_DESKTOP");
     if ( xdgCurrentDesktop == "GNOME" ) {
         return DesktopEnv_Gnome;
     } else if ( xdgCurrentDesktop == "Unity" ) {
-            return DesktopEnv_Unity;
+        return DesktopEnv_Unity;
     } else if ( xdgCurrentDesktop == "KDE" ) {
-        return DesktopEnv_Kde4;
+        return getKdeVersion();
     }
 
     QByteArray desktopSession = qgetenv("DESKTOP_SESSION");
     if ( desktopSession == "gnome" ) {
         return DesktopEnv_Gnome;
     } else if ( desktopSession == "kde" ) {
-        if ( qgetenv(kKDE4SessionEnvVar).isEmpty() ) {
-            // most likely KDE3
-            return DesktopEnv_Other;
-        } else {
-            return DesktopEnv_Kde4;
-        }
+        return getKdeVersion();
     } else if ( desktopSession == "kde4" ) {
         return DesktopEnv_Kde4;
     } else if ( desktopSession.contains("xfce") || desktopSession == "xubuntu" ) {
@@ -72,12 +79,7 @@ static DesktopEnvironment detectDesktopEnvironment() {
     if ( !qgetenv("GNOME_DESKTOP_SESSION_ID").isEmpty() ) {
         return DesktopEnv_Gnome;
     } else if ( !qgetenv("KDE_FULL_SESSION").isEmpty() ) {
-        if ( qgetenv(kKDE4SessionEnvVar).isEmpty() ) {
-            // most likely KDE3
-            return DesktopEnv_Other;
-        } else {
-            return DesktopEnv_Kde4;
-        }
+        return getKdeVersion();
     }
 
     return DesktopEnv_Other;
@@ -87,7 +89,10 @@ static KeyringBackend detectKeyringBackend()
 {
     switch (detectDesktopEnvironment()) {
     case DesktopEnv_Kde4:
-        return Backend_Kwallet;
+        return Backend_Kwallet4;
+        break;
+    case DesktopEnv_Plasma5:
+        return Backend_Kwallet5;
         break;
     // fall through
     case DesktopEnv_Gnome:
@@ -98,7 +103,7 @@ static KeyringBackend detectKeyringBackend()
         if ( GnomeKeyring::isAvailable() ) {
             return Backend_GnomeKeyring;
         } else {
-            return Backend_Kwallet;
+            return Backend_Kwallet4;
         }
     }
 
@@ -110,6 +115,22 @@ static KeyringBackend getKeyringBackend()
     return backend;
 }
 
+static void kwalletReadPasswordScheduledStartImpl(const char * service, const char * path, ReadPasswordJobPrivate * priv) {
+    if ( QDBusConnection::sessionBus().isConnected() )
+    {
+        priv->iface = new org::kde::KWallet( QLatin1String(service), QLatin1String(path), QDBusConnection::sessionBus(), priv );
+        const QDBusPendingReply<QString> reply = priv->iface->networkWallet();
+        QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher( reply, priv );
+        priv->connect( watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), priv, SLOT(kwalletWalletFound(QDBusPendingCallWatcher*)) );
+    }
+    else
+    {
+    // D-Bus is not reachable so none can tell us something about KWalletd
+        QDBusError err( QDBusError::NoServer, priv->tr("D-Bus is not running") );
+        priv->fallbackOnError( err );
+    }
+}
+
 void ReadPasswordJobPrivate::scheduledStart() {
     switch ( getKeyringBackend() ) {
     case Backend_GnomeKeyring:
@@ -119,20 +140,11 @@ void ReadPasswordJobPrivate::scheduledStart() {
             q->emitFinishedWithError( OtherError, tr("Unknown error") );
         break;
 
-    case Backend_Kwallet:
-        if ( QDBusConnection::sessionBus().isConnected() )
-        {
-            iface = new org::kde::KWallet( QLatin1String("org.kde.kwalletd"), QLatin1String("/modules/kwalletd"), QDBusConnection::sessionBus(), this );
-            const QDBusPendingReply<QString> reply = iface->networkWallet();
-            QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher( reply, this );
-            connect( watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletWalletFound(QDBusPendingCallWatcher*)) );
-        }
-        else
-        {
-        // D-Bus is not reachable so none can tell us something about KWalletd
-            QDBusError err( QDBusError::NoServer, tr("D-Bus is not running") );
-            fallbackOnError( err );
-        }
+    case Backend_Kwallet4:
+        kwalletReadPasswordScheduledStartImpl("org.kde.kwalletd", "/modules/kwalletd", this);
+        break;
+    case Backend_Kwallet5:
+        kwalletReadPasswordScheduledStartImpl("org.kde.kwalletd5", "/modules/kwalletd5", this);
         break;
     }
 }
@@ -326,6 +338,22 @@ void ReadPasswordJobPrivate::kwalletReadFinished( QDBusPendingCallWatcher* watch
     q->emitFinished();
 }
 
+static void kwalletWritePasswordScheduledStart( const char * service, const char * path, WritePasswordJobPrivate * priv ) {
+    if ( QDBusConnection::sessionBus().isConnected() )
+    {
+        priv->iface = new org::kde::KWallet( QLatin1String(service), QLatin1String(path), QDBusConnection::sessionBus(), priv );
+        const QDBusPendingReply<QString> reply = priv->iface->networkWallet();
+        QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher( reply, priv );
+        priv->connect( watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), priv, SLOT(kwalletWalletFound(QDBusPendingCallWatcher*)) );
+    }
+    else
+    {
+        // D-Bus is not reachable so none can tell us something about KWalletd
+        QDBusError err( QDBusError::NoServer, priv->tr("D-Bus is not running") );
+        priv->fallbackOnError( err );
+    }
+}
+
 void WritePasswordJobPrivate::scheduledStart() {
     switch ( getKeyringBackend() ) {
     case Backend_GnomeKeyring:
@@ -345,20 +373,12 @@ void WritePasswordJobPrivate::scheduledStart() {
         }
         break;
 
-    case Backend_Kwallet:
-        if ( QDBusConnection::sessionBus().isConnected() )
-        {
-            iface = new org::kde::KWallet( QLatin1String("org.kde.kwalletd"), QLatin1String("/modules/kwalletd"), QDBusConnection::sessionBus(), this );
-            const QDBusPendingReply<QString> reply = iface->networkWallet();
-            QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher( reply, this );
-            connect( watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletWalletFound(QDBusPendingCallWatcher*)) );
-        }
-        else
-        {
-            // D-Bus is not reachable so none can tell us something about KWalletd
-            QDBusError err( QDBusError::NoServer, tr("D-Bus is not running") );
-            fallbackOnError( err );
-        }
+    case Backend_Kwallet4:
+        kwalletWritePasswordScheduledStart("org.kde.kwalletd", "/modules/kwalletd", this);
+        break;
+    case Backend_Kwallet5:
+        kwalletWritePasswordScheduledStart("org.kde.kwalletd5", "/modules/kwalletd5", this);
+        break;
     }
 }
 
