@@ -126,7 +126,7 @@ static void kwalletReadPasswordScheduledStartImpl(const char * service, const ch
     else
     {
     // D-Bus is not reachable so none can tell us something about KWalletd
-        QDBusError err( QDBusError::NoServer, ReadPasswordPrivate::tr("D-Bus is not running") );
+        QDBusError err( QDBusError::NoServer, ReadPasswordJobPrivate::tr("D-Bus is not running") );
         priv->fallbackOnError( err );
     }
 }
