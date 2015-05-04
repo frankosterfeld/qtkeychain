@@ -127,9 +127,8 @@ if(NOT QT_TRANSLATIONS_DIR)
     # Extract the qmake executable location
     get_target_property(QT5_QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
     # Ask Qt5 where to put the translations
-    EXEC_PROGRAM( ${QT5_QMAKE_EXECUTABLE}
-        ARGS -query QT_INSTALL_TRANSLATIONS
-        OUTPUT_VARIABLE qt_translations_dir )
+    execute_process( COMMAND ${QT5_QMAKE_EXECUTABLE} -query QT_INSTALL_TRANSLATIONS
+        OUTPUT_VARIABLE qt_translations_dir OUTPUT_STRIP_TRAILING_WHITESPACE )
     # make sure we have / and not \ as qmake gives on windows
     FILE(TO_CMAKE_PATH "${qt_translations_dir}" qt_translations_dir)
     SET(QT_TRANSLATIONS_DIR ${qt_translations_dir} CACHE PATH "The
