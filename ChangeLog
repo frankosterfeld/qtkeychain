@@ -1,6 +1,9 @@
 ChangeLog
 =========
 
+version 0.5.0 (release 2015-05-04)
+  * Added support for KWallet5 (KDE5/KF)
+ 
 version 0.4.0 (release 2014-09-01)
   * KWallet: Handle case where no wallet exists yet (Liviu Cristian Mirea Ghiban <contact@liviucmg.com>)
   * Improved desktop environment detection at runtime (Daniel Molkentin <daniel@molkentin.de>)
