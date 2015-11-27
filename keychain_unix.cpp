@@ -94,7 +94,7 @@ static KeyringBackend detectKeyringBackend()
     case DesktopEnv_Plasma5:
         return Backend_Kwallet5;
         break;
-    // fall through
+        // fall through
     case DesktopEnv_Gnome:
     case DesktopEnv_Unity:
     case DesktopEnv_Xfce:
@@ -125,7 +125,7 @@ static void kwalletReadPasswordScheduledStartImpl(const char * service, const ch
     }
     else
     {
-    // D-Bus is not reachable so none can tell us something about KWalletd
+        // D-Bus is not reachable so none can tell us something about KWalletd
         QDBusError err( QDBusError::NoServer, ReadPasswordJobPrivate::tr("D-Bus is not running") );
         priv->fallbackOnError( err );
     }
@@ -135,7 +135,7 @@ void ReadPasswordJobPrivate::scheduledStart() {
     switch ( getKeyringBackend() ) {
     case Backend_GnomeKeyring:
         if ( !GnomeKeyring::find_network_password( key.toUtf8().constData(), q->service().toUtf8().constData(),
-                                                   reinterpret_cast<GnomeKeyring::OperationGetStringCallback>( &ReadPasswordJobPrivate::gnomeKeyring_cb ),
+                                                   reinterpret_cast<GnomeKeyring::OperationGetStringCallback>( &JobPrivate::gnomeKeyring_readCb ),
                                                    this, 0 ) )
             q->emitFinishedWithError( OtherError, tr("Unknown error") );
         break;
@@ -149,13 +149,14 @@ void ReadPasswordJobPrivate::scheduledStart() {
     }
 }
 
-void ReadPasswordJobPrivate::kwalletWalletFound(QDBusPendingCallWatcher *watcher)
+void JobPrivate::kwalletWalletFound(QDBusPendingCallWatcher *watcher)
 {
     watcher->deleteLater();
     const QDBusPendingReply<QString> reply = *watcher;
     const QDBusPendingReply<int> pendingReply = iface->open( reply.value(), 0, q->service() );
     QDBusPendingCallWatcher* pendingWatcher = new QDBusPendingCallWatcher( pendingReply, this );
-    connect( pendingWatcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletOpenFinished(QDBusPendingCallWatcher*)) );
+    connect( pendingWatcher, SIGNAL(finished(QDBusPendingCallWatcher*)),
+             this, SLOT(kwalletOpenFinished(QDBusPendingCallWatcher*)) );
 }
 
 static QPair<Error, QString> mapGnomeKeyringError( int result )
@@ -188,10 +189,10 @@ static QPair<Error, QString> mapGnomeKeyringError( int result )
     return qMakePair( OtherError, QObject::tr("Unknown error") );
 }
 
-void ReadPasswordJobPrivate::gnomeKeyring_cb( int result, const char* string, ReadPasswordJobPrivate* self )
+void JobPrivate::gnomeKeyring_readCb( int result, const char* string, JobPrivate* self )
 {
     if ( result == GnomeKeyring::RESULT_OK ) {
-        if ( self->dataType == ReadPasswordJobPrivate::Text )
+        if ( self->mode == JobPrivate::Text )
             self->data = string;
         else
             self->data = QByteArray::fromBase64( string );
@@ -209,11 +210,7 @@ void ReadPasswordJobPrivate::fallbackOnError(const QDBusError& err )
 
     if ( q->insecureFallback() && actual->contains( dataKey( key ) ) ) {
 
-        const WritePasswordJobPrivate::Mode mode = WritePasswordJobPrivate::stringToMode( actual->value( typeKey( key ) ).toString() );
-        if (mode == WritePasswordJobPrivate::Binary)
-           dataType = Binary;
-        else
-            dataType = Text;
+        mode = JobPrivate::stringToMode( actual->value( typeKey( key ) ).toString() );
         data = actual->value( dataKey( key ) ).toByteArray();
 
         q->emitFinished();
@@ -300,10 +297,10 @@ void ReadPasswordJobPrivate::kwalletEntryTypeFinished( QDBusPendingCallWatcher* 
         q->emitFinishedWithError( EntryNotFound, tr("Entry not found") );
         return;
     case Password:
-        dataType = Text;
+        mode = Text;
         break;
     case Stream:
-        dataType = Binary;
+        mode = Binary;
         break;
     case Map:
         q->emitFinishedWithError( EntryNotFound, tr("Unsupported entry type 'Map'") );
@@ -313,32 +310,28 @@ void ReadPasswordJobPrivate::kwalletEntryTypeFinished( QDBusPendingCallWatcher* 
         return;
     }
 
-    const QDBusPendingCall nextReply = dataType == Text
-        ? QDBusPendingCall( iface->readPassword( walletHandle, q->service(), key, q->service() ) )
-        : QDBusPendingCall( iface->readEntry( walletHandle, q->service(), key, q->service() ) );
+    const QDBusPendingCall nextReply = (mode == Text)
+            ? QDBusPendingCall( iface->readPassword( walletHandle, q->service(), key, q->service() ) )
+            : QDBusPendingCall( iface->readEntry( walletHandle, q->service(), key, q->service() ) );
     QDBusPendingCallWatcher* nextWatcher = new QDBusPendingCallWatcher( nextReply, this );
     connect( nextWatcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletReadFinished(QDBusPendingCallWatcher*)) );
 }
 
-void ReadPasswordJobPrivate::kwalletReadFinished( QDBusPendingCallWatcher* watcher ) {
-    watcher->deleteLater();
-    if ( watcher->isError() ) {
-        const QDBusError err = watcher->error();
-        q->emitFinishedWithError( OtherError, tr("Could not read password: %1; %2").arg( QDBusError::errorString( err.type() ), err.message() ) );
-        return;
-    }
-
-    if ( dataType == Binary ) {
+void ReadPasswordJobPrivate::kwalletFinished( QDBusPendingCallWatcher* watcher ) {
+    if ( !watcher->isError() ) {
+    if ( mode == Binary ) {
         QDBusPendingReply<QByteArray> reply = *watcher;
         data = reply.value();
     } else {
         QDBusPendingReply<QString> reply = *watcher;
         data = reply.value().toUtf8();
     }
-    q->emitFinished();
+    }
+
+    JobPrivate::kwalletFinished(watcher);
 }
 
-static void kwalletWritePasswordScheduledStart( const char * service, const char * path, WritePasswordJobPrivate * priv ) {
+static void kwalletWritePasswordScheduledStart( const char * service, const char * path, JobPrivate * priv ) {
     if ( QDBusConnection::sessionBus().isConnected() )
     {
         priv->iface = new org::kde::KWallet( QLatin1String(service), QLatin1String(path), QDBusConnection::sessionBus(), priv );
@@ -356,21 +349,15 @@ static void kwalletWritePasswordScheduledStart( const char * service, const char
 
 void WritePasswordJobPrivate::scheduledStart() {
     switch ( getKeyringBackend() ) {
-    case Backend_GnomeKeyring:
-        if ( mode == WritePasswordJobPrivate::Delete ) {
-            if ( !GnomeKeyring::delete_network_password( key.toUtf8().constData(), q->service().toUtf8().constData(),
-                                                         reinterpret_cast<GnomeKeyring::OperationDoneCallback>( &WritePasswordJobPrivate::gnomeKeyring_cb ),
-                                                         this, 0 ) )
-                q->emitFinishedWithError( OtherError, tr("Unknown error") );
-        } else {
-            QByteArray password = mode == WritePasswordJobPrivate::Text ? textData.toUtf8() : binaryData.toBase64();
-            QByteArray service = q->service().toUtf8();
-            if ( !GnomeKeyring::store_network_password( GnomeKeyring::GNOME_KEYRING_DEFAULT, service.constData(),
-                                                        key.toUtf8().constData(), service.constData(), password.constData(),
-                                                        reinterpret_cast<GnomeKeyring::OperationDoneCallback>( &WritePasswordJobPrivate::gnomeKeyring_cb ),
-                                                        this, 0 ) )
-                q->emitFinishedWithError( OtherError, tr("Unknown error") );
-        }
+    case Backend_GnomeKeyring: {
+        QByteArray password = (mode == JobPrivate::Text) ? data : data.toBase64();
+        QByteArray service = q->service().toUtf8();
+        if ( !GnomeKeyring::store_network_password( GnomeKeyring::GNOME_KEYRING_DEFAULT, service.constData(),
+                                                    key.toUtf8().constData(), service.constData(), password.constData(),
+                                                    reinterpret_cast<GnomeKeyring::OperationDoneCallback>( &JobPrivate::gnomeKeyring_writeCb ),
+                                                    this, 0 ) )
+            q->emitFinishedWithError( OtherError, tr("Unknown error") );
+    }
         break;
 
     case Backend_Kwallet4:
@@ -380,35 +367,6 @@ void WritePasswordJobPrivate::scheduledStart() {
         kwalletWritePasswordScheduledStart("org.kde.kwalletd5", "/modules/kwalletd5", this);
         break;
     }
-}
-
-QString WritePasswordJobPrivate::modeToString(Mode m)
-{
-    switch (m) {
-    case Delete:
-        return QLatin1String("Delete");
-    case Text:
-        return QLatin1String("Text");
-    case Binary:
-        return QLatin1String("Binary");
-    }
-
-    Q_ASSERT_X(false, Q_FUNC_INFO, "Unhandled Mode value");
-    return QString();
-}
-
-WritePasswordJobPrivate::Mode WritePasswordJobPrivate::stringToMode(const QString& s)
-{
-    if (s == QLatin1String("Delete") || s == QLatin1String("0"))
-        return Delete;
-    if (s == QLatin1String("Text") || s == QLatin1String("1"))
-        return Text;
-    if (s == QLatin1String("Binary") || s == QLatin1String("2"))
-        return Binary;
-
-    qCritical("Unexpected mode string '%s'", qPrintable(s));
-
-    return Text;
 }
 
 void WritePasswordJobPrivate::fallbackOnError(const QDBusError &err)
@@ -421,25 +379,14 @@ void WritePasswordJobPrivate::fallbackOnError(const QDBusError &err)
         return;
     }
 
-    if ( mode == Delete ) {
-        actual->remove( key );
-        actual->sync();
-
-        q->emitFinished();
-        return;
-   }
-
     actual->setValue( QString::fromLatin1( "%1/type" ).arg( key ), mode );
-    if ( mode == Text )
-        actual->setValue( QString::fromLatin1( "%1/data" ).arg( key ), textData.toUtf8() );
-    else if ( mode == Binary )
-        actual->setValue( QString::fromLatin1( "%1/data" ).arg( key ), binaryData );
+    actual->setValue( QString::fromLatin1( "%1/data" ).arg( key ), data );
     actual->sync();
 
     q->emitFinished();
 }
 
-void WritePasswordJobPrivate::gnomeKeyring_cb( int result, WritePasswordJobPrivate* self )
+void JobPrivate::gnomeKeyring_writeCb(int result, JobPrivate* self )
 {
     if ( result == GnomeKeyring::RESULT_OK ) {
         self->q->emitFinished();
@@ -449,16 +396,7 @@ void WritePasswordJobPrivate::gnomeKeyring_cb( int result, WritePasswordJobPriva
     }
 }
 
-void WritePasswordJobPrivate::kwalletWalletFound(QDBusPendingCallWatcher *watcher)
-{
-    watcher->deleteLater();
-    const QDBusPendingReply<QString> reply = *watcher;
-    const QDBusPendingReply<int> pendingReply = iface->open( reply.value(), 0, q->service() );
-    QDBusPendingCallWatcher* pendingWatcher = new QDBusPendingCallWatcher( pendingReply, this );
-    connect( pendingWatcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletOpenFinished(QDBusPendingCallWatcher*)) );
-}
-
-void WritePasswordJobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watcher ) {
+void JobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watcher ) {
     watcher->deleteLater();
     QDBusPendingReply<int> reply = *watcher;
 
@@ -486,10 +424,10 @@ void WritePasswordJobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watc
 
     QDBusPendingReply<int> nextReply;
 
-    if ( !textData.isEmpty() )
-        nextReply = iface->writePassword( handle, q->service(), key, textData, q->service() );
-    else if ( !binaryData.isEmpty() )
-        nextReply = iface->writeEntry( handle, q->service(), key, binaryData, q->service() );
+    if ( mode == Text )
+        nextReply = iface->writePassword( handle, q->service(), key, QString::fromUtf8(data), q->service() );
+    else if ( mode == Binary )
+        nextReply = iface->writeEntry( handle, q->service(), key, data, q->service() );
     else
         nextReply = iface->removeEntry( handle, q->service(), key, q->service() );
 
@@ -497,14 +435,54 @@ void WritePasswordJobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watc
     connect( nextWatcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletWriteFinished(QDBusPendingCallWatcher*)) );
 }
 
-void WritePasswordJobPrivate::kwalletWriteFinished( QDBusPendingCallWatcher* watcher ) {
+void JobPrivate::kwalletFinished( QDBusPendingCallWatcher* watcher ) {
     watcher->deleteLater();
     QDBusPendingReply<int> reply = *watcher;
     if ( reply.isError() ) {
         const QDBusError err = reply.error();
-        q->emitFinishedWithError( OtherError, tr("Could not open wallet: %1; %2").arg( QDBusError::errorString( err.type() ), err.message() ) );
+        q->emitFinishedWithError( OtherError, tr("Could not open wallet: %1; %2")
+                                  .arg( QDBusError::errorString( err.type() ), err.message() ) );
         return;
     }
+
+    q->emitFinished();
+}
+
+void DeletePasswordJobPrivate::scheduledStart() {
+    switch ( getKeyringBackend() ) {
+    case Backend_GnomeKeyring: {
+        if ( !GnomeKeyring::delete_network_password(
+                 key.toUtf8().constData(), q->service().toUtf8().constData(),
+                 reinterpret_cast<GnomeKeyring::OperationDoneCallback>( &JobPrivate::gnomeKeyring_writeCb ),
+                 this, 0 ) )
+            q->emitFinishedWithError( OtherError, tr("Unknown error") );
+    }
+        break;
+
+    case Backend_Kwallet4:
+        kwalletWritePasswordScheduledStart("org.kde.kwalletd", "/modules/kwalletd", this);
+        break;
+    case Backend_Kwallet5:
+        kwalletWritePasswordScheduledStart("org.kde.kwalletd5", "/modules/kwalletd5", this);
+        break;
+    }
+}
+
+void DeletePasswordJobPrivate::fallbackOnError(const QDBusError &err) {
+    QScopedPointer<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
+    QSettings* actual = q->settings() ? q->settings() : local.data();
+
+    if ( !q->insecureFallback() ) {
+        q->emitFinishedWithError( OtherError, tr("Could not open wallet: %1; %2")
+                                  .arg( QDBusError::errorString( err.type() ), err.message() ) );
+        return;
+    }
+
+    actual->remove( key );
+    actual->sync();
+
+    q->emitFinished();
+
 
     q->emitFinished();
 }

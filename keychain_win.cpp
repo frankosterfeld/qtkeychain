@@ -53,24 +53,6 @@ void ReadPasswordJobPrivate::scheduledStart() {
 }
 
 void WritePasswordJobPrivate::scheduledStart() {
-    if ( mode == Delete ) {
-        //Use settings member if there, create local settings object if not
-        std::auto_ptr<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
-        QSettings* actual = q->settings() ? q->settings() : local.get();
-        actual->remove( key );
-        actual->sync();
-        if ( actual->status() != QSettings::NoError ) {
-            const QString err = actual->status() == QSettings::AccessError
-                    ? tr("Could not delete encrypted data from settings: access error")
-                    : tr("Could not delete encrypted data from settings: format error");
-            q->emitFinishedWithError( OtherError, err );
-        } else {
-            q->emitFinished();
-        }
-        return;
-    }
-
-    QByteArray data = mode == Binary ? binaryData : textData.toUtf8();
     DATA_BLOB blob_in, blob_out;
     blob_in.pbData = reinterpret_cast<BYTE*>( data.data() );
     blob_in.cbData = data.size();
@@ -104,4 +86,20 @@ void WritePasswordJobPrivate::scheduledStart() {
     }
 
     q->emitFinished();
+}
+
+void DeletePasswordJobPrivate::scheduledStart() {
+    //Use settings member if there, create local settings object if not
+    std::auto_ptr<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
+    QSettings* actual = q->settings() ? q->settings() : local.get();
+    actual->remove( key );
+    actual->sync();
+    if ( actual->status() != QSettings::NoError ) {
+        const QString err = actual->status() == QSettings::AccessError
+                ? tr("Could not delete encrypted data from settings: access error")
+                : tr("Could not delete encrypted data from settings: format error");
+        q->emitFinishedWithError( OtherError, err );
+    } else {
+        q->emitFinished();
+    }
 }
