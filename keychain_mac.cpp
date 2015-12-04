@@ -29,9 +29,9 @@ static QString strForStatus( OSStatus os ) {
     const char * const buf = CFStringGetCStringPtr( str.value,  kCFStringEncodingUTF8 );
     if ( !buf )
         return QObject::tr( "%1 (OSStatus %2)" )
-            .arg( "OSX Keychain Error" ).arg( os );
+                .arg( "OSX Keychain Error" ).arg( os );
     return QObject::tr( "%1 (OSStatus %2)" )
-        .arg( QString::fromUtf8( buf, strlen( buf ) ) ).arg( os );
+            .arg( QString::fromUtf8( buf, strlen( buf ) ) ).arg( os );
 }
 
 static OSStatus readPw( QByteArray* pw,
@@ -148,14 +148,17 @@ void WritePasswordJobPrivate::scheduledStart()
     QString errorString;
     Error error = NoError;
 
-    if ( mode == Delete ) {
-        const Error derr = deleteEntryImpl( q->service(), key, &errorString );
-        if ( derr != NoError )
-            error = CouldNotDeleteEntry;
-        q->emitFinishedWithError( error, errorString );
-        return;
-    }
-    const QByteArray data = mode == Text ?  textData.toUtf8() : binaryData;
     error = writeEntryImpl( q->service(), key, data, &errorString );
+    q->emitFinishedWithError( error, errorString );
+}
+
+void DeletePasswordJobPrivate::scheduledStart()
+{
+    QString errorString;
+    Error error = NoError;
+
+    const Error derr = deleteEntryImpl( q->service(), key, &errorString );
+    if ( derr != NoError )
+        error = CouldNotDeleteEntry;
     q->emitFinishedWithError( error, errorString );
 }

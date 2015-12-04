@@ -13,7 +13,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QSettings>
-#include <QVector>
+#include <QQueue>
 
 #if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
 
@@ -35,105 +35,108 @@ class JobExecutor;
 class JobPrivate : public QObject {
     Q_OBJECT
 public:
-    JobPrivate( const QString& service_ )
-        : error( NoError )
-        , service( service_ )
-        , autoDelete( true )
-        , insecureFallback( false ) {}
+    enum Mode {
+	Text,
+	Binary
+    };
 
+    virtual void scheduledStart() = 0;
+
+    static QString modeToString(Mode m);
+    static Mode stringToMode(const QString& s);
+
+    Mode mode;
+
+#if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
+    org::kde::KWallet* iface;
+    int walletHandle;
+
+    static void gnomeKeyring_readCb( int result, const char* string, JobPrivate* data );
+    static void gnomeKeyring_writeCb( int result, JobPrivate* self );
+
+    virtual void fallbackOnError(const QDBusError& err) = 0;
+
+protected Q_SLOTS:
+    void kwalletWalletFound( QDBusPendingCallWatcher* watcher );
+    virtual void kwalletFinished( QDBusPendingCallWatcher* watcher );
+    virtual void kwalletOpenFinished( QDBusPendingCallWatcher* watcher );
+#else
+    void kwalletWalletFound(QDBusPendingCallWatcher *watcher) {}
+    virtual void kwalletFinished( QDBusPendingCallWatcher* watcher ) {}
+    virtual void kwalletOpenFinished( QDBusPendingCallWatcher* watcher ) {}
+#endif
+
+protected:
+    JobPrivate( const QString& service_, Job *q );
+
+protected:
     QKeychain::Error error;
     QString errorString;
     QString service;
     bool autoDelete;
     bool insecureFallback;
     QPointer<QSettings> settings;
+    QString key;
+    Job* const q;
+    QByteArray data;
+
+friend class Job;
+friend class JobExecutor;
+friend class ReadPasswordJob;
+friend class WritePasswordJob;
 };
 
-class ReadPasswordJobPrivate : public QObject {
+class ReadPasswordJobPrivate : public JobPrivate {
     Q_OBJECT
 public:
-    explicit ReadPasswordJobPrivate( ReadPasswordJob* qq ) : q( qq ), walletHandle( 0 ), dataType( Text ) {}
+    explicit ReadPasswordJobPrivate( const QString &service_, ReadPasswordJob* qq );
     void scheduledStart();
 
-    ReadPasswordJob* const q;
-    QByteArray data;
-    QString key;
-    int walletHandle;
-    enum DataType {
-        Binary,
-        Text
-    };
-    DataType dataType;
-
 #if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
-    org::kde::KWallet* iface;
-    static void gnomeKeyring_cb( int result, const char* string, ReadPasswordJobPrivate* data );
-    friend class QKeychain::JobExecutor;
     void fallbackOnError(const QDBusError& err);
 
 private Q_SLOTS:
-    void kwalletWalletFound( QDBusPendingCallWatcher* watcher );
     void kwalletOpenFinished( QDBusPendingCallWatcher* watcher );
     void kwalletEntryTypeFinished( QDBusPendingCallWatcher* watcher );
-    void kwalletReadFinished( QDBusPendingCallWatcher* watcher );
+    void kwalletFinished( QDBusPendingCallWatcher* watcher );
 #else //moc's too dumb to respect above macros, so just define empty slot implementations
 private Q_SLOTS:
-    void kwalletWalletFound( QDBusPendingCallWatcher* ) {}
     void kwalletOpenFinished( QDBusPendingCallWatcher* ) {}
     void kwalletEntryTypeFinished( QDBusPendingCallWatcher* ) {}
-    void kwalletReadFinished( QDBusPendingCallWatcher* ) {}
+    void kwalletFinished( QDBusPendingCallWatcher* ) {}
 #endif
 
+    friend class ReadPasswordJob;
 };
 
-class WritePasswordJobPrivate : public QObject {
+class WritePasswordJobPrivate : public JobPrivate {
     Q_OBJECT
 public:
-    explicit WritePasswordJobPrivate( WritePasswordJob* qq ) : q( qq ), mode( Delete ) {}
+    explicit WritePasswordJobPrivate( const QString &service_, WritePasswordJob* qq );
     void scheduledStart();
 
-    enum Mode {
-        Delete,
-        Text,
-        Binary
-    };
-
-    static QString modeToString(Mode m);
-    static Mode stringToMode(const QString& s);
-
-    WritePasswordJob* const q;
-    Mode mode;
-    QString key;
-    QByteArray binaryData;
-    QString textData;
-
 #if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
-    org::kde::KWallet* iface;
-    static void gnomeKeyring_cb( int result, WritePasswordJobPrivate* self );
-    friend class QKeychain::JobExecutor;
     void fallbackOnError(const QDBusError& err);
-
-private Q_SLOTS:
-    void kwalletWalletFound( QDBusPendingCallWatcher* watcher );
-    void kwalletOpenFinished( QDBusPendingCallWatcher* watcher );
-    void kwalletWriteFinished( QDBusPendingCallWatcher* watcher );
-#else
-private Q_SLOTS:
-    void kwalletWalletFound( QDBusPendingCallWatcher* ) {}
-    void kwalletOpenFinished( QDBusPendingCallWatcher* ) {}
-    void kwalletWriteFinished( QDBusPendingCallWatcher* ) {}
 #endif
+
+    friend class WritePasswordJob;
 };
 
-class DeletePasswordJobPrivate : public QObject {
+class DeletePasswordJobPrivate : public JobPrivate {
     Q_OBJECT
 public:
-    explicit DeletePasswordJobPrivate( DeletePasswordJob* qq ) : q( qq ) {}
+    explicit DeletePasswordJobPrivate( const QString &service_, DeletePasswordJob* qq );
+
+    void scheduledStart();
+
+#if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
+    void fallbackOnError(const QDBusError& err);
+#endif
+
+protected:
     void doStart();
-    DeletePasswordJob* const q;
-    QString key;
-private Q_SLOTS:
-    void jobFinished( QKeychain::Job* );
+
+    friend class DeletePasswordJob;
 };
 
 class JobExecutor : public QObject {
@@ -154,8 +157,8 @@ private Q_SLOTS:
 
 private:
     static JobExecutor* s_instance;
-    Job* m_runningJob;
-    QVector<QPointer<Job> > m_queue;
+    QQueue<QPointer<Job> > m_queue;
+    bool m_jobRunning;
 };
 
 }

@@ -17,6 +17,82 @@
 
 using namespace QKeychain;
 
+#if defined(USE_CREDENTIAL_STORE)
+#include <wincred.h>
+
+void ReadPasswordJobPrivate::scheduledStart() {
+    std::wstring name = key.toStdWString();
+    //Use settings member if there, create local settings object if not
+    std::auto_ptr<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
+    PCREDENTIALW cred;
+
+    if (!CredReadW(name.c_str(), CRED_TYPE_GENERIC, 0, &cred)) {
+        Error error;
+        QString msg;
+        switch(GetLastError()) {
+        case ERROR_NOT_FOUND:
+            error = EntryNotFound;
+            msg = tr("Password entry not found");
+            break;
+        default:
+            error = OtherError;
+            msg = tr("Could not decrypt data");
+            break;
+        }
+
+        q->emitFinishedWithError( error, msg );
+        return;
+    }
+
+    data = QByteArray((char*)cred->CredentialBlob, cred->CredentialBlobSize);
+    CredFree(cred);
+
+    q->emitFinished();
+}
+
+void WritePasswordJobPrivate::scheduledStart() {
+    CREDENTIALW cred;
+    char *pwd = data.data();
+    std::wstring name = key.toStdWString();
+
+    memset(&cred, 0, sizeof(cred));
+    cred.Comment = L"QtKeychain";
+    cred.Type = CRED_TYPE_GENERIC;
+    cred.TargetName = (LPWSTR)name.c_str();
+    cred.CredentialBlobSize = data.size();
+    cred.CredentialBlob = (LPBYTE)pwd;
+    cred.Persist = CRED_PERSIST_LOCAL_MACHINE;
+
+    if (!CredWriteW(&cred, 0)) {
+        q->emitFinishedWithError( OtherError, tr("Encryption failed") ); //TODO more details available?
+    } else {
+        q->emitFinished();
+    }
+}
+
+void DeletePasswordJobPrivate::scheduledStart() {
+    std::wstring name = key.toStdWString();
+
+    if (!CredDeleteW(name.c_str(), CRED_TYPE_GENERIC, 0)) {
+        Error error;
+        QString msg;
+        switch(GetLastError()) {
+        case ERROR_NOT_FOUND:
+            error = EntryNotFound;
+            msg = tr("Password entry not found");
+            break;
+        default:
+            error = OtherError;
+            msg = tr("Could not decrypt data");
+            break;
+        }
+
+        q->emitFinishedWithError( error, msg );
+    } else {
+        q->emitFinished();
+    }
+}
+#else
 void ReadPasswordJobPrivate::scheduledStart() {
     //Use settings member if there, create local settings object if not
     std::auto_ptr<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
@@ -53,24 +129,6 @@ void ReadPasswordJobPrivate::scheduledStart() {
 }
 
 void WritePasswordJobPrivate::scheduledStart() {
-    if ( mode == Delete ) {
-        //Use settings member if there, create local settings object if not
-        std::auto_ptr<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
-        QSettings* actual = q->settings() ? q->settings() : local.get();
-        actual->remove( key );
-        actual->sync();
-        if ( actual->status() != QSettings::NoError ) {
-            const QString err = actual->status() == QSettings::AccessError
-                    ? tr("Could not delete encrypted data from settings: access error")
-                    : tr("Could not delete encrypted data from settings: format error");
-            q->emitFinishedWithError( OtherError, err );
-        } else {
-            q->emitFinished();
-        }
-        return;
-    }
-
-    QByteArray data = mode == Binary ? binaryData : textData.toUtf8();
     DATA_BLOB blob_in, blob_out;
     blob_in.pbData = reinterpret_cast<BYTE*>( data.data() );
     blob_in.cbData = data.size();
@@ -105,3 +163,20 @@ void WritePasswordJobPrivate::scheduledStart() {
 
     q->emitFinished();
 }
+
+void DeletePasswordJobPrivate::scheduledStart() {
+    //Use settings member if there, create local settings object if not
+    std::auto_ptr<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
+    QSettings* actual = q->settings() ? q->settings() : local.get();
+    actual->remove( key );
+    actual->sync();
+    if ( actual->status() != QSettings::NoError ) {
+        const QString err = actual->status() == QSettings::AccessError
+                ? tr("Could not delete encrypted data from settings: access error")
+                : tr("Could not delete encrypted data from settings: format error");
+        q->emitFinishedWithError( OtherError, err );
+    } else {
+        q->emitFinished();
+    }
+}
+#endif
