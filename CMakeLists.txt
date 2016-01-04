@@ -17,8 +17,9 @@ if (WIN32)
     option(USE_CREDENTIAL_STORE "Build with windows CredentialStore support" ON)
 
     if (USE_CREDENTIAL_STORE)
-	add_definitions(-DUSE_CREDENTIAL_STORE=1)
+       add_definitions(-DUSE_CREDENTIAL_STORE=1)
     endif()
+    add_definitions(-DUNICODE)
 endif()
 
 if( NOT BUILD_WITH_QT4 )
@@ -199,4 +200,3 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainC
               ${CMAKE_CURRENT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfigVersion.cmake
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Qt${QTKEYCHAIN_VERSION_INFIX}Keychain
 )
-
