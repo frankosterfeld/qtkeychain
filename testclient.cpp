@@ -52,6 +52,29 @@ int main( int argc, char** argv ) {
             return 1;
         }
         std::cout << "Password stored successfully" << std::endl;
+    } else if ( *it == QLatin1String("bstore") ) {
+        if ( ++it == args.constEnd() )
+            return printUsage();
+        const QString acc = *it;
+        if ( ++it == args.constEnd() )
+            return printUsage();
+        const QString pass = *it;
+        if ( ++it != args.constEnd() )
+            return printUsage();
+        WritePasswordJob job( QLatin1String("qtkeychain-testclient") );
+        job.setAutoDelete( false );
+        job.setKey( acc );
+        job.setBinaryData( pass.toUtf8() );
+        QEventLoop loop;
+        job.connect( &job, SIGNAL(finished(QKeychain::Job*)), &loop, SLOT(quit()) );
+        job.start();
+        loop.exec();
+     if ( job.error() ) {
+            std::cerr << "Storing binary password failed: "
+                      << qPrintable(job.errorString()) << std::endl;
+            return 1;
+        }
+        std::cout << "Password stored successfully" << std::endl;
     } else if ( *it == QLatin1String("restore") ) {
         if ( ++it == args.constEnd() )
             return printUsage();
