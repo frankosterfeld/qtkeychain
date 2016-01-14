@@ -46,6 +46,8 @@ public:
     static Mode stringToMode(const QString& s);
 
     Mode mode;
+    Job* const q;
+    QByteArray data;
 
 #if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
     org::kde::KWallet* iface;
@@ -77,8 +79,6 @@ protected:
     bool insecureFallback;
     QPointer<QSettings> settings;
     QString key;
-    Job* const q;
-    QByteArray data;
 
 friend class Job;
 friend class JobExecutor;
