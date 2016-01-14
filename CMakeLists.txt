@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.11)
 project(qtkeychain)
 
+include(FindPkgConfig)
+
 ###
 
 set(QTKEYCHAIN_VERSION 0.7.90)
@@ -24,7 +26,7 @@ if (WIN32)
     option(USE_CREDENTIAL_STORE "Build with windows CredentialStore support" ON)
 
     if (USE_CREDENTIAL_STORE)
-	add_definitions(-DUSE_CREDENTIAL_STORE=1)
+        add_definitions(-DUSE_CREDENTIAL_STORE=1)
     endif()
 endif()
 
@@ -148,7 +150,16 @@ if(APPLE)
 endif()
 
 if(UNIX AND NOT APPLE AND NOT ANDROID)
-    list(APPEND qtkeychain_SOURCES keychain_unix.cpp gnomekeyring.cpp plaintextstore.cpp)
+    option(LIBSECRET_SUPPORT "Build with libsecret support" ON)
+
+    if(LIBSECRET_SUPPORT)
+        pkg_check_modules(LIBSECRET libsecret-1)
+
+        add_definitions(-DHAVE_LIBSECRET=${LIBSECRET_FOUND})
+        INCLUDE_DIRECTORIES(${LIBSECRET_INCLUDE_DIRS})
+    endif()
+
+    list(APPEND qtkeychain_SOURCES keychain_unix.cpp gnomekeyring.cpp libsecret.cpp plaintextstore.cpp)
     qt_add_dbus_interface(qtkeychain_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/org.kde.KWallet.xml kwallet_interface KWalletInterface)
     list(APPEND qtkeychain_LIBRARIES ${QTDBUS_LIBRARIES} )
 endif()

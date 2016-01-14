@@ -8,11 +8,15 @@
  *****************************************************************************/
 #include "keychain_p.h"
 #include "gnomekeyring_p.h"
+#include "libsecret_p.h"
 #include "plaintextstore_p.h"
+
+#include <QScopedPointer>
 
 using namespace QKeychain;
 
 enum KeyringBackend {
+    Backend_LibSecretKeyring,
     Backend_GnomeKeyring,
     Backend_Kwallet4,
     Backend_Kwallet5
@@ -74,6 +78,12 @@ static DesktopEnvironment detectDesktopEnvironment() {
 
 static KeyringBackend detectKeyringBackend()
 {
+    /* Libsecret unifies access to KDE and GNOME
+     * password services. */
+    if (LibSecretKeyring::isAvailable()) {
+        return Backend_LibSecretKeyring;
+    }
+
     switch (detectDesktopEnvironment()) {
     case DesktopEnv_Kde4:
         return Backend_Kwallet4;
@@ -87,7 +97,7 @@ static KeyringBackend detectKeyringBackend()
     case DesktopEnv_Xfce:
     case DesktopEnv_Other:
     default:
-        if ( GnomeKeyring::isAvailable() ) {
+         if ( GnomeKeyring::isAvailable() ) {
             return Backend_GnomeKeyring;
         } else {
             return Backend_Kwallet4;
@@ -120,6 +130,11 @@ static void kwalletReadPasswordScheduledStartImpl(const char * service, const ch
 
 void ReadPasswordJobPrivate::scheduledStart() {
     switch ( getKeyringBackend() ) {
+    case Backend_LibSecretKeyring: {
+        if ( !LibSecretKeyring::findPassword(key, q->service(), this) ) {
+            q->emitFinishedWithError( OtherError, tr("Unknown error") );
+        }
+    } break;
     case Backend_GnomeKeyring:
         this->mode = JobPrivate::Text;
         if ( !GnomeKeyring::find_network_password( key.toUtf8().constData(),
@@ -352,6 +367,12 @@ static void kwalletWritePasswordScheduledStart( const char * service, const char
 
 void WritePasswordJobPrivate::scheduledStart() {
     switch ( getKeyringBackend() ) {
+    case Backend_LibSecretKeyring: {
+        if ( !LibSecretKeyring::writePassword(service, key, service, mode,
+                                              data, this) ) {
+            q->emitFinishedWithError( OtherError, tr("Unknown error") );
+        }
+    } break;
     case Backend_GnomeKeyring: {
         QString type;
         QByteArray password;
@@ -470,6 +491,11 @@ void JobPrivate::kwalletFinished( QDBusPendingCallWatcher* watcher ) {
 
 void DeletePasswordJobPrivate::scheduledStart() {
     switch ( getKeyringBackend() ) {
+    case Backend_LibSecretKeyring: {
+        if ( !LibSecretKeyring::deletePassword(key, q->service(), this) ) {
+            q->emitFinishedWithError( OtherError, tr("Unknown error") );
+        }
+    } break;
     case Backend_GnomeKeyring: {
         if ( !GnomeKeyring::delete_network_password(
                  key.toUtf8().constData(), q->service().toUtf8().constData(),

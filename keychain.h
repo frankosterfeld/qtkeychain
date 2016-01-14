@@ -42,7 +42,7 @@ class JobPrivate;
  */
 class QKEYCHAIN_EXPORT Job : public QObject {
     Q_OBJECT
-public:    
+public:
     ~Job();
 
     /**
@@ -134,6 +134,9 @@ public:
      */
     void setKey( const QString& key );
 
+    void emitFinished();
+    void emitFinishedWithError(Error, const QString& errorString);
+
 Q_SIGNALS:
     /**
      * Emitted when this job is finished.
@@ -149,8 +152,6 @@ protected:
 private:
     void setError( Error error );
     void setErrorString( const QString& errorString );
-    void emitFinished();
-    void emitFinishedWithError(Error, const QString& errorString);
 
     void scheduledStart();
 
