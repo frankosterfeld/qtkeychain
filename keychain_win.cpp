@@ -21,12 +21,12 @@ using namespace QKeychain;
 #include <wincred.h>
 
 void ReadPasswordJobPrivate::scheduledStart() {
-    std::wstring name = key.toStdWString();
+    LPCWSTR name = (LPCWSTR)key.utf16();
     //Use settings member if there, create local settings object if not
     std::auto_ptr<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
     PCREDENTIALW cred;
 
-    if (!CredReadW(name.c_str(), CRED_TYPE_GENERIC, 0, &cred)) {
+    if (!CredReadW(name, CRED_TYPE_GENERIC, 0, &cred)) {
         Error error;
         QString msg;
         switch(GetLastError()) {
@@ -53,12 +53,12 @@ void ReadPasswordJobPrivate::scheduledStart() {
 void WritePasswordJobPrivate::scheduledStart() {
     CREDENTIALW cred;
     char *pwd = data.data();
-    std::wstring name = key.toStdWString();
+    LPWSTR name = (LPWSTR)key.utf16();
 
     memset(&cred, 0, sizeof(cred));
     cred.Comment = L"QtKeychain";
     cred.Type = CRED_TYPE_GENERIC;
-    cred.TargetName = (LPWSTR)name.c_str();
+    cred.TargetName = name;
     cred.CredentialBlobSize = data.size();
     cred.CredentialBlob = (LPBYTE)pwd;
     cred.Persist = CRED_PERSIST_LOCAL_MACHINE;
@@ -71,9 +71,9 @@ void WritePasswordJobPrivate::scheduledStart() {
 }
 
 void DeletePasswordJobPrivate::scheduledStart() {
-    std::wstring name = key.toStdWString();
+    LPCWSTR name = (LPCWSTR)key.utf16();
 
-    if (!CredDeleteW(name.c_str(), CRED_TYPE_GENERIC, 0)) {
+    if (!CredDeleteW(name, CRED_TYPE_GENERIC, 0)) {
         Error error;
         QString msg;
         switch(GetLastError()) {
