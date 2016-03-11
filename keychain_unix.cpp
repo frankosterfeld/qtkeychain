@@ -134,7 +134,10 @@ static void kwalletReadPasswordScheduledStartImpl(const char * service, const ch
 void ReadPasswordJobPrivate::scheduledStart() {
     switch ( getKeyringBackend() ) {
     case Backend_GnomeKeyring:
-        if ( !GnomeKeyring::find_network_password( key.toUtf8().constData(), q->service().toUtf8().constData(),
+        this->mode = JobPrivate::Text;
+        if ( !GnomeKeyring::find_network_password( key.toUtf8().constData(),
+                                                   q->service().toUtf8().constData(),
+                                                   "plaintext",
                                                    reinterpret_cast<GnomeKeyring::OperationGetStringCallback>( &JobPrivate::gnomeKeyring_readCb ),
                                                    this, 0 ) )
             q->emitFinishedWithError( OtherError, tr("Unknown error") );
@@ -192,11 +195,20 @@ static QPair<Error, QString> mapGnomeKeyringError( int result )
 void JobPrivate::gnomeKeyring_readCb( int result, const char* string, JobPrivate* self )
 {
     if ( result == GnomeKeyring::RESULT_OK ) {
-        if ( self->mode == JobPrivate::Text )
-            self->data = string;
+        if (self->mode == JobPrivate::Text)
+            self->data = QByteArray(string);
         else
-            self->data = QByteArray::fromBase64( string );
+            self->data = QByteArray::fromBase64(string);
+
         self->q->emitFinished();
+    } else if (self->mode == JobPrivate::Text) {
+        self->mode = JobPrivate::Binary;
+        if ( !GnomeKeyring::find_network_password( self->key.toUtf8().constData(),
+                                                   self->q->service().toUtf8().constData(),
+                                                   "base64",
+                                                   reinterpret_cast<GnomeKeyring::OperationGetStringCallback>( &JobPrivate::gnomeKeyring_readCb ),
+                                                   self, 0 ) )
+            self->q->emitFinishedWithError( OtherError, tr("Unknown error") );
     } else {
         const QPair<Error, QString> errorResult = mapGnomeKeyringError( result );
         self->q->emitFinishedWithError( errorResult.first, errorResult.second );
@@ -350,10 +362,27 @@ static void kwalletWritePasswordScheduledStart( const char * service, const char
 void WritePasswordJobPrivate::scheduledStart() {
     switch ( getKeyringBackend() ) {
     case Backend_GnomeKeyring: {
-        QByteArray password = (mode == JobPrivate::Text) ? data : data.toBase64();
+        QString type;
+        QByteArray password;
+
+        switch(mode) {
+        case JobPrivate::Text:
+            type = "plaintext";
+            password = data;
+            break;
+        default:
+            type = "base64";
+            password = data.toBase64();
+            break;
+        }
+
         QByteArray service = q->service().toUtf8();
-        if ( !GnomeKeyring::store_network_password( GnomeKeyring::GNOME_KEYRING_DEFAULT, service.constData(),
-                                                    key.toUtf8().constData(), service.constData(), password.constData(),
+        if ( !GnomeKeyring::store_network_password( GnomeKeyring::GNOME_KEYRING_DEFAULT,
+                                                    service.constData(),
+                                                    key.toUtf8().constData(),
+                                                    service.constData(),
+                                                    type.toUtf8().constData(),
+                                                    password.constData(),
                                                     reinterpret_cast<GnomeKeyring::OperationDoneCallback>( &JobPrivate::gnomeKeyring_writeCb ),
                                                     this, 0 ) )
             q->emitFinishedWithError( OtherError, tr("Unknown error") );

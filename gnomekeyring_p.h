@@ -43,7 +43,8 @@ public:
         } attributes[32];
     } PasswordSchema;
 
-    typedef void ( *OperationGetStringCallback )( Result result, const char* string, gpointer data );
+    typedef void ( *OperationGetStringCallback )( Result result, bool binary,
+                                                  const char* string, gpointer data );
     typedef void ( *OperationDoneCallback )( Result result, gpointer data );
     typedef void ( *GDestroyNotify )( gpointer data );
 
@@ -52,11 +53,14 @@ public:
     static bool isAvailable();
 
     static gpointer store_network_password( const gchar* keyring, const gchar* display_name,
-                                            const gchar* user, const gchar* server, const gchar* password,
+                                            const gchar* user, const gchar* server,
+                                            const gchar* type, const gchar* password,
                                             OperationDoneCallback callback, gpointer data, GDestroyNotify destroy_data );
 
     static gpointer find_network_password( const gchar* user, const gchar* server,
-                                           OperationGetStringCallback callback, gpointer data, GDestroyNotify destroy_data );
+                                           const gchar* type,
+                                           OperationGetStringCallback callback,
+                                           gpointer data, GDestroyNotify destroy_data );
 
     static gpointer delete_network_password( const gchar* user, const gchar* server,
                                              OperationDoneCallback callback, gpointer data, GDestroyNotify destroy_data );
