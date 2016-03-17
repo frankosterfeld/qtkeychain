@@ -181,9 +181,6 @@ target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME})
 ### CMake config file
 ###
 
-export(TARGETS ${QTKEYCHAIN_TARGET_NAME} FILE "${PROJECT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainLibraryDepends.cmake")
-export(PACKAGE Qt${QTKEYCHAIN_VERSION_INFIX}Keychain)
-
 configure_file(QtKeychainBuildTreeSettings.cmake.in
   "${PROJECT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainBuildTreeSettings.cmake" @ONLY)
 configure_file(QtKeychainConfig.cmake.in
