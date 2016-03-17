@@ -1,6 +1,9 @@
 ChangeLog
 =========
 
+version 0.6.0 (release 2016-03-18)
+  * Added support for the Windows Credential Store
+
 version 0.5.0 (release 2015-05-04)
   * Added support for KWallet5 (KDE5/KF)
  
