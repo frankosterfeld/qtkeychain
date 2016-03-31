@@ -1,6 +1,9 @@
 ChangeLog
 =========
 
+version 0.6.1 (release 2016-03-31)
+  * Fix KWallet not working (regressions in 0.6.0)
+
 version 0.6.0 (release 2016-03-18)
   * Added support for the Windows Credential Store
 
