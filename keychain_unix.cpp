@@ -326,18 +326,18 @@ void ReadPasswordJobPrivate::kwalletEntryTypeFinished( QDBusPendingCallWatcher* 
             ? QDBusPendingCall( iface->readPassword( walletHandle, q->service(), key, q->service() ) )
             : QDBusPendingCall( iface->readEntry( walletHandle, q->service(), key, q->service() ) );
     QDBusPendingCallWatcher* nextWatcher = new QDBusPendingCallWatcher( nextReply, this );
-    connect( nextWatcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletReadFinished(QDBusPendingCallWatcher*)) );
+    connect( nextWatcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletFinished(QDBusPendingCallWatcher*)) );
 }
 
 void ReadPasswordJobPrivate::kwalletFinished( QDBusPendingCallWatcher* watcher ) {
     if ( !watcher->isError() ) {
-    if ( mode == Binary ) {
-        QDBusPendingReply<QByteArray> reply = *watcher;
-        data = reply.value();
-    } else {
-        QDBusPendingReply<QString> reply = *watcher;
-        data = reply.value().toUtf8();
-    }
+        if ( mode == Binary ) {
+            QDBusPendingReply<QByteArray> reply = *watcher;
+            data = reply.value();
+        } else {
+            QDBusPendingReply<QString> reply = *watcher;
+            data = reply.value().toUtf8();
+        }
     }
 
     JobPrivate::kwalletFinished(watcher);
@@ -461,17 +461,18 @@ void JobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watcher ) {
         nextReply = iface->removeEntry( handle, q->service(), key, q->service() );
 
     QDBusPendingCallWatcher* nextWatcher = new QDBusPendingCallWatcher( nextReply, this );
-    connect( nextWatcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletWriteFinished(QDBusPendingCallWatcher*)) );
+    connect( nextWatcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletFinished(QDBusPendingCallWatcher*)) );
 }
 
 void JobPrivate::kwalletFinished( QDBusPendingCallWatcher* watcher ) {
-    watcher->deleteLater();
-    QDBusPendingReply<int> reply = *watcher;
-    if ( reply.isError() ) {
-        const QDBusError err = reply.error();
-        q->emitFinishedWithError( OtherError, tr("Could not open wallet: %1; %2")
-                                  .arg( QDBusError::errorString( err.type() ), err.message() ) );
-        return;
+    if ( !watcher->isError() ) {
+        if ( mode == Binary ) {
+            QDBusPendingReply<QByteArray> reply = *watcher;
+            data = reply.value();
+        } else {
+            QDBusPendingReply<QString> reply = *watcher;
+            data = reply.value().toUtf8();
+        }
     }
 
     q->emitFinished();
