@@ -333,10 +333,14 @@ void ReadPasswordJobPrivate::kwalletFinished( QDBusPendingCallWatcher* watcher )
     if ( !watcher->isError() ) {
         if ( mode == Binary ) {
             QDBusPendingReply<QByteArray> reply = *watcher;
-            data = reply.value();
+            if (reply.isValid()) {
+                data = reply.value();
+            }
         } else {
             QDBusPendingReply<QString> reply = *watcher;
-            data = reply.value().toUtf8();
+            if (reply.isValid()) {
+                data = reply.value().toUtf8();
+            }
         }
     }
 
@@ -468,10 +472,14 @@ void JobPrivate::kwalletFinished( QDBusPendingCallWatcher* watcher ) {
     if ( !watcher->isError() ) {
         if ( mode == Binary ) {
             QDBusPendingReply<QByteArray> reply = *watcher;
-            data = reply.value();
+            if (reply.isValid()) {
+                data = reply.value();
+            }
         } else {
             QDBusPendingReply<QString> reply = *watcher;
-            data = reply.value().toUtf8();
+            if (reply.isValid()) {
+                data = reply.value().toUtf8();
+            }
         }
     }
 
