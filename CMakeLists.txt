@@ -3,7 +3,7 @@ project(qtkeychain)
 
 ###
 
-set(QTKEYCHAIN_VERSION 0.6.1)
+set(QTKEYCHAIN_VERSION 0.6.2)
 set(QTKEYCHAIN_SOVERSION 0)
 
 ###
