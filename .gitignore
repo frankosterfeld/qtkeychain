@@ -1,0 +1,25 @@
+#CMake files
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+QtKeychainBuildTreeSettings.cmake
+QtKeychainConfig.cmake
+QtKeychainConfigVersion.cmake
+cmake_install.cmake
+
+#Qt files
+moc_keychain.cxx
+moc_keychain.cxx_parameters
+moc_keychain_p.cxx
+moc_keychain_p.cxx_parameters
+
+#General build files
+Debug
+Release
+
+#Mac build files
+qtkeychain.xcodeproj
+qtkeychain.build
+
+#Temporary files
+*.sw?
