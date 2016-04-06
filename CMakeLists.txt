@@ -164,7 +164,7 @@ if(NOT QTKEYCHAIN_STATIC)
     target_link_libraries(${QTKEYCHAIN_TARGET_NAME} ${qtkeychain_LIBRARIES})
 else()
     add_library(${QTKEYCHAIN_TARGET_NAME} STATIC ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
-    set_target_properties(${QTKEYCHAIN_TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS QKEYCHAIN_STATICLIB)
+    set_target_properties(${QTKEYCHAIN_TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS QKEYCHAIN_STATICLIB )
 endif()
 
 set_target_properties(${QTKEYCHAIN_TARGET_NAME} PROPERTIES
@@ -187,6 +187,7 @@ install(TARGETS ${QTKEYCHAIN_TARGET_NAME}
 
 add_executable( testclient testclient.cpp )
 target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME} ${qtkeychain_LIBRARIES})
+set_target_properties( testclient PROPERTIES COMPILE_DEFINITIONS QKEYCHAIN_STATICLIB )
 
 
 ###
