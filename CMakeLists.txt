@@ -13,6 +13,7 @@ include(GNUInstallDirs)
 
 option(BUILD_WITH_QT4 "Build qtkeychain with Qt4 no matter if Qt5 was found" OFF)
 option(BUILD_TRANSLATIONS "Build translations" ON)
+option(QTKEYCHAIN_STATIC "Build static library" OFF)
 
 if (WIN32)
     option(USE_CREDENTIAL_STORE "Build with windows CredentialStore support" ON)
@@ -122,7 +123,7 @@ endif()
 if(UNIX AND NOT APPLE)
     list(APPEND qtkeychain_SOURCES keychain_unix.cpp gnomekeyring.cpp)
     qt_add_dbus_interface(qtkeychain_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/org.kde.KWallet.xml kwallet_interface KWalletInterface)
-    list(APPEND qtkeychain_LIBRARIES ${QTDBUS_LIBRARIES})
+    list(APPEND qtkeychain_LIBRARIES ${QTDBUS_LIBRARIES} )
 endif()
 
 QT_WRAP_CPP(qtkeychain_MOC_OUTFILES keychain.h keychain_p.h)
@@ -185,7 +186,7 @@ install(TARGETS ${QTKEYCHAIN_TARGET_NAME}
 )
 
 add_executable( testclient testclient.cpp )
-target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME})
+target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME} ${qtkeychain_LIBRARIES})
 
 
 ###
