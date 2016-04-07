@@ -12,6 +12,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake/Module
 include(GNUInstallDirs)
 
 option(BUILD_WITH_QT4 "Build qtkeychain with Qt4 no matter if Qt5 was found" OFF)
+option(BUILD_TRANSLATIONS "Build translations" ON)
+option(QTKEYCHAIN_STATIC "Build static library" OFF)
 
 if (WIN32)
     option(USE_CREDENTIAL_STORE "Build with windows CredentialStore support" ON)
@@ -22,6 +24,12 @@ if (WIN32)
 endif()
 
 if( NOT BUILD_WITH_QT4 )
+
+    #Make it possible to point out where the QT is installed
+    if ( QTDIR ) 
+	list ( APPEND CMAKE_PREFIX_PATH ${QTDIR} )
+    endif( QTDIR )
+
     # try Qt5 first, and prefer that if found
     find_package(Qt5Core QUIET)
 endif()
@@ -87,9 +95,11 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 list(APPEND qtkeychain_LIBRARIES ${QTCORE_LIBRARIES})
 set(qtkeychain_SOURCES
     keychain.cpp
+    qkeychain_export.h
+    keychain.h
 )
 
-ADD_DEFINITIONS( -Wall )
+add_definitions( -Wall )
 
 if(WIN32)
     list(APPEND qtkeychain_SOURCES keychain_win.cpp)
@@ -113,7 +123,7 @@ endif()
 if(UNIX AND NOT APPLE)
     list(APPEND qtkeychain_SOURCES keychain_unix.cpp gnomekeyring.cpp)
     qt_add_dbus_interface(qtkeychain_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/org.kde.KWallet.xml kwallet_interface KWalletInterface)
-    list(APPEND qtkeychain_LIBRARIES ${QTDBUS_LIBRARIES})
+    list(APPEND qtkeychain_LIBRARIES ${QTDBUS_LIBRARIES} )
 endif()
 
 QT_WRAP_CPP(qtkeychain_MOC_OUTFILES keychain.h keychain_p.h)
@@ -124,26 +134,28 @@ set(qtkeychain_TR_FILES
 )
 
 file(GLOB qtkeychain_TR_SOURCES *.cpp *.h *.ui)
-qt_create_translation(qtkeychain_MESSAGES ${qtkeychain_TR_SOURCES} ${qtkeychain_TR_FILES})
-qt_add_translation(qtkeychain_QM_FILES ${qtkeychain_TR_FILES})
-add_custom_target(messages DEPENDS ${qtkeychain_MESSAGES})
-add_custom_target(translations DEPENDS ${qtkeychain_QM_FILES})
+if ( BUILD_TRANSLATIONS )
+    qt_create_translation(qtkeychain_MESSAGES ${qtkeychain_TR_SOURCES} ${qtkeychain_TR_FILES})
+    qt_add_translation(qtkeychain_QM_FILES ${qtkeychain_TR_FILES})
+    add_custom_target(messages DEPENDS ${qtkeychain_MESSAGES})
+    add_custom_target(translations DEPENDS ${qtkeychain_QM_FILES})
 
-if(NOT QT_TRANSLATIONS_DIR)
-    # If this directory is missing, we are in a Qt5 environment.
-    # Extract the qmake executable location
-    get_target_property(QT5_QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
-    # Ask Qt5 where to put the translations
-    execute_process( COMMAND ${QT5_QMAKE_EXECUTABLE} -query QT_INSTALL_TRANSLATIONS
-        OUTPUT_VARIABLE qt_translations_dir OUTPUT_STRIP_TRAILING_WHITESPACE )
-    # make sure we have / and not \ as qmake gives on windows
-    FILE(TO_CMAKE_PATH "${qt_translations_dir}" qt_translations_dir)
-    SET(QT_TRANSLATIONS_DIR ${qt_translations_dir} CACHE PATH "The
-    location of the Qt translations" FORCE)
-endif()
+    if(NOT QT_TRANSLATIONS_DIR)
+	# If this directory is missing, we are in a Qt5 environment.
+	# Extract the qmake executable location
+	get_target_property(QT5_QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
+	# Ask Qt5 where to put the translations
+	execute_process( COMMAND ${QT5_QMAKE_EXECUTABLE} -query QT_INSTALL_TRANSLATIONS
+	    OUTPUT_VARIABLE qt_translations_dir OUTPUT_STRIP_TRAILING_WHITESPACE )
+	# make sure we have / and not \ as qmake gives on windows
+	file( TO_CMAKE_PATH "${qt_translations_dir}" qt_translations_dir)
+	set( QT_TRANSLATIONS_DIR ${qt_translations_dir} CACHE PATH
+	     "The location of the Qt translations" FORCE)
+    endif()
 
-install(FILES ${qtkeychain_QM_FILES}
-        DESTINATION ${QT_TRANSLATIONS_DIR})
+    install(FILES ${qtkeychain_QM_FILES}
+	    DESTINATION ${QT_TRANSLATIONS_DIR})
+endif( BUILD_TRANSLATIONS )
 
 set(QTKEYCHAIN_TARGET_NAME qt${QTKEYCHAIN_VERSION_INFIX}keychain)
 if(NOT QTKEYCHAIN_STATIC)
@@ -152,7 +164,7 @@ if(NOT QTKEYCHAIN_STATIC)
     target_link_libraries(${QTKEYCHAIN_TARGET_NAME} ${qtkeychain_LIBRARIES})
 else()
     add_library(${QTKEYCHAIN_TARGET_NAME} STATIC ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
-    set_target_properties(${QTKEYCHAIN_TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS QKEYCHAIN_STATICLIB)
+    set_target_properties(${QTKEYCHAIN_TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS QKEYCHAIN_STATICLIB )
 endif()
 
 set_target_properties(${QTKEYCHAIN_TARGET_NAME} PROPERTIES
@@ -174,7 +186,8 @@ install(TARGETS ${QTKEYCHAIN_TARGET_NAME}
 )
 
 add_executable( testclient testclient.cpp )
-target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME})
+target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME} ${qtkeychain_LIBRARIES})
+set_target_properties( testclient PROPERTIES COMPILE_DEFINITIONS QKEYCHAIN_STATICLIB )
 
 
 ###
