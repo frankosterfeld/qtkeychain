@@ -1,6 +1,9 @@
 ChangeLog
 =========
 
+version 0.7.0 (release 2016-05-23)
+  * Bump SO version due to 0.6 being binary-incompatible to previous releases
+
 version 0.6.2 (release 2016-04-04)
   * KWallet: Fixes a crash when storing passwords, seen on Debian/KDE4
 
