@@ -78,6 +78,16 @@ static DesktopEnvironment detectDesktopEnvironment() {
 
 static KeyringBackend detectKeyringBackend()
 {
+    // Check if user wants to override detection logic
+    QByteArray backendOverride = qgetenv("QTKEYCHAIN_BACKEND");
+    if (backendOverride == "kwallet4") {
+        return Backend_Kwallet4;
+    } else if (backendOverride == "kwallet5") {
+        return Backend_Kwallet5;
+    } else if (backendOverride == "gnome") {
+        return Backend_GnomeKeyring;
+    }
+
     /* Libsecret unifies access to KDE and GNOME
      * password services. */
     if (LibSecretKeyring::isAvailable()) {
