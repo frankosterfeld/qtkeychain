@@ -26,7 +26,7 @@ struct Releaser {
 
 static QString strForStatus( OSStatus os ) {
     const Releaser<CFStringRef> str( SecCopyErrorMessageString( os, 0 ) );
-    const char * const buf = CFStringGetCStringPtr( str.value,  kCFStringEncodingUTF8 );
+    const char * const buf = CFStringGetCStringPtr( str.value, kCFStringEncodingUTF8 );
     if ( !buf )
         return QObject::tr( "OS X Keychain error (OSStatus %1)" ).arg( os );
     return QObject::tr( "%1 (OSStatus %2)" )
