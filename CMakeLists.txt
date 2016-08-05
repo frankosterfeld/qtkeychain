@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.11)
 project(qtkeychain)
 
 ###
@@ -10,6 +10,7 @@ set(QTKEYCHAIN_SOVERSION 1)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake/Modules")
 include(GNUInstallDirs)
+include(GenerateExportHeader)
 
 option(BUILD_WITH_QT4 "Build qtkeychain with Qt4 no matter if Qt5 was found" OFF)
 
@@ -148,12 +149,17 @@ install(FILES ${qtkeychain_QM_FILES}
 set(QTKEYCHAIN_TARGET_NAME qt${QTKEYCHAIN_VERSION_INFIX}keychain)
 if(NOT QTKEYCHAIN_STATIC)
     add_library(${QTKEYCHAIN_TARGET_NAME} SHARED ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
-    set_target_properties(${QTKEYCHAIN_TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS QKEYCHAIN_BUILD_QKEYCHAIN_LIB)
-    target_link_libraries(${QTKEYCHAIN_TARGET_NAME} ${qtkeychain_LIBRARIES})
 else()
     add_library(${QTKEYCHAIN_TARGET_NAME} STATIC ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
-    set_target_properties(${QTKEYCHAIN_TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS QKEYCHAIN_STATICLIB)
 endif()
+
+target_link_libraries(${QTKEYCHAIN_TARGET_NAME} PUBLIC ${qtkeychain_LIBRARIES})
+
+
+generate_export_header(${QTKEYCHAIN_TARGET_NAME}
+  EXPORT_FILE_NAME qkeychain_export.h
+  EXPORT_MACRO_NAME QKEYCHAIN_EXPORT
+)
 
 set_target_properties(${QTKEYCHAIN_TARGET_NAME} PROPERTIES
     VERSION ${QTKEYCHAIN_VERSION}
@@ -162,7 +168,7 @@ set_target_properties(${QTKEYCHAIN_TARGET_NAME} PROPERTIES
     INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
 )
 
-install(FILES keychain.h qkeychain_export.h
+install(FILES keychain.h ${CMAKE_CURRENT_BINARY_DIR}/qkeychain_export.h
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt${QTKEYCHAIN_VERSION_INFIX}keychain/
 )
 
