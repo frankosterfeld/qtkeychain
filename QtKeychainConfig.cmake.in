@@ -24,11 +24,6 @@ else()
     find_dependency(Qt4 COMPONENTS QtCore)
 endif()
 
-if(APPLE)
-    find_dependency(COREFOUNDATION_LIBRARY CoreFoundation)
-    find_dependency(SECURITY_LIBRARY Security)
-endif()
-
 # Our library dependencies (contains definitions for IMPORTED targets)
 include("${QTKEYCHAIN_CMAKE_DIR}/Qt@QTKEYCHAIN_VERSION_INFIX@KeychainLibraryDepends.cmake")
 
