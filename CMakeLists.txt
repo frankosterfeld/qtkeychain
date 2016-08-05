@@ -114,10 +114,10 @@ endif()
 if(APPLE)
     list(APPEND qtkeychain_SOURCES keychain_mac.cpp)
 
-    find_library(COREFOUNDATION_LIBRARY CoreFoundation)
+    find_library(COREFOUNDATION_LIBRARY CoreFoundation REQUIRED)
     list(APPEND qtkeychain_LIBRARIES ${COREFOUNDATION_LIBRARY})
 
-    find_library(SECURITY_LIBRARY Security)
+    find_library(SECURITY_LIBRARY Security REQUIRED)
     list(APPEND qtkeychain_LIBRARIES ${SECURITY_LIBRARY})
 endif()
 
@@ -192,7 +192,7 @@ install(TARGETS ${QTKEYCHAIN_TARGET_NAME}
 )
 
 add_executable( testclient testclient.cpp )
-target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME} ${qtkeychain_LIBRARIES})
+target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME})
 
 
 ###
