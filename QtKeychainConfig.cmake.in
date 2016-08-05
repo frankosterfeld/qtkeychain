@@ -6,10 +6,27 @@
 # Compute paths
 get_filename_component(QTKEYCHAIN_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 if(EXISTS "${QTKEYCHAIN_CMAKE_DIR}/CMakeCache.txt")
-   # In build tree
-   include("${QTKEYCHAIN_CMAKE_DIR}/Qt@QTKEYCHAIN_VERSION_INFIX@KeychainBuildTreeSettings.cmake")
+    # In build tree
+    include("${QTKEYCHAIN_CMAKE_DIR}/Qt@QTKEYCHAIN_VERSION_INFIX@KeychainBuildTreeSettings.cmake")
 else()
-   set(QTKEYCHAIN_INCLUDE_DIRS "@CMAKE_INSTALL_FULL_INCLUDEDIR@")
+    set(QTKEYCHAIN_INCLUDE_DIRS "@CMAKE_INSTALL_FULL_INCLUDEDIR@")
+endif()
+
+include(CMakeFindDependencyMacro)
+
+if("@QTKEYCHAIN_VERSION_INFIX@" STREQUAL "5")
+    find_dependency(Qt5Core)
+
+    if(UNIX AND NOT APPLE)
+        find_dependency(Qt5DBus)
+    endif()
+else()
+    find_dependency(Qt4 COMPONENTS QtCore)
+endif()
+
+if(APPLE)
+    find_dependency(COREFOUNDATION_LIBRARY CoreFoundation)
+    find_dependency(SECURITY_LIBRARY Security)
 endif()
 
 # Our library dependencies (contains definitions for IMPORTED targets)

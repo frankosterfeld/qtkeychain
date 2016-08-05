@@ -103,10 +103,10 @@ endif()
 if(APPLE)
     list(APPEND qtkeychain_SOURCES keychain_mac.cpp)
 
-    find_library(COREFOUNDATION_LIBRARY CoreFoundation)
+    find_library(COREFOUNDATION_LIBRARY CoreFoundation REQUIRED)
     list(APPEND qtkeychain_LIBRARIES ${COREFOUNDATION_LIBRARY})
 
-    find_library(SECURITY_LIBRARY Security)
+    find_library(SECURITY_LIBRARY Security REQUIRED)
     list(APPEND qtkeychain_LIBRARIES ${SECURITY_LIBRARY})
 endif()
 
