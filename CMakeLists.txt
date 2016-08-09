@@ -16,6 +16,10 @@ option(BUILD_WITH_QT4 "Build qtkeychain with Qt4 no matter if Qt5 was found" OFF
 option(BUILD_TRANSLATIONS "Build translations" ON)
 option(QTKEYCHAIN_STATIC "Build static library" OFF)
 
+if(CMAKE_SYSTEM_NAME STREQUAL Android)
+    set(ANDROID 1)
+endif()
+
 if (WIN32)
     option(USE_CREDENTIAL_STORE "Build with windows CredentialStore support" ON)
 
@@ -37,7 +41,8 @@ endif()
 
 if (Qt5Core_FOUND)
   set(QTKEYCHAIN_VERSION_INFIX 5)
-  if(UNIX AND NOT APPLE)
+
+  if(UNIX AND NOT APPLE AND NOT ANDROID)
     find_package(Qt5DBus REQUIRED)
     include_directories(${Qt5DBus_INCLUDE_DIRS})
     set(QTDBUS_LIBRARIES ${Qt5DBus_LIBRARIES})
@@ -139,7 +144,7 @@ if(APPLE)
     list(APPEND qtkeychain_LIBRARIES ${SECURITY_LIBRARY})
 endif()
 
-if(UNIX AND NOT APPLE)
+if(UNIX AND NOT APPLE AND NOT ANDROID)
     list(APPEND qtkeychain_SOURCES keychain_unix.cpp gnomekeyring.cpp)
     qt_add_dbus_interface(qtkeychain_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/org.kde.KWallet.xml kwallet_interface KWalletInterface)
     list(APPEND qtkeychain_LIBRARIES ${QTDBUS_LIBRARIES} )
