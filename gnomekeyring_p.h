@@ -4,6 +4,8 @@
 #include <QLibrary>
 
 class GnomeKeyring : private QLibrary {
+    Q_OBJECT
+
 public:
     enum Result {
         RESULT_OK,
