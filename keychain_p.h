@@ -84,6 +84,7 @@ friend class Job;
 friend class JobExecutor;
 friend class ReadPasswordJob;
 friend class WritePasswordJob;
+friend class PlainTextStore;
 };
 
 class ReadPasswordJobPrivate : public JobPrivate {
