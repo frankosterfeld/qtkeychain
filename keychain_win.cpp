@@ -56,7 +56,7 @@ void WritePasswordJobPrivate::scheduledStart() {
     LPWSTR name = (LPWSTR)key.utf16();
 
     memset(&cred, 0, sizeof(cred));
-    cred.Comment = L"QtKeychain";
+    cred.Comment = const_cast<wchar_t*>(L"QtKeychain");
     cred.Type = CRED_TYPE_GENERIC;
     cred.TargetName = name;
     cred.CredentialBlobSize = data.size();
