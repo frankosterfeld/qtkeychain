@@ -44,7 +44,7 @@ enum DesktopEnvironment {
 // licensed under BSD, see base/nix/xdg_util.cc
 
 static DesktopEnvironment getKdeVersion() {
-    QString value = qgetenv("KDE_SESSION_VERSION");
+    QByteArray value = qgetenv("KDE_SESSION_VERSION");
     if ( value == "5" ) {
         return DesktopEnv_Plasma5;
     } else if (value == "4" ) {
@@ -371,11 +371,11 @@ void WritePasswordJobPrivate::scheduledStart() {
 
         switch(mode) {
         case JobPrivate::Text:
-            type = "plaintext";
+            type = QLatin1String("plaintext");
             password = data;
             break;
         default:
-            type = "base64";
+            type = QLatin1String("base64");
             password = data.toBase64();
             break;
         }
