@@ -8,22 +8,9 @@
  *****************************************************************************/
 #include "keychain_p.h"
 #include "gnomekeyring_p.h"
-
-#include <QSettings>
-
-#include <QScopedPointer>
+#include "plaintextstore_p.h"
 
 using namespace QKeychain;
-
-static QString typeKey( const QString& key )
-{
-    return QString::fromLatin1( "%1/type" ).arg( key );
-}
-
-static QString dataKey( const QString& key )
-{
-    return QString::fromLatin1( "%1/data" ).arg( key );
-}
 
 enum KeyringBackend {
     Backend_GnomeKeyring,
@@ -217,15 +204,16 @@ void JobPrivate::gnomeKeyring_readCb( int result, const char* string, JobPrivate
 
 void ReadPasswordJobPrivate::fallbackOnError(const QDBusError& err )
 {
-    QScopedPointer<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
-    QSettings* actual = q->settings() ? q->settings() : local.data();
+    PlainTextStore plainTextStore( q->service(), q->settings() );
 
-    if ( q->insecureFallback() && actual->contains( dataKey( key ) ) ) {
+    if ( q->insecureFallback() && plainTextStore.contains( key ) ) {
+        mode = plainTextStore.readMode( key );
+        data = plainTextStore.readData( key );
 
-        mode = JobPrivate::stringToMode( actual->value( typeKey( key ) ).toString() );
-        data = actual->value( dataKey( key ) ).toByteArray();
-
-        q->emitFinished();
+        if ( plainTextStore.error() != NoError )
+            q->emitFinishedWithError( plainTextStore.error(), plainTextStore.errorString() );
+        else
+            q->emitFinished();
     } else {
         if ( err.type() == QDBusError::ServiceUnknown ) //KWalletd not running
             q->emitFinishedWithError( NoBackendAvailable, tr("No keychain service available") );
@@ -238,21 +226,20 @@ void ReadPasswordJobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watch
     watcher->deleteLater();
     const QDBusPendingReply<int> reply = *watcher;
 
-    QScopedPointer<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
-    QSettings* actual = q->settings() ? q->settings() : local.data();
-
     if ( reply.isError() ) {
         fallbackOnError( reply.error() );
         return;
     }
 
-    if ( actual->contains( dataKey( key ) ) ) {
+    PlainTextStore plainTextStore( q->service(), q->settings() );
+
+    if ( plainTextStore.contains( key ) ) {
         // We previously stored data in the insecure QSettings, but now have KWallet available.
         // Do the migration
 
-        data = actual->value( dataKey( key ) ).toByteArray();
-        const WritePasswordJobPrivate::Mode mode = WritePasswordJobPrivate::stringToMode( actual->value( typeKey( key ) ).toString() );
-        actual->remove( key );
+        data = plainTextStore.readData( key );
+        const WritePasswordJobPrivate::Mode mode = plainTextStore.readMode( key );
+        plainTextStore.remove( key );
 
         q->emitFinished();
 
@@ -404,19 +391,18 @@ void WritePasswordJobPrivate::scheduledStart() {
 
 void WritePasswordJobPrivate::fallbackOnError(const QDBusError &err)
 {
-    QScopedPointer<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
-    QSettings* actual = q->settings() ? q->settings() : local.data();
-
     if ( !q->insecureFallback() ) {
         q->emitFinishedWithError( OtherError, tr("Could not open wallet: %1; %2").arg( QDBusError::errorString( err.type() ), err.message() ) );
         return;
     }
 
-    actual->setValue( QString::fromLatin1( "%1/type" ).arg( key ), mode );
-    actual->setValue( QString::fromLatin1( "%1/data" ).arg( key ), data );
-    actual->sync();
+    PlainTextStore plainTextStore( q->service(), q->settings() );
+    plainTextStore.write( key, data, mode );
 
-    q->emitFinished();
+    if ( plainTextStore.error() != NoError )
+        q->emitFinishedWithError( plainTextStore.error(), plainTextStore.errorString() );
+    else
+        q->emitFinished();
 }
 
 void JobPrivate::gnomeKeyring_writeCb(int result, JobPrivate* self )
@@ -433,19 +419,15 @@ void JobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watcher ) {
     watcher->deleteLater();
     QDBusPendingReply<int> reply = *watcher;
 
-    QScopedPointer<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
-    QSettings* actual = q->settings() ? q->settings() : local.data();
-
     if ( reply.isError() ) {
         fallbackOnError( reply.error() );
         return;
     }
 
-    if ( actual->contains( key ) )
-    {
+    PlainTextStore plainTextStore( q->service(), q->settings() );
+    if ( plainTextStore.contains( key ) ) {
         // If we had previously written to QSettings, but we now have a kwallet available, migrate and delete old insecure data
-        actual->remove( key );
-        actual->sync();
+        plainTextStore.remove( key );
     }
 
     const int handle = reply.value();

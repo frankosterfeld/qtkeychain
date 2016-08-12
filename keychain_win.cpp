@@ -7,8 +7,7 @@
  * details, check the accompanying file 'COPYING'.                            *
  *****************************************************************************/
 #include "keychain_p.h"
-
-#include <QSettings>
+#include "plaintextstore_p.h"
 
 #include <windows.h>
 #include <wincrypt.h>
@@ -22,8 +21,6 @@ using namespace QKeychain;
 
 void ReadPasswordJobPrivate::scheduledStart() {
     LPCWSTR name = (LPCWSTR)key.utf16();
-    //Use settings member if there, create local settings object if not
-    std::auto_ptr<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
     PCREDENTIALW cred;
 
     if (!CredReadW(name, CRED_TYPE_GENERIC, 0, &cred)) {
@@ -94,13 +91,10 @@ void DeletePasswordJobPrivate::scheduledStart() {
 }
 #else
 void ReadPasswordJobPrivate::scheduledStart() {
-    //Use settings member if there, create local settings object if not
-    std::auto_ptr<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
-    QSettings* actual = q->settings() ? q->settings() : local.get();
-
-    QByteArray encrypted = actual->value( key ).toByteArray();
-    if ( encrypted.isNull() ) {
-        q->emitFinishedWithError( EntryNotFound, tr("Entry not found") );
+    PlainTextStore plainTextStore( q->service(), q->settings() );
+    QByteArray encrypted = plainTextStore.readData( key );
+    if ( plainTextStore.error() != NoError ) {
+        q->emitFinishedWithError( plainTextStore.error(), plainTextStore.errorString() );
         return;
     }
 
@@ -147,17 +141,10 @@ void WritePasswordJobPrivate::scheduledStart() {
     const QByteArray encrypted( reinterpret_cast<char*>( blob_out.pbData ), blob_out.cbData );
     LocalFree( blob_out.pbData );
 
-    //Use settings member if there, create local settings object if not
-    std::auto_ptr<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
-    QSettings* actual = q->settings() ? q->settings() : local.get();
-    actual->setValue( key, encrypted );
-    actual->sync();
-    if ( actual->status() != QSettings::NoError ) {
-
-        const QString errorString = actual->status() == QSettings::AccessError
-                ? tr("Could not store encrypted data in settings: access error")
-                : tr("Could not store encrypted data in settings: format error");
-        q->emitFinishedWithError( OtherError, errorString );
+    PlainTextStore plainTextStore( q->service(), q->settings() );
+    plainTextStore.write( key, encrypted, Binary );
+    if ( plainTextStore.error() != NoError ) {
+        q->emitFinishedWithError( plainTextStore.error(), plainTextStore.errorString() );
         return;
     }
 
@@ -165,16 +152,10 @@ void WritePasswordJobPrivate::scheduledStart() {
 }
 
 void DeletePasswordJobPrivate::scheduledStart() {
-    //Use settings member if there, create local settings object if not
-    std::auto_ptr<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
-    QSettings* actual = q->settings() ? q->settings() : local.get();
-    actual->remove( key );
-    actual->sync();
-    if ( actual->status() != QSettings::NoError ) {
-        const QString err = actual->status() == QSettings::AccessError
-                ? tr("Could not delete encrypted data from settings: access error")
-                : tr("Could not delete encrypted data from settings: format error");
-        q->emitFinishedWithError( OtherError, err );
+    PlainTextStore plainTextStore( q->service(), q->settings() );
+    plainTextStore.remove( key );
+    if ( plainTextStore.error() != NoError ) {
+        q->emitFinishedWithError( plainTextStore.error(), plainTextStore.errorString() );
     } else {
         q->emitFinished();
     }
