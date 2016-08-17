@@ -192,13 +192,34 @@ private:
 
 class WritePasswordJobPrivate;
 
+/**
+ * @brief Job for writing secrets to the keychain.
+ * You can use a WritePasswordJob to store passwords or binary data in the keychain.
+ * This job requires a "service" string, which is basically a namespace of keys within the keychain.
+ * This means that you can store different pairs <key, secret> under the same service string.
+ */
 class QKEYCHAIN_EXPORT WritePasswordJob : public Job {
     Q_OBJECT
 public:
+    /**
+     * Create a new WritePasswordJob.
+     * @param service The service string used by this job (can be empty).
+     * @param parent The parent of this job.
+     */
     explicit WritePasswordJob( const QString& service, QObject* parent=0 );
     ~WritePasswordJob();
 
+    /**
+     * Set the @p data that the job will store in the keychain as binary data.
+     * @warning setBinaryData() and setTextData() are mutually exclusive.
+     */
     void setBinaryData( const QByteArray& data );
+
+    /**
+     * Set the @p data that the job will store in the keychain as string.
+     * Tipically @p data is a password.
+     * @warning setBinaryData() and setTextData() are mutually exclusive.
+     */
     void setTextData( const QString& data );
 
 private:
