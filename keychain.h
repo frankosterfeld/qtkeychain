@@ -177,13 +177,35 @@ friend class DeletePasswordJobPrivate;
 
 class ReadPasswordJobPrivate;
 
+/**
+ * @brief Job for reading secrets from the keychain.
+ * You can use a ReadPasswordJob to read passwords or binary data from the keychain.
+ * This job requires a "service" string, which is basically a namespace of keys within the keychain.
+ * This means that you can read all the pairs <key, secret> stored in the same service string.
+ */
 class QKEYCHAIN_EXPORT ReadPasswordJob : public Job {
     Q_OBJECT
 public:
+    /**
+     * Create a new ReadPasswordJob.
+     * @param service The service string used by this job (can be empty).
+     * @param parent The parent of this job.
+     */
     explicit ReadPasswordJob( const QString& service, QObject* parent=0 );
     ~ReadPasswordJob();
 
+    /**
+     * @return The binary data stored as value of this job's key().
+     * @see Job::key()
+     */
     QByteArray binaryData() const;
+
+    /**
+     * @return The string stored as value of this job's key().
+     * @see Job::key()
+     * @warning Returns meaningless data if the data was stored as binary data.
+     * @see WritePasswordJob::setTextData()
+     */
     QString textData() const;
 
 private:
