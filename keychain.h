@@ -37,6 +37,9 @@ enum Error {
 class JobExecutor;
 class JobPrivate;
 
+/**
+ * @brief Abstract base class for all QKeychain jobs.
+ */
 class QKEYCHAIN_EXPORT Job : public QObject {
     Q_OBJECT
 public:    
@@ -45,23 +48,109 @@ public:
     QSettings* settings() const;
     void setSettings( QSettings* settings );
 
+    /**
+     * Call this method to start the job.
+     * Tipically you want to connect some slot to the finished() signal first.
+     * You can run the job either synchronously or asynchronously.
+     *
+     * In the first case you tipically use an inner event loop:
+     *
+     * \code
+     * SomeClass::startJob()
+     * {
+     *     QEventLoop eventLoop;
+     *     connect(job, &Job::finished, &eventLoop, &QEventLoop::quit);
+     *     job->start();
+     *     eventLoop.exec();
+     *
+     *     if (job->error() {
+     *         // handle error
+     *     } else {
+     *         // do job-specific stuff
+     *     }
+     * }
+     * \endcode
+     *
+     * In the asynchronous case you just connect some slot to the finished() signal
+     * and you will handle the job's completion there:
+     *
+     * \code
+     * SomeClass::startJob()
+     * {
+     *     connect(job, &Job::finished, this, &SomeClass::slotJobFinished);
+     *     job->start();
+     * }
+     *
+     * SomeClass::slotJobFinished(Job *job)
+     * {
+     *     if (job->error() {
+     *         // handle error
+     *     } else {
+     *         // do job-specific stuff
+     *     }
+     * }
+     * \endcode
+     *
+     * @see finished()
+     */
     void start();
 
     QString service() const;
 
+    /**
+     * @note Call this method only after finished() has been emitted.
+     * @return The error code of the job (0 if no error).
+     */
     Error error() const;
+
+    /**
+     * @return An error message that might provide details if error() returns OtherError.
+     */
     QString errorString() const;
 
+    /**
+     * @return Whether this job autodeletes itself once finished() has been emitted. Default is true.
+     * @see setAutoDelete()
+     */
     bool autoDelete() const;
+
+    /**
+     * Set whether this job should autodelete itself once finished() has been emitted.
+     * @see autoDelete()
+     */
     void setAutoDelete( bool autoDelete );
 
+    /**
+     * @return Whether this job will use plaintext storage on unsupported platforms. Default is false.
+     * @see setInsecureFallback()
+     */
     bool insecureFallback() const;
+
+    /**
+     * Set whether this job should use plaintext storage on unsupported platforms.
+     * @see insecureFallback()
+     */
     void setInsecureFallback( bool insecureFallback );
 
+    /**
+     * @return The string used as key by this job.
+     * @see setKey()
+     */
     QString key() const;
+
+    /**
+     * Set the @p key that this job will use to read or write data from/to the keychain.
+     * The key can be an empty string.
+     * @see key()
+     */
     void setKey( const QString& key );
 
 Q_SIGNALS:
+    /**
+     * Emitted when this job is finished.
+     * You can connect to this signal to be notified about the job's completion.
+     * @see start()
+     */
     void finished( QKeychain::Job* );
 
 protected:
