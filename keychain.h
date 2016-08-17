@@ -50,29 +50,7 @@ public:
 
     /**
      * Call this method to start the job.
-     * Tipically you want to connect some slot to the finished() signal first.
-     * You can run the job either synchronously or asynchronously.
-     *
-     * In the first case you tipically use an inner event loop:
-     *
-     * \code
-     * SomeClass::startJob()
-     * {
-     *     QEventLoop eventLoop;
-     *     connect(job, &Job::finished, &eventLoop, &QEventLoop::quit);
-     *     job->start();
-     *     eventLoop.exec();
-     *
-     *     if (job->error() {
-     *         // handle error
-     *     } else {
-     *         // do job-specific stuff
-     *     }
-     * }
-     * \endcode
-     *
-     * In the asynchronous case you just connect some slot to the finished() signal
-     * and you will handle the job's completion there:
+     * Typically you want to connect some slot to the finished() signal first:
      *
      * \code
      * SomeClass::startJob()
@@ -83,7 +61,7 @@ public:
      *
      * SomeClass::slotJobFinished(Job *job)
      * {
-     *     if (job->error() {
+     *     if (job->error()) {
      *         // handle error
      *     } else {
      *         // do job-specific stuff
@@ -239,7 +217,7 @@ public:
 
     /**
      * Set the @p data that the job will store in the keychain as string.
-     * Tipically @p data is a password.
+     * Typically @p data is a password.
      * @warning setBinaryData() and setTextData() are mutually exclusive.
      */
     void setTextData( const QString& data );
