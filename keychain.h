@@ -251,9 +251,20 @@ private:
 
 class DeletePasswordJobPrivate;
 
+/**
+ * @brief Job for deleting secrets from the keychain.
+ * You can use a DeletePasswordJob to delete passwords or binary data from the keychain.
+ * This job requires a "service" string, which is basically a namespace of keys within the keychain.
+ * This means that you can delete all the pairs <key, secret> stored in the same service string.
+ */
 class QKEYCHAIN_EXPORT DeletePasswordJob : public Job {
     Q_OBJECT
 public:
+    /**
+     * Create a new DeletePasswordJob.
+     * @param service The service string used by this job (can be empty).
+     * @param parent The parent of this job.
+     */
     explicit DeletePasswordJob( const QString& service, QObject* parent=0 );
     ~DeletePasswordJob();
 
