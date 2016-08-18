@@ -45,7 +45,18 @@ class QKEYCHAIN_EXPORT Job : public QObject {
 public:    
     ~Job();
 
+    /**
+     * @return The QSettings instance used as plaintext storage if insecureFallback() is true.
+     * @see setSettings()
+     * @see insecureFallback()
+     */
     QSettings* settings() const;
+
+    /**
+     * @return Set the QSettings instance that will be used as plaintext storage if insecureFallback() is true.
+     * @see settings()
+     * @see insecureFallback()
+     */
     void setSettings( QSettings* settings );
 
     /**
