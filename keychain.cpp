@@ -195,12 +195,13 @@ ReadPasswordJobPrivate::ReadPasswordJobPrivate(const QString &service_, ReadPass
 }
 
 JobPrivate::JobPrivate(const QString &service_, Job *qq)
-    : error( NoError )
+    : q(qq)
+    , mode( Text )
+    , error( NoError )
     , service( service_ )
     , autoDelete( true )
     , insecureFallback( false )
-    , q(qq) {
-
+{
 }
 
 QString JobPrivate::modeToString(Mode m)

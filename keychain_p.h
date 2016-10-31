@@ -45,8 +45,8 @@ public:
     static QString modeToString(Mode m);
     static Mode stringToMode(const QString& s);
 
-    Mode mode;
     Job* const q;
+    Mode mode;
     QByteArray data;
 
 #if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN) && !defined(Q_OS_ANDROID)
