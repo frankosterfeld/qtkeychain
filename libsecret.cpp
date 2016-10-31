@@ -194,8 +194,8 @@ static QString modeToString(QKeychain::JobPrivate::Mode mode) {
 #endif
 
 bool LibSecretKeyring::isAvailable() {
-    const LibSecretKeyring& keyring = instance();
 #if defined(HAVE_LIBSECRET)
+    const LibSecretKeyring& keyring = instance();
     if (!keyring.isLoaded())
         return false;
     if (secret_password_lookup_fn == NULL)
@@ -307,6 +307,7 @@ bool LibSecretKeyring::deletePassword(const QString &key, const QString &service
 LibSecretKeyring::LibSecretKeyring()
     : QLibrary("secret-1")
 {
+#ifdef HAVE_LIBSECRET
     if (load()) {
         secret_password_lookup_fn =
                 (secret_password_lookup_t)resolve("secret_password_lookup");
@@ -325,6 +326,7 @@ LibSecretKeyring::LibSecretKeyring()
         secret_error_get_quark_fn =
                 (secret_error_get_quark_t)resolve("secret_error_get_quark");
     }
+#endif
 }
 
 LibSecretKeyring &LibSecretKeyring::instance() {

@@ -155,7 +155,9 @@ if(UNIX AND NOT APPLE AND NOT ANDROID)
     if(LIBSECRET_SUPPORT)
         pkg_check_modules(LIBSECRET libsecret-1)
 
-        add_definitions(-DHAVE_LIBSECRET=${LIBSECRET_FOUND})
+        if (LIBSECRET_FOUND)
+            add_definitions(-DHAVE_LIBSECRET=1)
+        endif()
         INCLUDE_DIRECTORIES(${LIBSECRET_INCLUDE_DIRS})
     endif()
 
