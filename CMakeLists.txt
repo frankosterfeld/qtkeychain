@@ -149,7 +149,11 @@ if(WIN32)
 endif()
 
 if(APPLE)
-    list(APPEND qtkeychain_SOURCES keychain_mac.cpp)
+    if(IOS)
+        list(APPEND qtkeychain_SOURCES keychain_ios.cpp)
+    else()
+        list(APPEND qtkeychain_SOURCES keychain_mac.cpp)
+    endif()
 
     find_library(COREFOUNDATION_LIBRARY CoreFoundation REQUIRED)
     list(APPEND qtkeychain_LIBRARIES ${COREFOUNDATION_LIBRARY})
