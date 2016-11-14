@@ -31,12 +31,6 @@ if (WIN32)
 endif()
 
 if( NOT BUILD_WITH_QT4 )
-
-    #Make it possible to point out where the QT is installed
-    if ( QTDIR ) 
-	list ( APPEND CMAKE_PREFIX_PATH ${QTDIR} )
-    endif( QTDIR )
-
     # try Qt5 first, and prefer that if found
     find_package(Qt5Core QUIET)
 endif()
