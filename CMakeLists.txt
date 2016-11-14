@@ -60,14 +60,6 @@ if (Qt5Core_FOUND)
   set(QTCORE_LIBRARIES ${Qt5Core_LIBRARIES})
   include_directories(${Qt5Core_INCLUDE_DIRS})
 
-  if (Qt5_POSITION_INDEPENDENT_CODE)
-    if (CMAKE_VERSION VERSION_LESS 2.8.9) # TODO remove once we increase the cmake requirement
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-    else()
-      set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-    endif()
-  endif()
-
   if (NOT Qt5Core_VERSION VERSION_LESS "5.7.0")
     if (CMAKE_COMPILER_IS_GNUCXX)
       if ((NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.7.0") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "6.1.0"))
