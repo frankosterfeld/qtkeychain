@@ -31,12 +31,6 @@ if (WIN32)
 endif()
 
 if( NOT BUILD_WITH_QT4 )
-
-    #Make it possible to point out where the QT is installed
-    if ( QTDIR ) 
-	list ( APPEND CMAKE_PREFIX_PATH ${QTDIR} )
-    endif( QTDIR )
-
     # try Qt5 first, and prefer that if found
     find_package(Qt5Core QUIET)
 endif()
@@ -65,14 +59,6 @@ if (Qt5Core_FOUND)
 
   set(QTCORE_LIBRARIES ${Qt5Core_LIBRARIES})
   include_directories(${Qt5Core_INCLUDE_DIRS})
-
-  if (Qt5_POSITION_INDEPENDENT_CODE)
-    if (CMAKE_VERSION VERSION_LESS 2.8.9) # TODO remove once we increase the cmake requirement
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-    else()
-      set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-    endif()
-  endif()
 
   if (NOT Qt5Core_VERSION VERSION_LESS "5.7.0")
     if (CMAKE_COMPILER_IS_GNUCXX)
@@ -217,6 +203,7 @@ set_target_properties(${QTKEYCHAIN_TARGET_NAME} PROPERTIES
     SOVERSION ${QTKEYCHAIN_SOVERSION}
     MACOSX_RPATH 1
     INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+    INSTALL_RPATH_USE_LINK_PATH TRUE
 )
 
 install(FILES keychain.h ${CMAKE_CURRENT_BINARY_DIR}/qkeychain_export.h
