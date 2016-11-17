@@ -85,7 +85,7 @@ void ReadPasswordJobPrivate::scheduledStart()
         q->emitFinished();
     } else {
         const ErrorDescription error = ErrorDescription::fromStatus(status);
-        q->emitFinishedWithError(error.code, Job::tr("Could not retreive private key from keystore: %1").arg(error.message));
+        q->emitFinishedWithError(error.code, Job::tr("Could not retrieve private key from keystore: %1").arg(error.message));
     }
 
     if (dataRef)
