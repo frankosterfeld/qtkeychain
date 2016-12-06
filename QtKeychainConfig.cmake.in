@@ -3,16 +3,10 @@
 #  QTKEYCHAIN_INCLUDE_DIRS - include directories for QtKeychain
 #  QTKEYCHAIN_LIBRARIES    - libraries to link against
 
-# Compute paths
-get_filename_component(QTKEYCHAIN_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-if(EXISTS "${QTKEYCHAIN_CMAKE_DIR}/CMakeCache.txt")
-    # In build tree
-    include("${QTKEYCHAIN_CMAKE_DIR}/Qt@QTKEYCHAIN_VERSION_INFIX@KeychainBuildTreeSettings.cmake")
-else()
-    set(QTKEYCHAIN_INCLUDE_DIRS "@CMAKE_INSTALL_FULL_INCLUDEDIR@")
-endif()
+@PACKAGE_INIT@
 
-include(CMakeFindDependencyMacro)
+include("${CMAKE_CURRENT_LIST_DIR}/Qt@QTKEYCHAIN_VERSION_INFIX@KeychainLibraryDepends.cmake")
+
 
 if("@QTKEYCHAIN_VERSION_INFIX@" STREQUAL "5")
     find_dependency(Qt5Core)
@@ -24,10 +18,5 @@ else()
     find_dependency(Qt4 COMPONENTS QtCore)
 endif()
 
-# Our library dependencies (contains definitions for IMPORTED targets)
-include("${QTKEYCHAIN_CMAKE_DIR}/Qt@QTKEYCHAIN_VERSION_INFIX@KeychainLibraryDepends.cmake")
-
-# These are IMPORTED targets created by FooBarLibraryDepends.cmake
 set(QTKEYCHAIN_LIBRARIES "@QTKEYCHAIN_TARGET_NAME@")
-
-set(QTKEYCHAIN_FOUND TRUE)
+get_target_property(QTKEYCHAIN_INCLUDE_DIRS "@QTKEYCHAIN_TARGET_NAME@" INTERFACE_INCLUDE_DIRECTORIES)
