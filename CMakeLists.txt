@@ -13,6 +13,9 @@ set(QTKEYCHAIN_SOVERSION 1)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake/Modules")
 include(GNUInstallDirs)
 include(GenerateExportHeader)
+include(ECMPackageConfigHelpers)
+include(ECMSetupVersion)
+include(ECMGeneratePriFile)
 
 option(BUILD_WITH_QT4 "Build qtkeychain with Qt4 no matter if Qt5 was found" OFF)
 option(BUILD_TRANSLATIONS "Build translations" ON)
@@ -195,7 +198,7 @@ else()
 endif()
 
 target_link_libraries(${QTKEYCHAIN_TARGET_NAME} PUBLIC ${qtkeychain_LIBRARIES})
-
+target_include_directories(${QTKEYCHAIN_TARGET_NAME} PUBLIC $<INSTALL_INTERFACE:include/>)
 
 generate_export_header(${QTKEYCHAIN_TARGET_NAME}
   EXPORT_FILE_NAME qkeychain_export.h
@@ -229,12 +232,25 @@ target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME})
 ### CMake config file
 ###
 
-configure_file(QtKeychainBuildTreeSettings.cmake.in
-  "${PROJECT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainBuildTreeSettings.cmake" @ONLY)
-configure_file(QtKeychainConfig.cmake.in
-  "${PROJECT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfig.cmake" @ONLY)
-configure_file(QtKeychainConfigVersion.cmake.in
-  "${PROJECT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfigVersion.cmake" @ONLY)
+ecm_configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/QtKeychainConfig.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfig.cmake"
+  INSTALL_DESTINATION Qt${QTKEYCHAIN_VERSION_INFIX}Keychain)
+
+ecm_setup_version("${QTKEYCHAIN_VERSION}" VARIABLE_PREFIX SNORE
+  PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfigVersion.cmake"
+  SOVERSION ${QTKEYCHAIN_VERSION})
+
+if(UNIX AND NOT APPLE AND NOT ANDROID)
+    set(PRI_EXTRA_DEPS "dbus")
+endif()
+ecm_generate_pri_file(BASE_NAME Qt${QTKEYCHAIN_VERSION_INFIX}Keychain
+  LIB_NAME ${QTKEYCHAIN_TARGET_NAME}
+  DEPS "core ${PRI_EXTRA_DEPS}"
+  INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR}
+  FILENAME_VAR pri_filename)
+
+install(FILES ${pri_filename} DESTINATION ${ECM_MKSPECS_INSTALL_DIR})
+
 
 install(EXPORT Qt${QTKEYCHAIN_VERSION_INFIX}KeychainLibraryDepends
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Qt${QTKEYCHAIN_VERSION_INFIX}Keychain"
