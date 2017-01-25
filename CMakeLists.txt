@@ -62,6 +62,10 @@ if (Qt5Core_FOUND)
 
   set(QTCORE_LIBRARIES ${Qt5Core_LIBRARIES})
   include_directories(${Qt5Core_INCLUDE_DIRS})
+  
+  message("Bob!!!")
+  message("Qt5core lib ${Qt5Core_LIBRARIES}")
+  message("Qt5core inc ${Qt5Core_INCLUDE_DIRS}")
 
   if (NOT Qt5Core_VERSION VERSION_LESS "5.7.0")
     if (CMAKE_COMPILER_IS_GNUCXX)
@@ -130,7 +134,7 @@ endif()
 
 if(APPLE)
     if(IOS)
-        list(APPEND qtkeychain_SOURCES keychain_ios.cpp)
+        list(APPEND qtkeychain_SOURCES keychain_ios.mm)
     else()
         list(APPEND qtkeychain_SOURCES keychain_mac.cpp)
     endif()
@@ -224,8 +228,6 @@ install(TARGETS ${QTKEYCHAIN_TARGET_NAME}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-add_executable( testclient testclient.cpp )
-target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME})
 
 
 ###
