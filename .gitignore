@@ -44,4 +44,7 @@ qtkeychain.build
 *.sw?
 *~
 
+.gradle
+gradle.properties
+
 
