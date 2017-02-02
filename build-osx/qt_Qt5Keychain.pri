@@ -1,0 +1,10 @@
+QT.Qt5Keychain.VERSION = 0.7.90
+QT.Qt5Keychain.MAJOR_VERSION = 0
+QT.Qt5Keychain.MINOR_VERSION = 7
+QT.Qt5Keychain.PATCH_VERSION = 90
+QT.Qt5Keychain.name = qt5keychain
+QT.Qt5Keychain.defines = 
+QT.Qt5Keychain.includes = /usr/local/include
+QT.Qt5Keychain.private_includes =
+QT.Qt5Keychain.libs = /usr/local/lib
+QT.Qt5Keychain.depends = core 

@@ -46,5 +46,9 @@ qtkeychain.build
 
 .gradle
 gradle.properties
-
-
+build
+build-*
+include
+dist
+lib
+.project
