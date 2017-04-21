@@ -110,7 +110,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 list(APPEND qtkeychain_LIBRARIES ${QTCORE_LIBRARIES})
 set(qtkeychain_SOURCES
     keychain.cpp
-    qkeychain_export.h
+    ${CMAKE_CURRENT_BINARY_DIR}/qkeychain_export.h
     keychain.h
 )
 
