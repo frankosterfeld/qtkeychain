@@ -25,7 +25,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Android)
     set(ANDROID 1)
 endif()
 
-if (WIN32)
+if(WIN32)
     option(USE_CREDENTIAL_STORE "Build with windows CredentialStore support" ON)
 
     if (USE_CREDENTIAL_STORE)
@@ -33,13 +33,18 @@ if (WIN32)
     endif()
 endif()
 
-if( NOT BUILD_WITH_QT4 )
+if(NOT BUILD_WITH_QT4)
     # try Qt5 first, and prefer that if found
     find_package(Qt5Core QUIET)
 endif()
 
 if (Qt5Core_FOUND)
   set(QTKEYCHAIN_VERSION_INFIX 5)
+  set(QTCORE_LIBRARIES ${Qt5Core_LIBRARIES})
+  include_directories(${Qt5Core_INCLUDE_DIRS})
+  macro(qt_wrap_cpp)
+    qt5_wrap_cpp(${ARGN})
+  endmacro()
 
   if(UNIX AND NOT APPLE AND NOT ANDROID)
     find_package(Qt5DBus REQUIRED)
@@ -49,19 +54,16 @@ if (Qt5Core_FOUND)
       qt5_add_dbus_interface(${ARGN})
     endmacro()
   endif()
-  find_package(Qt5LinguistTools REQUIRED)
-  macro(qt_add_translation)
-    qt5_add_translation(${ARGN})
-  endmacro(qt_add_translation)
-  macro(qt_create_translation)
-    qt5_create_translation(${ARGN})
-  endmacro(qt_create_translation)
-  macro(qt_wrap_cpp)
-    qt5_wrap_cpp(${ARGN})
-  endmacro()
 
-  set(QTCORE_LIBRARIES ${Qt5Core_LIBRARIES})
-  include_directories(${Qt5Core_INCLUDE_DIRS})
+  if(BUILD_TRANSLATIONS)
+    find_package(Qt5LinguistTools REQUIRED)
+    macro(qt_add_translation)
+      qt5_add_translation(${ARGN})
+    endmacro(qt_add_translation)
+    macro(qt_create_translation)
+      qt5_create_translation(${ARGN})
+    endmacro(qt_create_translation)
+  endif()
 
   if (NOT Qt5Core_VERSION VERSION_LESS "5.7.0")
     if (CMAKE_COMPILER_IS_GNUCXX)
@@ -82,6 +84,12 @@ if (Qt5Core_FOUND)
   endif()
 else()
   set(QTKEYCHAIN_VERSION_INFIX "")
+  include_directories(${QT_INCLUDES})
+  set(QTCORE_LIBRARIES ${QT_QTCORE_LIBRARY})
+  macro(qt_wrap_cpp)
+    qt4_wrap_cpp(${ARGN})
+  endmacro()
+
   if(UNIX AND NOT APPLE)
     find_package(Qt4 COMPONENTS QtCore QtDBus REQUIRED)
     set(QTDBUS_LIBRARIES ${QT_QTDBUS_LIBRARY})
@@ -91,17 +99,15 @@ else()
   else()
     find_package(Qt4 COMPONENTS QtCore REQUIRED)
   endif()
-  include_directories(${QT_INCLUDES})
-  set(QTCORE_LIBRARIES ${QT_QTCORE_LIBRARY})
-  macro(qt_add_translation)
-    qt4_add_translation(${ARGN})
-  endmacro(qt_add_translation)
-  macro(qt_create_translation)
-    qt4_create_translation(${ARGN})
-  endmacro(qt_create_translation)
-  macro(qt_wrap_cpp)
-    qt4_wrap_cpp(${ARGN})
-  endmacro()
+
+  if(BUILD_TRANSLATIONS)
+    macro(qt_add_translation)
+      qt4_add_translation(${ARGN})
+    endmacro(qt_add_translation)
+    macro(qt_create_translation)
+      qt4_create_translation(${ARGN})
+    endmacro(qt_create_translation)
+  endif()
 endif()
 
 
@@ -114,7 +120,7 @@ set(qtkeychain_SOURCES
     keychain.h
 )
 
-add_definitions( -Wall )
+add_definitions(-Wall)
 
 if(WIN32)
     list(APPEND qtkeychain_SOURCES keychain_win.cpp)
@@ -124,7 +130,7 @@ if(WIN32)
     endif()
     #FIXME: mingw bug; otherwise getting undefined refs to RtlSecureZeroMemory there
     if(MINGW)
-        add_definitions( -O2 )
+        add_definitions(-O2)
     endif()
 endif()
 
@@ -148,7 +154,7 @@ if(UNIX AND NOT APPLE AND NOT ANDROID)
     if(LIBSECRET_SUPPORT)
         pkg_check_modules(LIBSECRET libsecret-1)
 
-        if (LIBSECRET_FOUND)
+        if(LIBSECRET_FOUND)
             add_definitions(-DHAVE_LIBSECRET=1)
         endif()
         INCLUDE_DIRECTORIES(${LIBSECRET_INCLUDE_DIRS})
@@ -167,28 +173,28 @@ set(qtkeychain_TR_FILES
 )
 
 file(GLOB qtkeychain_TR_SOURCES *.cpp *.h *.ui)
-if ( BUILD_TRANSLATIONS )
+if (BUILD_TRANSLATIONS)
     qt_create_translation(qtkeychain_MESSAGES ${qtkeychain_TR_SOURCES} ${qtkeychain_TR_FILES})
     qt_add_translation(qtkeychain_QM_FILES ${qtkeychain_TR_FILES})
     add_custom_target(messages DEPENDS ${qtkeychain_MESSAGES})
     add_custom_target(translations DEPENDS ${qtkeychain_QM_FILES})
 
     if(NOT QT_TRANSLATIONS_DIR)
-	# If this directory is missing, we are in a Qt5 environment.
-	# Extract the qmake executable location
-	get_target_property(QT5_QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
-	# Ask Qt5 where to put the translations
-	execute_process( COMMAND ${QT5_QMAKE_EXECUTABLE} -query QT_INSTALL_TRANSLATIONS
-	    OUTPUT_VARIABLE qt_translations_dir OUTPUT_STRIP_TRAILING_WHITESPACE )
-	# make sure we have / and not \ as qmake gives on windows
-	file( TO_CMAKE_PATH "${qt_translations_dir}" qt_translations_dir)
-	set( QT_TRANSLATIONS_DIR ${qt_translations_dir} CACHE PATH
-	     "The location of the Qt translations" FORCE)
+    # If this directory is missing, we are in a Qt5 environment.
+    # Extract the qmake executable location
+    get_target_property(QT5_QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
+    # Ask Qt5 where to put the translations
+    execute_process(COMMAND ${QT5_QMAKE_EXECUTABLE} -query QT_INSTALL_TRANSLATIONS
+        OUTPUT_VARIABLE qt_translations_dir OUTPUT_STRIP_TRAILING_WHITESPACE)
+    # make sure we have / and not \ as qmake gives on windows
+    file(TO_CMAKE_PATH "${qt_translations_dir}" qt_translations_dir)
+    set(QT_TRANSLATIONS_DIR ${qt_translations_dir} CACHE PATH
+        "The location of the Qt translations" FORCE)
     endif()
 
     install(FILES ${qtkeychain_QM_FILES}
-	    DESTINATION ${QT_TRANSLATIONS_DIR})
-endif( BUILD_TRANSLATIONS )
+        DESTINATION ${QT_TRANSLATIONS_DIR})
+endif()
 
 set(QTKEYCHAIN_TARGET_NAME qt${QTKEYCHAIN_VERSION_INFIX}keychain)
 if(NOT QTKEYCHAIN_STATIC)
@@ -224,8 +230,8 @@ install(TARGETS ${QTKEYCHAIN_TARGET_NAME}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-add_executable( testclient testclient.cpp )
-target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME})
+add_executable(testclient testclient.cpp)
+target_link_libraries(testclient ${QTKEYCHAIN_TARGET_NAME})
 
 
 ###
