@@ -1,0 +1,44 @@
+dist: trusty
+sudo: require
+
+language: cpp
+compiler:
+    - gcc
+    - clang
+
+env:
+  - CMAKE_OPTIONS="-DBUILD_TRANSLATIONS=ON  -DQTKEYCHAIN_STATIC=ON"
+  - CMAKE_OPTIONS="-DBUILD_TRANSLATIONS=ON  -DQTKEYCHAIN_STATIC=OFF"
+  - CMAKE_OPTIONS="-DBUILD_TRANSLATIONS=OFF -DQTKEYCHAIN_STATIC=ON"
+  - CMAKE_OPTIONS="-DBUILD_TRANSLATIONS=OFF -DQTKEYCHAIN_STATIC=OFF"
+  - CMAKE_OPTIONS="-DBUILD_TRANSLATIONS=ON  -DQTKEYCHAIN_STATIC=ON  -DBUILD_WITH_QT4=ON"
+  - CMAKE_OPTIONS="-DBUILD_TRANSLATIONS=ON  -DQTKEYCHAIN_STATIC=OFF -DBUILD_WITH_QT4=ON"
+  - CMAKE_OPTIONS="-DBUILD_TRANSLATIONS=OFF -DQTKEYCHAIN_STATIC=ON  -DBUILD_WITH_QT4=ON"
+  - CMAKE_OPTIONS="-DBUILD_TRANSLATIONS=OFF -DQTKEYCHAIN_STATIC=OFF -DBUILD_WITH_QT4=ON"
+  
+before_install:
+  - if [[ $CMAKE_OPTIONS == *"QT4"* ]]; then
+      sudo add-apt-repository --yes ppa:beineri/opt-qt487-trusty;
+      sudo apt-get update;
+      sudo apt-get install -qq opt-libqt4-core opt-libqt4-dbus;
+      if [[ $CMAKE_OPTIONS == *"TRANSLATIONS=ON"* ]]; then
+        sudo apt-get install -qq opt-qt4-linguist-tools;
+      fi
+    else
+      sudo add-apt-repository --yes ppa:beineri/opt-qt511-trusty;
+      sudo apt-get update;
+      sudo apt-get install -qq qt51base;
+      if [[ $CMAKE_OPTIONS == *"TRANSLATIONS=ON"* ]]; then
+        sudo apt-get install -qq qt51tools;
+      fi
+    fi
+  - source $(find /opt -name 'qt*env.sh');
+
+before_script:
+  - mkdir build
+  - cd build
+
+script: 
+  - cmake .. ${CMAKE_OPTIONS}
+  - make
+
