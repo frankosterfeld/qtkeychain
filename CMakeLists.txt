@@ -38,7 +38,7 @@ if( NOT BUILD_WITH_QT4 )
     find_package(Qt5Core QUIET)
 endif()
 
-if (Qt5Core_FOUND)
+if (Qt5Core_FOUND AND NOT BUILD_WITH_QT4)
   set(QTKEYCHAIN_VERSION_INFIX 5)
 
   if(UNIX AND NOT APPLE AND NOT ANDROID)
