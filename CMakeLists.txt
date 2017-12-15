@@ -118,7 +118,7 @@ add_definitions( -Wall )
 
 if(WIN32)
     list(APPEND qtkeychain_SOURCES keychain_win.cpp)
-    if (!USE_CREDENTIAL_STORE)
+    if (NOT USE_CREDENTIAL_STORE)
         list(APPEND qtkeychain_LIBRARIES crypt32)
         list(APPEND qtkeychain_SOURCES plaintextstore.cpp)
     endif()
