@@ -152,6 +152,7 @@ if(UNIX AND NOT APPLE AND NOT ANDROID)
             add_definitions(-DHAVE_LIBSECRET=1)
         endif()
         INCLUDE_DIRECTORIES(${LIBSECRET_INCLUDE_DIRS})
+        list(APPEND qtkeychain_LIBRARIES ${LIBSECRET_LIBRARIES})
     endif()
 
     list(APPEND qtkeychain_SOURCES keychain_unix.cpp gnomekeyring.cpp libsecret.cpp plaintextstore.cpp)
