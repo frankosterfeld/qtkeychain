@@ -100,7 +100,7 @@ static KeyringBackend detectKeyringBackend()
          if ( GnomeKeyring::isAvailable() ) {
             return Backend_GnomeKeyring;
         } else {
-            return Backend_Kwallet4;
+            return Backend_Kwallet5;
         }
     }
 
