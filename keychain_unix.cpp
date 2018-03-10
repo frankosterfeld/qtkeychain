@@ -12,6 +12,7 @@
 #include "plaintextstore_p.h"
 
 #include <QScopedPointer>
+#include <QSettings>
 
 using namespace QKeychain;
 
@@ -30,6 +31,11 @@ enum DesktopEnvironment {
     DesktopEnv_Xfce,
     DesktopEnv_Other
 };
+
+static const QString backendLibSecret = "libsecret";
+static const QString backendKwallet4 = "kwallet4";
+static const QString backendKwallet5 = "kwallet5";
+static const QString backendGnomeKeyring = "gnome-keyring";
 
 // the following detection algorithm is derived from chromium,
 // licensed under BSD, see base/nix/xdg_util.cc
@@ -76,37 +82,68 @@ static DesktopEnvironment detectDesktopEnvironment() {
     return DesktopEnv_Other;
 }
 
-static KeyringBackend detectKeyringBackend()
+static KeyringBackend detectKeyringBackend(void)
 {
+#if QT_VERSION >= 0x050000
+	const QString prefix = "qt5-";
+#else
+	const QString prefix = "qt4-";
+#endif
+	const QSettings settings(QSettings::SystemScope, prefix + "keychain");
+	const QString backend = settings.value("backend", "").toString();
+	const QStringList disabled = settings.value("disabled-backends").toStringList();
+
+	if (backend.compare(backendLibSecret, Qt::CaseInsensitive) == 0) {
+		return Backend_LibSecretKeyring;
+	}
+	if (backend.compare(backendKwallet4, Qt::CaseInsensitive) == 0) {
+		return Backend_Kwallet4;
+	}
+	if (backend.compare(backendKwallet5, Qt::CaseInsensitive) == 0) {
+		return Backend_Kwallet5;
+	}
+	if (backend.compare(backendGnomeKeyring, Qt::CaseInsensitive) == 0) {
+		return Backend_GnomeKeyring;
+	}
+
     /* Libsecret unifies access to KDE and GNOME
      * password services. */
-    if (LibSecretKeyring::isAvailable()) {
-        return Backend_LibSecretKeyring;
-    }
+	if (!disabled.contains(backendLibSecret)) {
+		if (LibSecretKeyring::isAvailable()) {
+			return Backend_LibSecretKeyring;
+		}
+	}
 
     switch (detectDesktopEnvironment()) {
     case DesktopEnv_Kde4:
-        return Backend_Kwallet4;
-        break;
+		if (!disabled.contains(backendKwallet4, Qt::CaseInsensitive)) {
+			return Backend_Kwallet4;
+		}
     case DesktopEnv_Plasma5:
-        return Backend_Kwallet5;
-        break;
+		if (!disabled.contains(backendKwallet5, Qt::CaseInsensitive)) {
+			return Backend_Kwallet5;
+		}
         // fall through
     case DesktopEnv_Gnome:
     case DesktopEnv_Unity:
     case DesktopEnv_Xfce:
     case DesktopEnv_Other:
     default:
-         if ( GnomeKeyring::isAvailable() ) {
-            return Backend_GnomeKeyring;
-        } else {
-            return Backend_Kwallet4;
-        }
+		if (!disabled.contains(backendGnomeKeyring, Qt::CaseInsensitive)) {
+			if ( GnomeKeyring::isAvailable() ) {
+	            return Backend_GnomeKeyring;
+	        }
+		}
+		if (!disabled.contains(backendKwallet4, Qt::CaseInsensitive)) {
+			return Backend_Kwallet4;
+		}
+
+		return Backend_Kwallet4;
     }
 
 }
 
-static KeyringBackend getKeyringBackend()
+static KeyringBackend getKeyringBackend(void)
 {
     static KeyringBackend backend = detectKeyringBackend();
     return backend;
