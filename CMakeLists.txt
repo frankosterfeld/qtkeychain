@@ -21,6 +21,27 @@ option(BUILD_WITH_QT4 "Build qtkeychain with Qt4 no matter if Qt5 was found" OFF
 option(BUILD_TRANSLATIONS "Build translations" ON)
 option(QTKEYCHAIN_STATIC "Build static library" OFF)
 
+# Configure MSVC Runtime
+if(MSVC)
+	include(MSVCRuntime)
+	if(NOT DEFINED MSVC_RUNTIME)
+		set(MSVC_RUNTIME "dynamic")
+	endif()
+	if(MSVC_RUNTIME STREQUAL "static")
+		if(BUILD_SHARED_LIBS)
+			message(FATAL_ERROR "Static CRT is only supported in a fully static build")
+		endif()
+		message(STATUS "Use the MSVC static runtime option carefully!")
+		message(STATUS "OpenSSL uses /MD by default, and is very picky")
+		message(STATUS "Random freeing errors are a common sign of runtime issues")
+	endif()
+	configure_msvc_runtime()
+
+	if(NOT DEFINED CMAKE_SUPPRESS_REGENERATION)
+		set(CMAKE_SUPPRESS_REGENERATION ON)
+	endif()
+endif()
+
 if(CMAKE_SYSTEM_NAME STREQUAL Android)
     set(ANDROID 1)
 endif()
@@ -35,7 +56,7 @@ endif()
 
 if( NOT BUILD_WITH_QT4 )
     # try Qt5 first, and prefer that if found
-    find_package(Qt5Core QUIET)
+    find_package(Qt5Core )
 endif()
 
 if (Qt5Core_FOUND)
@@ -225,8 +246,31 @@ install(TARGETS ${QTKEYCHAIN_TARGET_NAME}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
+if(MSVC_RUNTIME STREQUAL "static")
+	get_target_property(Qt5_LOCATION Qt5::Core LOCATION)
+	get_filename_component(Qt5_DIRECTORY "${Qt5_LOCATION}" DIRECTORY)
+	get_filename_component(Qt5_DIRECTORY "${Qt5_DIRECTORY}" DIRECTORY)
+	set(Qt5_LIBRARY_DIRECTORIES "${Qt5_DIRECTORY}/lib" "${Qt5_DIRECTORY}/plugins/platforms" "${Qt5_DIRECTORY}/plugins/imageformats")
+
+
+	string(TOLOWER ${CMAKE_BUILD_TYPE} LOWERCASE_CMAKE_BUILD_TYPE)
+	IF(LOWERCASE_CMAKE_BUILD_TYPE MATCHES "debug")			   
+            find_library(qtpcre_LIBRARIES qtpcre2d
+                HINTS ${Qt5_LIBRARY_DIRECTORIES}
+                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
+                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+	ELSE()
+            find_library(qtpcre_LIBRARIES qtpcre2
+                HINTS ${Qt5_LIBRARY_DIRECTORIES}
+                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
+                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+	ENDIF(LOWERCASE_CMAKE_BUILD_TYPE MATCHES "debug")
+
+	set(STATIC_ADDITIONAL_LIBS ${qtpcre_LIBRARIES} Ws2_32.lib Version.lib Winmm.lib)
+endif()
+
 add_executable( testclient testclient.cpp )
-target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME})
+target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME} ${STATIC_ADDITIONAL_LIBS})
 
 
 ###
