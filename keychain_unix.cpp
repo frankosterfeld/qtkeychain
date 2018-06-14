@@ -78,11 +78,19 @@ static DesktopEnvironment detectDesktopEnvironment() {
 
 static KeyringBackend detectKeyringBackend()
 {
-    /* Libsecret unifies access to KDE and GNOME
-     * password services. */
-    if (LibSecretKeyring::isAvailable()) {
-        return Backend_LibSecretKeyring;
-    }
+    /* The secret service dbus api, accessible through libsecret, is supposed
+     * to unify password services.
+     *
+     * Unfortunately at the time of Kubuntu 18.04 the secret service backend
+     * in KDE is gnome-keyring-daemon - using it has several complications:
+     * - the default collection isn't opened on session start, so users need
+     *   to manually unlock it when the first application uses it
+     * - it's separate from the kwallet5 keyring, so switching to it means the
+     *   existing keyring data can't be accessed anymore
+     *
+     * Thus we still prefer kwallet backends on KDE even if libsecret is
+     * available.
+     */
 
     switch (detectDesktopEnvironment()) {
     case DesktopEnv_Kde4:
@@ -91,13 +99,18 @@ static KeyringBackend detectKeyringBackend()
     case DesktopEnv_Plasma5:
         return Backend_Kwallet5;
         break;
-        // fall through
+
+    // fall through
     case DesktopEnv_Gnome:
     case DesktopEnv_Unity:
     case DesktopEnv_Xfce:
     case DesktopEnv_Other:
     default:
-         if ( GnomeKeyring::isAvailable() ) {
+        if (LibSecretKeyring::isAvailable()) {
+            return Backend_LibSecretKeyring;
+        }
+
+        if ( GnomeKeyring::isAvailable() ) {
             return Backend_GnomeKeyring;
         } else {
             return Backend_Kwallet4;
