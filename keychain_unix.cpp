@@ -76,6 +76,25 @@ static DesktopEnvironment detectDesktopEnvironment() {
     return DesktopEnv_Other;
 }
 
+static bool isKwallet5Available()
+{
+    if (!QDBusConnection::sessionBus().isConnected())
+        return false;
+
+    org::kde::KWallet iface(
+        QLatin1String("org.kde.kwalletd5"),
+        QLatin1String("/modules/kwalletd5"),
+        QDBusConnection::sessionBus());
+
+    // At this point iface.isValid() can return false even though the
+    // interface is activatable by making a call. Hence we check whether
+    // a wallet can be opened.
+
+    iface.setTimeout(500);
+    QDBusMessage reply = iface.call(QStringLiteral("networkWallet"));
+    return reply.type() == QDBusMessage::ReplyMessage;
+}
+
 static KeyringBackend detectKeyringBackend()
 {
     /* The secret service dbus api, accessible through libsecret, is supposed
@@ -95,12 +114,12 @@ static KeyringBackend detectKeyringBackend()
     switch (detectDesktopEnvironment()) {
     case DesktopEnv_Kde4:
         return Backend_Kwallet4;
-        break;
-    case DesktopEnv_Plasma5:
-        return Backend_Kwallet5;
-        break;
 
-    // fall through
+    case DesktopEnv_Plasma5:
+        if (isKwallet5Available()) {
+            return Backend_Kwallet5;
+        }
+        // fallthrough
     case DesktopEnv_Gnome:
     case DesktopEnv_Unity:
     case DesktopEnv_Xfce:
