@@ -119,7 +119,15 @@ static KeyringBackend detectKeyringBackend()
         if (isKwallet5Available()) {
             return Backend_Kwallet5;
         }
-        // fallthrough
+        if (LibSecretKeyring::isAvailable()) {
+            return Backend_LibSecretKeyring;
+        }
+        if (GnomeKeyring::isAvailable()) {
+            return Backend_GnomeKeyring;
+        }
+        // During startup the keychain backend might just not have started yet
+        return Backend_Kwallet5;
+
     case DesktopEnv_Gnome:
     case DesktopEnv_Unity:
     case DesktopEnv_Xfce:
@@ -128,12 +136,22 @@ static KeyringBackend detectKeyringBackend()
         if (LibSecretKeyring::isAvailable()) {
             return Backend_LibSecretKeyring;
         }
-
-        if ( GnomeKeyring::isAvailable() ) {
+        if (GnomeKeyring::isAvailable()) {
             return Backend_GnomeKeyring;
-        } else {
-            return Backend_Kwallet4;
         }
+        if (isKwallet5Available()) {
+            return Backend_Kwallet5;
+        }
+        // During startup the keychain backend might just not have started yet
+        //
+        // This doesn't need to be libsecret because LibSecretKeyring::isAvailable()
+        // only fails if the libsecret shared library couldn't be loaded. In contrast
+        // to that GnomeKeyring::isAvailable() can return false if the shared library
+        // *was* loaded but its libgnome_keyring::is_available() returned false.
+        //
+        // In the future there should be a difference between "API available" and
+        // "keychain available".
+        return Backend_GnomeKeyring;
     }
 
 }
