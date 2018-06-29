@@ -18,6 +18,7 @@ include(ECMSetupVersion)
 include(ECMGeneratePriFile)
 
 option(BUILD_WITH_QT4 "Build qtkeychain with Qt4 no matter if Qt5 was found" OFF)
+option(BUILD_TEST_APPLICATION "Build test application" ON)
 option(BUILD_TRANSLATIONS "Build translations" ON)
 option(QTKEYCHAIN_STATIC "Build static library" OFF)
 
@@ -225,8 +226,10 @@ install(TARGETS ${QTKEYCHAIN_TARGET_NAME}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-add_executable( testclient testclient.cpp )
-target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME})
+if(BUILD_TEST_APPLICATION)
+    add_executable( testclient testclient.cpp )
+    target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME})
+endif()
 
 
 ###
