@@ -76,32 +76,82 @@ static DesktopEnvironment detectDesktopEnvironment() {
     return DesktopEnv_Other;
 }
 
+static bool isKwallet5Available()
+{
+    if (!QDBusConnection::sessionBus().isConnected())
+        return false;
+
+    org::kde::KWallet iface(
+        QLatin1String("org.kde.kwalletd5"),
+        QLatin1String("/modules/kwalletd5"),
+        QDBusConnection::sessionBus());
+
+    // At this point iface.isValid() can return false even though the
+    // interface is activatable by making a call. Hence we check whether
+    // a wallet can be opened.
+
+    iface.setTimeout(500);
+    QDBusMessage reply = iface.call(QStringLiteral("networkWallet"));
+    return reply.type() == QDBusMessage::ReplyMessage;
+}
+
 static KeyringBackend detectKeyringBackend()
 {
-    /* Libsecret unifies access to KDE and GNOME
-     * password services. */
-    if (LibSecretKeyring::isAvailable()) {
-        return Backend_LibSecretKeyring;
-    }
+    /* The secret service dbus api, accessible through libsecret, is supposed
+     * to unify password services.
+     *
+     * Unfortunately at the time of Kubuntu 18.04 the secret service backend
+     * in KDE is gnome-keyring-daemon - using it has several complications:
+     * - the default collection isn't opened on session start, so users need
+     *   to manually unlock it when the first application uses it
+     * - it's separate from the kwallet5 keyring, so switching to it means the
+     *   existing keyring data can't be accessed anymore
+     *
+     * Thus we still prefer kwallet backends on KDE even if libsecret is
+     * available.
+     */
 
     switch (detectDesktopEnvironment()) {
     case DesktopEnv_Kde4:
         return Backend_Kwallet4;
-        break;
+
     case DesktopEnv_Plasma5:
+        if (isKwallet5Available()) {
+            return Backend_Kwallet5;
+        }
+        if (LibSecretKeyring::isAvailable()) {
+            return Backend_LibSecretKeyring;
+        }
+        if (GnomeKeyring::isAvailable()) {
+            return Backend_GnomeKeyring;
+        }
+        // During startup the keychain backend might just not have started yet
         return Backend_Kwallet5;
-        break;
-        // fall through
+
     case DesktopEnv_Gnome:
     case DesktopEnv_Unity:
     case DesktopEnv_Xfce:
     case DesktopEnv_Other:
     default:
-         if ( GnomeKeyring::isAvailable() ) {
-            return Backend_GnomeKeyring;
-        } else {
-            return Backend_Kwallet4;
+        if (LibSecretKeyring::isAvailable()) {
+            return Backend_LibSecretKeyring;
         }
+        if (GnomeKeyring::isAvailable()) {
+            return Backend_GnomeKeyring;
+        }
+        if (isKwallet5Available()) {
+            return Backend_Kwallet5;
+        }
+        // During startup the keychain backend might just not have started yet
+        //
+        // This doesn't need to be libsecret because LibSecretKeyring::isAvailable()
+        // only fails if the libsecret shared library couldn't be loaded. In contrast
+        // to that GnomeKeyring::isAvailable() can return false if the shared library
+        // *was* loaded but its libgnome_keyring::is_available() returned false.
+        //
+        // In the future there should be a difference between "API available" and
+        // "keychain available".
+        return Backend_GnomeKeyring;
     }
 
 }
