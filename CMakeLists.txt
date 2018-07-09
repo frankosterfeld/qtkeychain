@@ -5,7 +5,7 @@ include(FindPkgConfig)
 
 ###
 
-set(QTKEYCHAIN_VERSION 0.8.90)
+set(QTKEYCHAIN_VERSION 0.9.0)
 set(QTKEYCHAIN_SOVERSION 1)
 
 ###

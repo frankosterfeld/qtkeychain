@@ -1,6 +1,13 @@
 ChangeLog
 =========
 
+version 0.9.0 (release 2018-07-13)
+  * Fall back on libsecret if kwallet is not available (Christian Kamm <mail@ckamm.de>)
+  * Only require QtLinguist if building translations (Victor Kropp <victor.kropp@jetbrains.com>)
+  * Fix building on Windows without credential store (Dmitry Ivanov <dm.vl.ivanov@gmail.com>)
+  * Fix Qt 4 build (Sandro Knauß <hefee@debian.org>)
+  * Make build of test application optional (Boris Pek <tehnick-8@yandex.ru>)
+
 version 0.8.0 (release 2017-04-19)
   * Buildsystem improvements (Kristofer Tingdahl <kristofer.tingdahl@dgbes.com>, Hannah von Reth <hannah.vonreth@kdab.com>, Giuseppe D'Angelo <giuseppe.dangelo@kdab.com>)
   * Enable C++11 support for Qt >= 5.7 (Dmitry Ivanov <dm.vl.ivanov@gmail.com>)
