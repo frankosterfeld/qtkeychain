@@ -116,7 +116,7 @@ list(APPEND qtkeychain_LIBRARIES ${QTCORE_LIBRARIES})
 set(qtkeychain_SOURCES
     keychain.cpp
     qkeychain_export.h
-    keychain.h
+    ${CMAKE_CURRENT_BINARY_DIR}/keychain.h
 )
 
 add_definitions( -Wall )
@@ -165,7 +165,7 @@ if(UNIX AND NOT APPLE AND NOT ANDROID)
     list(APPEND qtkeychain_LIBRARIES ${QTDBUS_LIBRARIES} )
 endif()
 
-QT_WRAP_CPP(qtkeychain_MOC_OUTFILES keychain.h keychain_p.h gnomekeyring_p.h)
+QT_WRAP_CPP(qtkeychain_MOC_OUTFILES ${CMAKE_CURRENT_BINARY_DIR}/keychain.h keychain_p.h gnomekeyring_p.h)
 
 set(qtkeychain_TR_FILES
       translations/qtkeychain_de.ts
@@ -219,7 +219,7 @@ set_target_properties(${QTKEYCHAIN_TARGET_NAME} PROPERTIES
     INSTALL_RPATH_USE_LINK_PATH TRUE
 )
 
-install(FILES keychain.h ${CMAKE_CURRENT_BINARY_DIR}/qkeychain_export.h
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/keychain.h ${CMAKE_CURRENT_BINARY_DIR}/qkeychain_export.h
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt${QTKEYCHAIN_VERSION_INFIX}keychain/
 )
 
@@ -247,6 +247,8 @@ ecm_configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/QtKeychainConfig.
 ecm_setup_version("${QTKEYCHAIN_VERSION}" VARIABLE_PREFIX SNORE
   PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfigVersion.cmake"
   SOVERSION ${QTKEYCHAIN_VERSION})
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/keychain.h.in" "${CMAKE_CURRENT_BINARY_DIR}/keychain.h" @ONLY)
 
 if(UNIX AND NOT APPLE AND NOT ANDROID)
     set(PRI_EXTRA_DEPS "dbus")
