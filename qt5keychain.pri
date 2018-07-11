@@ -23,7 +23,7 @@ plaintextstore {
     HEADERS += $$QT5KEYCHAIN_PWD/plaintextstore_p.h
     SOURCES += $$QT5KEYCHAIN_PWD/plaintextstore.cpp
 } else {
-    unix:!macx {
+    unix:!macx:!ios {
         QT += dbus
 
         HEADERS += $$QT5KEYCHAIN_PWD/gnomekeyring_p.h
@@ -43,8 +43,13 @@ plaintextstore {
         #DBUS_INTERFACES += $$PWD/Keychain/org.kde.KWallet.xml
     }
 
-    mac {
+    macx:!ios {
         LIBS += "-framework Security" "-framework Foundation"
         SOURCES += $$QT5KEYCHAIN_PWD/keychain_mac.cpp
+    }
+
+    ios {
+        LIBS += "-framework Security" "-framework Foundation"
+        OBJECTIVE_SOURCES += $$QT5KEYCHAIN_PWD/keychain_ios.mm
     }
 }
