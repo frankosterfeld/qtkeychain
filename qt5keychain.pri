@@ -4,9 +4,8 @@
 
 QT5KEYCHAIN_PWD = $$PWD
 
-CONFIG *= depend_includepath
+CONFIG += depend_includepath
 DEFINES += QTKEYCHAIN_NO_EXPORT
-#CONFIG += plaintextstore
 
 INCLUDEPATH += \
     $$PWD/.. \
@@ -16,40 +15,44 @@ HEADERS += \
     $$QT5KEYCHAIN_PWD/keychain_p.h \
     $$QT5KEYCHAIN_PWD/keychain.h
 
-SOURCES *= \
+SOURCES += \
     $$QT5KEYCHAIN_PWD/keychain.cpp
 
-plaintextstore {
-    HEADERS += $$QT5KEYCHAIN_PWD/plaintextstore_p.h
-    SOURCES += $$QT5KEYCHAIN_PWD/plaintextstore.cpp
-} else {
-    unix:!macx:!ios {
-        QT += dbus
+unix:!macx:!ios {
+    QT += dbus
+    HEADERS += \
+        $$QT5KEYCHAIN_PWD/gnomekeyring_p.h \
+        $$QT5KEYCHAIN_PWD/plaintextstore_p.h
+    SOURCES += \
+        $$QT5KEYCHAIN_PWD/gnomekeyring.cpp \
+        $$QT5KEYCHAIN_PWD/keychain_unix.cpp \
+        $$QT5KEYCHAIN_PWD/plaintextstore.cpp
+}
 
-        HEADERS += $$QT5KEYCHAIN_PWD/gnomekeyring_p.h
-
-        SOURCES += \
-            $$QT5KEYCHAIN_PWD/gnomekeyring.cpp \
-            $$QT5KEYCHAIN_PWD/keychain_unix.cpp
+win32 {
+    # Remove the following USE_CREDENTIAL_STORE line
+    # to use the CryptProtectData Windows API function
+    # instead of the Windows Credential Store.
+    DEFINES += USE_CREDENTIAL_STORE
+    contains(DEFINES, USE_CREDENTIAL_STORE) {
+        LIBS += -lAdvapi32
+    } else {
+        LIBS += -lCrypt32
+        HEADERS += $$QT5KEYCHAIN_PWD/plaintextstore_p.h
+        SOURCES += $$QT5KEYCHAIN_PWD/plaintextstore.cpp
     }
+    HEADERS += $$QT5KEYCHAIN_PWD/libsecret_p.h
+    SOURCES += \
+        $$QT5KEYCHAIN_PWD/keychain_win.cpp \
+        $$QT5KEYCHAIN_PWD/libsecret.cpp
+}
 
-    win {
-        HEADERS += $$QT5KEYCHAIN_PWD/libsecret_p.h
+macx:!ios {
+    LIBS += "-framework Security" "-framework Foundation"
+    SOURCES += $$QT5KEYCHAIN_PWD/keychain_mac.cpp
+}
 
-        SOURCES += \
-            $$QT5KEYCHAIN_PWD/keychain_win.cpp \
-            $$QT5KEYCHAIN_PWD/libsecret.cpp
-
-        #DBUS_INTERFACES += $$PWD/Keychain/org.kde.KWallet.xml
-    }
-
-    macx:!ios {
-        LIBS += "-framework Security" "-framework Foundation"
-        SOURCES += $$QT5KEYCHAIN_PWD/keychain_mac.cpp
-    }
-
-    ios {
-        LIBS += "-framework Security" "-framework Foundation"
-        OBJECTIVE_SOURCES += $$QT5KEYCHAIN_PWD/keychain_ios.mm
-    }
+ios {
+    LIBS += "-framework Security" "-framework Foundation"
+    OBJECTIVE_SOURCES += $$QT5KEYCHAIN_PWD/keychain_ios.mm
 }
