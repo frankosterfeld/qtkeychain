@@ -58,7 +58,7 @@ void WritePasswordJobPrivate::scheduledStart() {
     cred.TargetName = name;
     cred.CredentialBlobSize = data.size();
     cred.CredentialBlob = (LPBYTE)pwd;
-    cred.Persist = CRED_PERSIST_LOCAL_MACHINE;
+    cred.Persist = CRED_PERSIST_ENTERPRISE;
 
     if (!CredWriteW(&cred, 0)) {
         q->emitFinishedWithError( OtherError, tr("Encryption failed") ); //TODO more details available?
