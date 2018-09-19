@@ -47,7 +47,7 @@ pipeline {
                         unstash 'build-ios-include'
                         sh 'unzip build-android-lib.zip'
                         withCredentials([usernamePassword(credentialsId: 'artifactory-online-publish', passwordVariable: 'artifactory_password', usernameVariable: 'artifactory_user')]) {
-                            sh "./gradlew packageLib -Puse_timestamp=true -Pqt_core=/Qt/5.10.0 -Partifactory_user=$artifactory_user -Partifactory_password=$artifactory_password -Partifactory_contextUrl=https://qliktech.jfrog.io/qliktech -PbranchName=$BRANCH -Ppublish_android=true -Ppublish_ios=true --info --no-daemon"
+                            sh "./gradlew packageLib -Puse_timestamp=${USE_TIMESTAMP} -Pqt_core=/Qt/5.10.0 -Partifactory_user=$artifactory_user -Partifactory_password=$artifactory_password -Partifactory_contextUrl=https://qliktech.jfrog.io/qliktech -PbranchName=$BRANCH -Ppublish_android=true -Ppublish_ios=true --info --no-daemon"
                         }
                         archiveArtifacts 'dist/*.zip'
                     }
