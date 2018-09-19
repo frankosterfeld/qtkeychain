@@ -44,7 +44,7 @@ ext {
     useTimestamp = project.hasProperty('use_timestamp') ? use_timestamp : false
 }
 
-if (useTimestamp){
+if (useTimestamp == 'true'){
     def timestamp = new Date().format('yyyyMMddHHmmss')
     version += "-${timestamp}"
 }
