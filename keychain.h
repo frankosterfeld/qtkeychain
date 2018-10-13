@@ -150,7 +150,7 @@ Q_SIGNALS:
     void finished( QKeychain::Job* );
 
 protected:
-    explicit Job( JobPrivate *q, QObject* parent=0 );
+    explicit Job( JobPrivate *q, QObject* parent=Q_NULLPTR );
     Q_INVOKABLE void doStart();
 
 private:
@@ -185,7 +185,7 @@ public:
      * @param service The service string used by this job (can be empty).
      * @param parent The parent of this job.
      */
-    explicit ReadPasswordJob( const QString& service, QObject* parent=0 );
+    explicit ReadPasswordJob( const QString& service, QObject* parent=Q_NULLPTR );
     ~ReadPasswordJob();
 
     /**
@@ -222,7 +222,7 @@ public:
      * @param service The service string used by this job (can be empty).
      * @param parent The parent of this job.
      */
-    explicit WritePasswordJob( const QString& service, QObject* parent=0 );
+    explicit WritePasswordJob( const QString& service, QObject* parent=Q_NULLPTR );
     ~WritePasswordJob();
 
     /**
@@ -259,7 +259,7 @@ public:
      * @param service The service string used by this job (can be empty).
      * @param parent The parent of this job.
      */
-    explicit DeletePasswordJob( const QString& service, QObject* parent=0 );
+    explicit DeletePasswordJob( const QString& service, QObject* parent=Q_NULLPTR );
     ~DeletePasswordJob();
 
 private:
