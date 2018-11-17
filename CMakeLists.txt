@@ -26,6 +26,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL Android)
     set(ANDROID 1)
 endif()
 
+if(CMAKE_SYSTEM_NAME STREQUAL Haiku)
+    set(HAIKU 1)
+endif()
+
 if (WIN32)
     option(USE_CREDENTIAL_STORE "Build with windows CredentialStore support" ON)
 
@@ -42,7 +46,7 @@ endif()
 if (Qt5Core_FOUND AND NOT BUILD_WITH_QT4)
   set(QTKEYCHAIN_VERSION_INFIX 5)
 
-  if(UNIX AND NOT APPLE AND NOT ANDROID)
+  if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT HAIKU)
     find_package(Qt5DBus REQUIRED)
     include_directories(${Qt5DBus_INCLUDE_DIRS})
     set(QTDBUS_LIBRARIES ${Qt5DBus_LIBRARIES})
@@ -147,7 +151,14 @@ if(APPLE)
     list(APPEND qtkeychain_LIBRARIES ${SECURITY_LIBRARY})
 endif()
 
-if(UNIX AND NOT APPLE AND NOT ANDROID)
+if(HAIKU)
+    list(APPEND qtkeychain_SOURCES keychain_haiku.cpp)
+
+    find_library(BE_LIBRARY be REQUIRED)
+    list(APPEND qtkeychain_LIBRARIES ${BE_LIBRARY})
+endif()
+
+if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT HAIKU)
     option(LIBSECRET_SUPPORT "Build with libsecret support" ON)
 
     if(LIBSECRET_SUPPORT)
@@ -252,7 +263,7 @@ ecm_setup_version("${QTKEYCHAIN_VERSION}" VARIABLE_PREFIX SNORE
   PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfigVersion.cmake"
   SOVERSION ${QTKEYCHAIN_VERSION})
 
-if(UNIX AND NOT APPLE AND NOT ANDROID)
+if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT HAIKU)
     set(PRI_EXTRA_DEPS "dbus")
 endif()
 ecm_generate_pri_file(BASE_NAME Qt${QTKEYCHAIN_VERSION_INFIX}Keychain
