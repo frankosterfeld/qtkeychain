@@ -15,7 +15,7 @@
 #include <QSettings>
 #include <QQueue>
 
-#if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN) && !defined(Q_OS_ANDROID)
+#if defined(KEYCHAIN_DBUS)
 
 #include <QDBusPendingCallWatcher>
 
@@ -49,7 +49,7 @@ public:
     Mode mode;
     QByteArray data;
 
-#if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN) && !defined(Q_OS_ANDROID)
+#if defined(KEYCHAIN_DBUS)
     org::kde::KWallet* iface;
     int walletHandle;
 
@@ -93,7 +93,7 @@ public:
     explicit ReadPasswordJobPrivate( const QString &service_, ReadPasswordJob* qq );
     void scheduledStart();
 
-#if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN) && !defined(Q_OS_ANDROID)
+#if defined(KEYCHAIN_DBUS)
     void fallbackOnError(const QDBusError& err);
 
 private Q_SLOTS:
@@ -116,7 +116,7 @@ public:
     explicit WritePasswordJobPrivate( const QString &service_, WritePasswordJob* qq );
     void scheduledStart();
 
-#if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN) && !defined(Q_OS_ANDROID)
+#if defined(KEYCHAIN_DBUS)
     void fallbackOnError(const QDBusError& err);
 #endif
 
@@ -130,7 +130,7 @@ public:
 
     void scheduledStart();
 
-#if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN) && !defined(Q_OS_ANDROID)
+#if defined(KEYCHAIN_DBUS)
     void fallbackOnError(const QDBusError& err);
 #endif
 

@@ -160,6 +160,7 @@ if(UNIX AND NOT APPLE AND NOT ANDROID)
         list(APPEND qtkeychain_LIBRARIES ${LIBSECRET_LIBRARIES})
     endif()
 
+    add_definitions(-DKEYCHAIN_DBUS=1)
     list(APPEND qtkeychain_SOURCES keychain_unix.cpp gnomekeyring.cpp libsecret.cpp plaintextstore.cpp)
     qt_add_dbus_interface(qtkeychain_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/org.kde.KWallet.xml kwallet_interface KWalletInterface)
     list(APPEND qtkeychain_LIBRARIES ${QTDBUS_LIBRARIES} )
