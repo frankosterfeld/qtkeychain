@@ -74,6 +74,7 @@ if (Qt5Core_FOUND)
   include_directories(${Qt5Core_INCLUDE_DIRS})
   
   message("Bob!!!")
+  message("TBDkgr...testing")
   message("Qt5core lib ${Qt5Core_LIBRARIES}")
   message("Qt5core inc ${Qt5Core_INCLUDE_DIRS}")
 
