@@ -28,6 +28,7 @@ enum DesktopEnvironment {
     DesktopEnv_Plasma5,
     DesktopEnv_Unity,
     DesktopEnv_Xfce,
+    DesktopEnv_Lxqt,
     DesktopEnv_Other
 };
 
@@ -54,6 +55,8 @@ static DesktopEnvironment detectDesktopEnvironment() {
         return DesktopEnv_Unity;
     } else if ( xdgCurrentDesktop == "KDE" ) {
         return getKdeVersion();
+    } else if ( xdgCurrentDesktop == "LXQt" ) {
+        return DesktopEnv_Lxqt;
     }
 
     QByteArray desktopSession = qgetenv("DESKTOP_SESSION");
@@ -113,6 +116,7 @@ static KeyringBackend detectKeyringBackend()
 
     switch (detectDesktopEnvironment()) {
     case DesktopEnv_Kde4:
+    case DesktopEnv_Lxqt:
         return Backend_Kwallet4;
 
     case DesktopEnv_Plasma5:
