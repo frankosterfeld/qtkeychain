@@ -305,7 +305,7 @@ bool LibSecretKeyring::deletePassword(const QString &key, const QString &service
 }
 
 LibSecretKeyring::LibSecretKeyring()
-    : QLibrary("secret-1")
+    : QLibrary(QStringLiteral("secret-1"), 0)
 {
 #ifdef HAVE_LIBSECRET
     if (load()) {
