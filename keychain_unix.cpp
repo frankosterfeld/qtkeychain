@@ -54,6 +54,8 @@ static DesktopEnvironment detectDesktopEnvironment() {
         return DesktopEnv_Unity;
     } else if ( xdgCurrentDesktop == "KDE" ) {
         return getKdeVersion();
+    } else if ( xdgCurrentDesktop == "XFCE" ) {
+        return DesktopEnv_Xfce;
     }
 
     QByteArray desktopSession = qgetenv("DESKTOP_SESSION");
