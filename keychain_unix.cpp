@@ -93,7 +93,7 @@ static bool isKwallet5Available()
     // a wallet can be opened.
 
     iface.setTimeout(500);
-    QDBusMessage reply = iface.call(QStringLiteral("networkWallet"));
+    QDBusMessage reply = iface.call(QLatin1String("networkWallet"));
     return reply.type() == QDBusMessage::ReplyMessage;
 }
 
