@@ -157,7 +157,7 @@ if(UNIX AND NOT APPLE AND NOT ANDROID)
             add_definitions(-DHAVE_LIBSECRET=1)
         endif()
         INCLUDE_DIRECTORIES(${LIBSECRET_INCLUDE_DIRS})
-        list(APPEND qtkeychain_LIBRARIES ${LIBSECRET_LIBRARIES})
+        list(APPEND qtkeychain_LIBRARIES_PRIVATE ${LIBSECRET_LIBRARIES})
     endif()
 
     list(APPEND qtkeychain_SOURCES keychain_unix.cpp gnomekeyring.cpp libsecret.cpp plaintextstore.cpp)
@@ -203,7 +203,7 @@ else()
     add_library(${QTKEYCHAIN_TARGET_NAME} STATIC ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
 endif()
 
-target_link_libraries(${QTKEYCHAIN_TARGET_NAME} PUBLIC ${qtkeychain_LIBRARIES})
+target_link_libraries(${QTKEYCHAIN_TARGET_NAME} PUBLIC ${qtkeychain_LIBRARIES} PRIVATE ${qtkeychain_LIBRARIES_PRIVATE})
 target_include_directories(${QTKEYCHAIN_TARGET_NAME} PUBLIC $<INSTALL_INTERFACE:include/>)
 
 generate_export_header(${QTKEYCHAIN_TARGET_NAME}
