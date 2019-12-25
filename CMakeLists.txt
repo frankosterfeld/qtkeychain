@@ -169,7 +169,10 @@ QT_WRAP_CPP(qtkeychain_MOC_OUTFILES keychain.h keychain_p.h gnomekeyring_p.h)
 
 set(qtkeychain_TR_FILES
       translations/qtkeychain_de.ts
+      translations/qtkeychain_fr.ts
       translations/qtkeychain_ro.ts
+      translations/qtkeychain_ru.ts
+      translations/qtkeychain_zh.ts
 )
 
 file(GLOB qtkeychain_TR_SOURCES *.cpp *.h *.ui)
