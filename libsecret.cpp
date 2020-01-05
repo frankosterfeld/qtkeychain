@@ -244,6 +244,9 @@ bool LibSecretKeyring::findPassword(const QString &user, const QString &server,
                                NULL);
     return true;
 #else
+    Q_UNUSED(user)
+    Q_UNUSED(server)
+    Q_UNUSED(self)
     return false;
 #endif
 }
@@ -281,6 +284,12 @@ bool LibSecretKeyring::writePassword(const QString &display_name,
                               NULL);
     return true;
 #else
+    Q_UNUSED(display_name)
+    Q_UNUSED(user)
+    Q_UNUSED(server)
+    Q_UNUSED(mode)
+    Q_UNUSED(password)
+    Q_UNUSED(self)
     return false;
 #endif
 }
@@ -300,6 +309,9 @@ bool LibSecretKeyring::deletePassword(const QString &key, const QString &service
                               NULL);
     return true;
 #else
+    Q_UNUSED(key)
+    Q_UNUSED(service)
+    Q_UNUSED(self)
     return false;
 #endif
 }
