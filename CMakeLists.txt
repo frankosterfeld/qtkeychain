@@ -140,11 +140,7 @@ if(APPLE)
         list(APPEND qtkeychain_SOURCES keychain_mac.cpp)
     endif()
 
-    find_library(COREFOUNDATION_LIBRARY CoreFoundation REQUIRED)
-    list(APPEND qtkeychain_LIBRARIES ${COREFOUNDATION_LIBRARY})
-
-    find_library(SECURITY_LIBRARY Security REQUIRED)
-    list(APPEND qtkeychain_LIBRARIES ${SECURITY_LIBRARY})
+    list(APPEND qtkeychain_LIBRARIES "-framework Foundation" "-framework Security")
 endif()
 
 if(UNIX AND NOT APPLE AND NOT ANDROID)
