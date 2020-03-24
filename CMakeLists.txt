@@ -139,7 +139,7 @@ endif()
 
 if(APPLE)
     if(IOS)
-        list(APPEND qtkeychain_SOURCES keychain_ios.cpp)
+        list(APPEND qtkeychain_SOURCES keychain_ios.mm)
     else()
         list(APPEND qtkeychain_SOURCES keychain_mac.cpp)
     endif()
