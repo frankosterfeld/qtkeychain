@@ -18,6 +18,7 @@ include(GenerateExportHeader)
 include(CMakePackageConfigHelpers)
 include(ECMSetupVersion)
 include(ECMGeneratePriFile)
+include(CMakeDependentOption)
 
 option(BUILD_WITH_QT6 "Build qtkeychain with Qt 6" OFF)
 option(BUILD_TEST_APPLICATION "Build test application" OFF)
@@ -27,6 +28,8 @@ if(QTKEYCHAIN_STATIC)
     set(BUILD_SHARED_LIBS OFF)
     message(WARNING "QTKEYCHAIN_STATIC is deprecated. Use BUILD_SHARED_LIBS=OFF instead.")
 endif()
+CMAKE_DEPENDENT_OPTION(BUILD_TRANSLATIONS_AS_RESOURCES "Bundle translations with the library" OFF
+                       "BUILD_TRANSLATIONS" OFF)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Android)
     set(ANDROID 1)
@@ -217,18 +220,28 @@ if ( BUILD_TRANSLATIONS )
     # https://github.com/frankosterfeld/qtkeychain/issues/185
     add_dependencies(${QTKEYCHAIN_TARGET_NAME} translations)
 
-    if(QTKEYCHAIN_VERSION_INFIX EQUAL 5 AND QT_TRANSLATIONS_DIR AND NOT QTKEYCHAIN_TRANSLATIONS_DIR)
-        # Back compatibility with pre-0.11 versions
-        message (WARNING "QT_TRANSLATIONS_DIR is deprecated, use QTKEYCHAIN_TRANSLATIONS_DIR instead")
-        set(QTKEYCHAIN_TRANSLATIONS_DIR ${QT_TRANSLATIONS_DIR}
-            CACHE PATH "The location of the QtKeychain translations" FORCE)
+    if (BUILD_TRANSLATIONS_AS_RESOURCES)
+        set(QM_FILE_LIST "")
+        foreach(FILE ${qtkeychain_QM_FILES})
+            list(APPEND QM_FILE_LIST "<file>${FILE}</file>")
+        endforeach()
+        string(REPLACE ";" "" QM_FILE_LIST ${QM_FILE_LIST})
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/translations/translations.qrc.in ${CMAKE_CURRENT_BINARY_DIR}/translations.qrc)
+        target_sources(${QTKEYCHAIN_TARGET_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/translations.qrc)
     else()
-        set(QTKEYCHAIN_TRANSLATIONS_DIR
-            ${CMAKE_INSTALL_DATADIR}/qt${QTKEYCHAIN_VERSION_INFIX}keychain/translations
-            CACHE PATH "The location of the QtKeychain translations" )
-    endif()
+        if(QTKEYCHAIN_VERSION_INFIX EQUAL 5 AND QT_TRANSLATIONS_DIR AND NOT QTKEYCHAIN_TRANSLATIONS_DIR)
+            # Back compatibility with pre-0.11 versions
+            message (WARNING "QT_TRANSLATIONS_DIR is deprecated, use QTKEYCHAIN_TRANSLATIONS_DIR instead")
+            set(QTKEYCHAIN_TRANSLATIONS_DIR ${QT_TRANSLATIONS_DIR}
+                CACHE PATH "The location of the QtKeychain translations" FORCE)
+        else()
+            set(QTKEYCHAIN_TRANSLATIONS_DIR
+                ${CMAKE_INSTALL_DATADIR}/qt${QTKEYCHAIN_VERSION_INFIX}keychain/translations
+                CACHE PATH "The location of the QtKeychain translations" )
+        endif()
 
-    install(FILES ${qtkeychain_QM_FILES} DESTINATION ${QTKEYCHAIN_TRANSLATIONS_DIR})
+        install(FILES ${qtkeychain_QM_FILES} DESTINATION ${QTKEYCHAIN_TRANSLATIONS_DIR})
+    endif()
 endif( BUILD_TRANSLATIONS )
 
 target_link_libraries(${QTKEYCHAIN_TARGET_NAME} PUBLIC ${qtkeychain_LIBRARIES} PRIVATE ${qtkeychain_LIBRARIES_PRIVATE})
