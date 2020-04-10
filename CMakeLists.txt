@@ -190,21 +190,19 @@ if ( BUILD_TRANSLATIONS )
     add_custom_target(messages DEPENDS ${qtkeychain_MESSAGES})
     add_custom_target(translations DEPENDS ${qtkeychain_QM_FILES})
 
-    if(NOT QT_TRANSLATIONS_DIR)
-	# If this directory is missing, we are in a Qt5 environment.
-	# Extract the qmake executable location
-	get_target_property(QT5_QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
-	# Ask Qt5 where to put the translations
-	execute_process( COMMAND ${QT5_QMAKE_EXECUTABLE} -query QT_INSTALL_TRANSLATIONS
-	    OUTPUT_VARIABLE qt_translations_dir OUTPUT_STRIP_TRAILING_WHITESPACE )
-	# make sure we have / and not \ as qmake gives on windows
-	file( TO_CMAKE_PATH "${qt_translations_dir}" qt_translations_dir)
-	set( QT_TRANSLATIONS_DIR ${qt_translations_dir} CACHE PATH
-	     "The location of the Qt translations" FORCE)
+    if(QTKEYCHAIN_VERSION_INFIX EQUAL 5 AND QT_TRANSLATIONS_DIR AND NOT QTKEYCHAIN_TRANSLATIONS_DIR)
+        # Back compatibility with pre-0.11 versions
+        message (WARNING "QT_TRANSLATIONS_DIR is deprecated, use QTKEYCHAIN_TRANSLATIONS_DIR instead")
+        set(QTKEYCHAIN_TRANSLATIONS_DIR ${QT_TRANSLATIONS_DIR}
+            CACHE PATH "The location of the QtKeychain translations" FORCE)
+    else()
+        set(QTKEYCHAIN_TRANSLATIONS_DIR
+            ${CMAKE_INSTALL_DATADIR}/qt${QTKEYCHAIN_VERSION_INFIX}keychain/translations
+            CACHE PATH "The location of the QtKeychain translations" )
     endif()
 
     install(FILES ${qtkeychain_QM_FILES}
-	    DESTINATION ${QT_TRANSLATIONS_DIR})
+	    DESTINATION ${QTKEYCHAIN_TRANSLATIONS_DIR})
 endif( BUILD_TRANSLATIONS )
 
 set(QTKEYCHAIN_TARGET_NAME qt${QTKEYCHAIN_VERSION_INFIX}keychain)
