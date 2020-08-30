@@ -16,10 +16,13 @@ include(GenerateExportHeader)
 include(ECMPackageConfigHelpers)
 include(ECMSetupVersion)
 include(ECMGeneratePriFile)
+include(CMakeDependentOption)
 
 option(BUILD_WITH_QT4 "Build qtkeychain with Qt4 no matter if Qt5 was found" OFF)
 option(BUILD_TEST_APPLICATION "Build test application" ON)
 option(BUILD_TRANSLATIONS "Build translations" ON)
+CMAKE_DEPENDENT_OPTION(BUILD_TRANSLATIONS_AS_RESOURCES "Bundle translations with the library" OFF
+                       "BUILD_TRANSLATIONS" OFF)
 option(QTKEYCHAIN_STATIC "Build static library" OFF)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Android)
@@ -190,21 +193,31 @@ if ( BUILD_TRANSLATIONS )
     add_custom_target(messages DEPENDS ${qtkeychain_MESSAGES})
     add_custom_target(translations DEPENDS ${qtkeychain_QM_FILES})
 
-    if(NOT QT_TRANSLATIONS_DIR)
-	# If this directory is missing, we are in a Qt5 environment.
-	# Extract the qmake executable location
-	get_target_property(QT5_QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
-	# Ask Qt5 where to put the translations
-	execute_process( COMMAND ${QT5_QMAKE_EXECUTABLE} -query QT_INSTALL_TRANSLATIONS
-	    OUTPUT_VARIABLE qt_translations_dir OUTPUT_STRIP_TRAILING_WHITESPACE )
-	# make sure we have / and not \ as qmake gives on windows
-	file( TO_CMAKE_PATH "${qt_translations_dir}" qt_translations_dir)
-	set( QT_TRANSLATIONS_DIR ${qt_translations_dir} CACHE PATH
-	     "The location of the Qt translations" FORCE)
-    endif()
+    if (BUILD_TRANSLATIONS_AS_RESOURCES)
+        set(QM_FILE_LIST "")
+        foreach(FILE ${qtkeychain_QM_FILES})
+            list(APPEND QM_FILE_LIST "<file>${FILE}</file>")
+        endforeach()
+        string(REPLACE ";" "" QM_FILE_LIST ${QM_FILE_LIST})
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/translations/translations.qrc.in ${CMAKE_CURRENT_BINARY_DIR}/translations.qrc)
+        list(APPEND qtkeychain_QM_FILES ${CMAKE_CURRENT_BINARY_DIR}/translations.qrc)
+    else()
+        if(NOT QT_TRANSLATIONS_DIR)
+        # If this directory is missing, we are in a Qt5 environment.
+        # Extract the qmake executable location
+        get_target_property(QT5_QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
+        # Ask Qt5 where to put the translations
+        execute_process( COMMAND ${QT5_QMAKE_EXECUTABLE} -query QT_INSTALL_TRANSLATIONS
+            OUTPUT_VARIABLE qt_translations_dir OUTPUT_STRIP_TRAILING_WHITESPACE )
+        # make sure we have / and not \ as qmake gives on windows
+        file( TO_CMAKE_PATH "${qt_translations_dir}" qt_translations_dir)
+        set( QT_TRANSLATIONS_DIR ${qt_translations_dir} CACHE PATH
+             "The location of the Qt translations" FORCE)
+        endif()
 
-    install(FILES ${qtkeychain_QM_FILES}
-	    DESTINATION ${QT_TRANSLATIONS_DIR})
+        install(FILES ${qtkeychain_QM_FILES}
+            DESTINATION ${QT_TRANSLATIONS_DIR})
+    endif()
 endif( BUILD_TRANSLATIONS )
 
 set(QTKEYCHAIN_TARGET_NAME qt${QTKEYCHAIN_VERSION_INFIX}keychain)
