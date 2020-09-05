@@ -59,10 +59,10 @@ win32 {
     DEFINES += USE_CREDENTIAL_STORE
     contains(DEFINES, USE_CREDENTIAL_STORE) {
         !build_pass:message("Windows Credential Store support: on")
-        LIBS += -lAdvapi32
+        LIBS += -ladvapi32
     } else {
         !build_pass:message("Windows Credential Store support: off")
-        LIBS += -lCrypt32
+        LIBS += -lcrypt32
         HEADERS += $$QT5KEYCHAIN_PWD/plaintextstore_p.h
         SOURCES += $$QT5KEYCHAIN_PWD/plaintextstore.cpp
     }
