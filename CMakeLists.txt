@@ -5,7 +5,7 @@ include(FindPkgConfig)
 
 ###
 
-set(QTKEYCHAIN_VERSION 0.10.90)
+set(QTKEYCHAIN_VERSION 0.11.90)
 set(QTKEYCHAIN_SOVERSION 1)
 
 ###
@@ -139,7 +139,7 @@ endif()
 
 if(APPLE)
     if(IOS)
-        list(APPEND qtkeychain_SOURCES keychain_ios.cpp)
+        list(APPEND qtkeychain_SOURCES keychain_ios.mm)
     else()
         list(APPEND qtkeychain_SOURCES keychain_mac.cpp)
     endif()
@@ -164,7 +164,7 @@ if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT HAIKU)
             add_definitions(-DHAVE_LIBSECRET=1)
         endif()
         INCLUDE_DIRECTORIES(${LIBSECRET_INCLUDE_DIRS})
-        list(APPEND qtkeychain_LIBRARIES ${LIBSECRET_LIBRARIES})
+        list(APPEND qtkeychain_LIBRARIES_PRIVATE ${LIBSECRET_LIBRARIES})
     endif()
 
     add_definitions(-DKEYCHAIN_DBUS=1)
@@ -190,21 +190,19 @@ if ( BUILD_TRANSLATIONS )
     add_custom_target(messages DEPENDS ${qtkeychain_MESSAGES})
     add_custom_target(translations DEPENDS ${qtkeychain_QM_FILES})
 
-    if(NOT QT_TRANSLATIONS_DIR)
-	# If this directory is missing, we are in a Qt5 environment.
-	# Extract the qmake executable location
-	get_target_property(QT5_QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
-	# Ask Qt5 where to put the translations
-	execute_process( COMMAND ${QT5_QMAKE_EXECUTABLE} -query QT_INSTALL_TRANSLATIONS
-	    OUTPUT_VARIABLE qt_translations_dir OUTPUT_STRIP_TRAILING_WHITESPACE )
-	# make sure we have / and not \ as qmake gives on windows
-	file( TO_CMAKE_PATH "${qt_translations_dir}" qt_translations_dir)
-	set( QT_TRANSLATIONS_DIR ${qt_translations_dir} CACHE PATH
-	     "The location of the Qt translations" FORCE)
+    if(QTKEYCHAIN_VERSION_INFIX EQUAL 5 AND QT_TRANSLATIONS_DIR AND NOT QTKEYCHAIN_TRANSLATIONS_DIR)
+        # Back compatibility with pre-0.11 versions
+        message (WARNING "QT_TRANSLATIONS_DIR is deprecated, use QTKEYCHAIN_TRANSLATIONS_DIR instead")
+        set(QTKEYCHAIN_TRANSLATIONS_DIR ${QT_TRANSLATIONS_DIR}
+            CACHE PATH "The location of the QtKeychain translations" FORCE)
+    else()
+        set(QTKEYCHAIN_TRANSLATIONS_DIR
+            ${CMAKE_INSTALL_DATADIR}/qt${QTKEYCHAIN_VERSION_INFIX}keychain/translations
+            CACHE PATH "The location of the QtKeychain translations" )
     endif()
 
     install(FILES ${qtkeychain_QM_FILES}
-	    DESTINATION ${QT_TRANSLATIONS_DIR})
+	    DESTINATION ${QTKEYCHAIN_TRANSLATIONS_DIR})
 endif( BUILD_TRANSLATIONS )
 
 set(QTKEYCHAIN_TARGET_NAME qt${QTKEYCHAIN_VERSION_INFIX}keychain)
@@ -213,8 +211,11 @@ if(NOT QTKEYCHAIN_STATIC)
 else()
     add_library(${QTKEYCHAIN_TARGET_NAME} STATIC ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
 endif()
+if(WIN32)
+    set_target_properties( ${QTKEYCHAIN_TARGET_NAME} PROPERTIES DEBUG_POSTFIX "d" )
+endif()
 
-target_link_libraries(${QTKEYCHAIN_TARGET_NAME} PUBLIC ${qtkeychain_LIBRARIES})
+target_link_libraries(${QTKEYCHAIN_TARGET_NAME} PUBLIC ${qtkeychain_LIBRARIES} PRIVATE ${qtkeychain_LIBRARIES_PRIVATE})
 if(NOT INTERFACE_INCLUDE_SUFFIX)
     set(INTERFACE_INCLUDE_SUFFIX include)
 endif()

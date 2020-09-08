@@ -1,6 +1,14 @@
 ChangeLog
 =========
 
+version 0.11.0 (release 2020-09-08)
+
+  * Important: Debug builds on Windows now get the "d" suffix
+  * Various build system fixes
+  * Add Haiku support (François Revol <revol@free.fr>)
+  * Translation: Russian (Alexander Gorishnyak <kefir500@gmail.com>)
+  * Translation: Update French (David Geiger <david.david@mageialinux-online.org>)
+
 version 0.10.0 (release 2019-12-17)
 
   * Detect XFCE desktop correctly. (Sandro Knauß <hefee@debian.org>)
