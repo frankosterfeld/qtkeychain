@@ -28,7 +28,7 @@
 #   <prefix>_SOVERSION      - <soversion>, or <major> if SOVERSION was not given
 #
 # If CMake policy CMP0048 is not NEW, the following CMake variables will also
-# be set:
+# be set::
 #
 #   PROJECT_VERSION_MAJOR   - <major>
 #   PROJECT_VERSION_MINOR   - <minor>
@@ -75,34 +75,13 @@
 #
 # Since pre-1.0.0.
 #
-# COMPATIBLITY option available since 1.6.0.
+# COMPATIBILITY option available since 1.6.0.
 
 #=============================================================================
-# Copyright 2014 Alex Merry <alex.merry@kde.org>
-# Copyright 2012 Alexander Neundorf <neundorf@kde.org>
+# SPDX-FileCopyrightText: 2014 Alex Merry <alex.merry@kde.org>
+# SPDX-FileCopyrightText: 2012 Alexander Neundorf <neundorf@kde.org>
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-# 1. Redistributions of source code must retain the copyright
-#    notice, this list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-# 3. The name of the author may not be used to endorse or promote products
-#    derived from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
-# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-# IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
-# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-# THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# SPDX-License-Identifier: BSD-3-Clause
 
 include(CMakePackageConfigHelpers)
 
@@ -154,9 +133,9 @@ function(ecm_setup_version _version)
         set(_minor "${PROJECT_VERSION_MINOR}")
         set(_patch "${PROJECT_VERSION_PATCH}")
     else()
-        string(REGEX REPLACE "^([0-9]+)\\.[0-9]+\\.[0-9]+.*" "\\1" _major "${_version}")
-        string(REGEX REPLACE "^[0-9]+\\.([0-9]+)\\.[0-9]+.*" "\\1" _minor "${_version}")
-        string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" _patch "${_version}")
+        string(REGEX REPLACE "^0*([0-9]+)\\.[0-9]+\\.[0-9]+.*" "\\1" _major "${_version}")
+        string(REGEX REPLACE "^[0-9]+\\.0*([0-9]+)\\.[0-9]+.*" "\\1" _minor "${_version}")
+        string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.0*([0-9]+).*" "\\1" _patch "${_version}")
     endif()
 
     if(NOT ESV_SOVERSION)

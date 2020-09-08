@@ -72,37 +72,16 @@
 # Since pre-1.0.0.
 
 #=============================================================================
-# Copyright 2014 David Faure <faure@kde.org>
+# SPDX-FileCopyrightText: 2014 David Faure <faure@kde.org>
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-# 1. Redistributions of source code must retain the copyright
-#    notice, this list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-# 3. The name of the author may not be used to endorse or promote products
-#    derived from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
-# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-# IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
-# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-# THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# SPDX-License-Identifier: BSD-3-Clause
 
 # Replicate the logic from KDEInstallDirs.cmake as we can't depend on it
 # Ask qmake if we're using the same prefix as Qt
 set(_askqmake OFF)
 if(NOT DEFINED KDE_INSTALL_USE_QT_SYS_PATHS)
     include(ECMQueryQmake)
-    query_qmake(qt_install_prefix_dir QT_INSTALL_PREFIX)
+    query_qmake(qt_install_prefix_dir QT_INSTALL_PREFIX TRY)
     if(qt_install_prefix_dir STREQUAL "${CMAKE_INSTALL_PREFIX}")
         set(_askqmake ON)
     endif()
@@ -159,24 +138,45 @@ function(ECM_GENERATE_PRI_FILE)
   string(REGEX REPLACE "^[0-9]+\\.([0-9]+)\\.[0-9]+.*" "\\1" PROJECT_VERSION_MINOR "${PROJECT_VERSION_STRING}")
   string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" PROJECT_VERSION_PATCH "${PROJECT_VERSION_STRING}")
 
+  # Prepare the right number of "../.." to go from ECM_MKSPECS_INSTALL_DIR to the install prefix
+  # This allows to make the generated pri files relocatable (no absolute paths)
+  if (IS_ABSOLUTE ${ECM_MKSPECS_INSTALL_DIR})
+     set(BASEPATH ${CMAKE_INSTALL_PREFIX})
+  else()
+    string(REGEX REPLACE "[^/]+" ".." PRI_ROOT_RELATIVE_TO_MKSPECS ${ECM_MKSPECS_INSTALL_DIR})
+    set(BASEPATH "$$PWD/${PRI_ROOT_RELATIVE_TO_MKSPECS}")
+ endif()
+
   set(PRI_TARGET_BASENAME ${EGPF_BASE_NAME})
   set(PRI_TARGET_LIBNAME ${EGPF_LIB_NAME})
   set(PRI_TARGET_QTDEPS ${EGPF_DEPS})
   if(IS_ABSOLUTE "${EGPF_INCLUDE_INSTALL_DIR}")
       set(PRI_TARGET_INCLUDES "${EGPF_INCLUDE_INSTALL_DIR}")
   else()
-      set(PRI_TARGET_INCLUDES "${CMAKE_INSTALL_PREFIX}/${EGPF_INCLUDE_INSTALL_DIR}")
+      set(PRI_TARGET_INCLUDES "${BASEPATH}/${EGPF_INCLUDE_INSTALL_DIR}")
   endif()
   if(IS_ABSOLUTE "${EGPF_LIB_INSTALL_DIR}")
       set(PRI_TARGET_LIBS "${EGPF_LIB_INSTALL_DIR}")
   else()
-      set(PRI_TARGET_LIBS "${CMAKE_INSTALL_PREFIX}/${EGPF_LIB_INSTALL_DIR}")
+      set(PRI_TARGET_LIBS "${BASEPATH}/${EGPF_LIB_INSTALL_DIR}")
   endif()
   set(PRI_TARGET_DEFINES "")
 
   set(PRI_FILENAME ${CMAKE_CURRENT_BINARY_DIR}/qt_${PRI_TARGET_BASENAME}.pri)
   if (EGPF_FILENAME_VAR)
      set(${EGPF_FILENAME_VAR} ${PRI_FILENAME} PARENT_SCOPE)
+  endif()
+
+  set(PRI_TARGET_MODULE_CONFIG "")
+  # backward compat: it was not obvious LIB_NAME needs to be a target name,
+  # and some projects where the target name was not the actual library output name
+  # passed the output name for LIB_NAME, so .name & .module prperties are correctly set.
+  # TODO: improve API dox, allow control over module name if target name != output name
+  if(TARGET ${EGPF_LIB_NAME})
+    get_target_property(target_type ${EGPF_LIB_NAME} TYPE)
+    if (target_type STREQUAL "STATIC_LIBRARY")
+        set(PRI_TARGET_MODULE_CONFIG "staticlib")
+    endif()
   endif()
 
   file(GENERATE
@@ -193,6 +193,7 @@ QT.${PRI_TARGET_BASENAME}.includes = ${PRI_TARGET_INCLUDES}
 QT.${PRI_TARGET_BASENAME}.private_includes =
 QT.${PRI_TARGET_BASENAME}.libs = ${PRI_TARGET_LIBS}
 QT.${PRI_TARGET_BASENAME}.depends = ${PRI_TARGET_QTDEPS}
+QT.${PRI_TARGET_BASENAME}.module_config = ${PRI_TARGET_MODULE_CONFIG}
 "
   )
 endfunction()

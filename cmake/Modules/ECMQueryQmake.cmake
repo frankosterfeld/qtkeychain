@@ -9,12 +9,26 @@ endif()
 set(QMAKE_EXECUTABLE ${_qmake_executable_default}
     CACHE FILEPATH "Location of the Qt5 qmake executable")
 
+# Helper method
 # This is not public API (yet)!
+# Usage: query_qmake(<result_variable> <qt_variable> [TRY])
+# Passing TRY will result in the method not failing fatal if no qmake executable
+# has been found, but instead simply returning an empty string
 function(query_qmake result_variable qt_variable)
+    set(options TRY)
+    set(oneValueArgs )
+    set(multiValueArgs )
+
+    cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
     if(NOT QMAKE_EXECUTABLE)
-        set(${result_variable} "" PARENT_SCOPE)
-        message(WARNING "Should specify a qmake Qt5 binary. Can't check ${qt_variable}")
-        return()
+        if(ARGS_TRY)
+            set(${result_variable} "" PARENT_SCOPE)
+            message(STATUS "No qmake Qt5 binary found. Can't check ${qt_variable}")
+            return()
+        else()
+            message(FATAL_ERROR "No qmake Qt5 binary found. Can't check ${qt_variable} as required")
+        endif()
     endif()
     execute_process(
         COMMAND ${QMAKE_EXECUTABLE} -query "${qt_variable}"
