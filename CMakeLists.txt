@@ -39,15 +39,14 @@ if (WIN32)
 endif()
 
 if( NOT BUILD_WITH_QT4 )
-    # try Qt5 first, and prefer that if found
-    find_package(Qt5Core QUIET)
+    find_package(Qt5 COMPONENTS Core REQUIRED)
 endif()
 
 if (Qt5Core_FOUND AND NOT BUILD_WITH_QT4)
   set(QTKEYCHAIN_VERSION_INFIX 5)
 
   if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT HAIKU)
-    find_package(Qt5DBus REQUIRED)
+    find_package(Qt5 COMPONENTS DBus REQUIRED)
     include_directories(${Qt5DBus_INCLUDE_DIRS})
     set(QTDBUS_LIBRARIES ${Qt5DBus_LIBRARIES})
     macro(qt_add_dbus_interface)
@@ -56,7 +55,7 @@ if (Qt5Core_FOUND AND NOT BUILD_WITH_QT4)
   endif()
 
   if(BUILD_TRANSLATIONS)
-    find_package(Qt5LinguistTools REQUIRED)
+    find_package(Qt5 COMPONENTS LinguistTools REQUIRED)
     macro(qt_add_translation)
       qt5_add_translation(${ARGN})
     endmacro(qt_add_translation)
