@@ -1,19 +1,18 @@
-cmake_minimum_required(VERSION 2.8.11)
-project(qtkeychain)
-
-include(FindPkgConfig)
-
-###
+cmake_minimum_required(VERSION 3.3)
 
 set(QTKEYCHAIN_VERSION 0.11.90)
 set(QTKEYCHAIN_SOVERSION 1)
+
+project(qtkeychain VERSION ${QTKEYCHAIN_VERSION})
+
+include(FindPkgConfig)
 
 ###
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake/Modules")
 include(GNUInstallDirs)
 include(GenerateExportHeader)
-include(ECMPackageConfigHelpers)
+include(CMakePackageConfigHelpers)
 include(ECMSetupVersion)
 include(ECMGeneratePriFile)
 
@@ -254,7 +253,7 @@ endif()
 ### CMake config file
 ###
 
-ecm_configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/QtKeychainConfig.cmake.in"
+configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/QtKeychainConfig.cmake.in"
   "${CMAKE_CURRENT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfig.cmake"
   INSTALL_DESTINATION Qt${QTKEYCHAIN_VERSION_INFIX}Keychain)
 
