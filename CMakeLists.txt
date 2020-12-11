@@ -121,7 +121,18 @@ set(qtkeychain_SOURCES
     keychain.h
 )
 
-add_definitions( -Wall )
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    # CMake < 3.15 sneaks in /W# flags for us, so we need a replacement,
+    # or we'll get a warning (cf. CMP0092)
+    if (CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+        string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    else()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+    endif()
+else()
+    # MSVC's STL / Qt headers are not MSVC -Wall clean, so don't enable it there
+    add_definitions( -Wall )
+endif()
 
 if(WIN32)
     list(APPEND qtkeychain_SOURCES keychain_win.cpp)
