@@ -24,20 +24,20 @@ void ReadPasswordJobPrivate::scheduledStart() {
     PCREDENTIALW cred;
 
     if (!CredReadW(name, CRED_TYPE_GENERIC, 0, &cred)) {
-        Error error;
+        Error err;
         QString msg;
         switch(GetLastError()) {
         case ERROR_NOT_FOUND:
-            error = EntryNotFound;
+            err = EntryNotFound;
             msg = tr("Password entry not found");
             break;
         default:
-            error = OtherError;
+            err = OtherError;
             msg = tr("Could not decrypt data");
             break;
         }
 
-        q->emitFinishedWithError( error, msg );
+        q->emitFinishedWithError( err, msg );
         return;
     }
 
@@ -96,20 +96,20 @@ void DeletePasswordJobPrivate::scheduledStart() {
     LPCWSTR name = (LPCWSTR)key.utf16();
 
     if (!CredDeleteW(name, CRED_TYPE_GENERIC, 0)) {
-        Error error;
+        Error err;
         QString msg;
         switch(GetLastError()) {
         case ERROR_NOT_FOUND:
-            error = EntryNotFound;
+            err = EntryNotFound;
             msg = tr("Password entry not found");
             break;
         default:
-            error = OtherError;
+            err = OtherError;
             msg = tr("Could not decrypt data");
             break;
         }
 
-        q->emitFinishedWithError( error, msg );
+        q->emitFinishedWithError( err, msg );
     } else {
         q->emitFinished();
     }
