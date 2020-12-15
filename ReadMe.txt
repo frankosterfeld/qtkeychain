@@ -3,7 +3,7 @@ QtKeychain
 
 QtKeychain is a Qt API to store passwords and other secret data securely. How the data is stored depends on the platform:
 
- * **Mac OS X:** Passwords are stored in the OS X Keychain.
+ * **macOS:** Passwords are stored in the macOS Keychain.
 
  * **Linux/Unix:** If running, GNOME Keyring is used, otherwise qtkeychain tries to use KWallet (via D-Bus), if available.
 
