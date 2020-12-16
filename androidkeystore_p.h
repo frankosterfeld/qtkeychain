@@ -312,7 +312,7 @@ public:
 
     using Object::Object;
 
-    static Cipher getInstance(const QString &transformation, const QString &provider);
+    static Cipher getInstance(const QString &transformation);
     bool init(int opMode, const java::security::Key &key) const;
 };
 

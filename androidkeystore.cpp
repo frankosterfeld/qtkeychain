@@ -271,12 +271,11 @@ bool OutputStream::flush() const
     return handleExceptions();
 }
 
-Cipher Cipher::getInstance(const QString &transformation, const QString &provider)
+Cipher Cipher::getInstance(const QString &transformation)
 {
     return handleExceptions(callStaticObjectMethod("javax/crypto/Cipher", "getInstance",
-                                                   "(Ljava/lang/String;Ljava/lang/String;)Ljavax/crypto/Cipher;",
-                                                   fromString(transformation).object(),
-                                                   fromString(provider).object()));
+                                                   "(Ljava/lang/String;)Ljavax/crypto/Cipher;",
+                                                   fromString(transformation).object()));
 }
 
 bool Cipher::init(int opMode, const Key &key) const
