@@ -63,7 +63,7 @@ void ReadPasswordJobPrivate::scheduledStart()
     const KeyStore::PrivateKeyEntry entry = keyStore.getEntry(alias);
 
     if (!entry) {
-        q->emitFinishedWithError(Error::AccessDenied, tr("Could not retreive private key from keystore"));
+        q->emitFinishedWithError(Error::AccessDenied, tr("Could not retrieve private key from keystore"));
         return;
     }
 
@@ -128,7 +128,7 @@ void WritePasswordJobPrivate::scheduledStart()
     const KeyStore::PrivateKeyEntry entry = keyStore.getEntry(alias);
 
     if (!entry) {
-        q->emitFinishedWithError(Error::AccessDenied, tr("Could not retreive private key from keystore"));
+        q->emitFinishedWithError(Error::AccessDenied, tr("Could not retrieve private key from keystore"));
         return;
     }
 
