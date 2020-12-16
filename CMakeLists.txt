@@ -5,6 +5,9 @@ set(QTKEYCHAIN_SOVERSION 1)
 
 project(qtkeychain VERSION ${QTKEYCHAIN_VERSION})
 
+# Enable C++11
+SET(CMAKE_CXX_STANDARD 11)
+
 include(FindPkgConfig)
 
 ###
@@ -188,7 +191,6 @@ if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT HAIKU)
 endif()
 
 if(ANDROID)
-    set(CMAKE_CXX_STANDARD 11)
     list(APPEND qtkeychain_SOURCES keychain_android.cpp androidkeystore.cpp plaintextstore.cpp)
     list(APPEND qtkeychain_LIBRARIES ${QTANDROIDEXTRAS_LIBRARIES} )
 endif()
