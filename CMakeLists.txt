@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.3)
 
-set(QTKEYCHAIN_VERSION 0.12.0)
+set(QTKEYCHAIN_VERSION 0.12.90)
 set(QTKEYCHAIN_SOVERSION 1)
 
 project(qtkeychain VERSION ${QTKEYCHAIN_VERSION})
