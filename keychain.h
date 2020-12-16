@@ -47,7 +47,7 @@ class JobPrivate;
 class QKEYCHAIN_EXPORT Job : public QObject {
     Q_OBJECT
 public:
-    ~Job();
+    ~Job() override;
 
     /**
      * @return The QSettings instance used as plaintext storage if insecureFallback() is true.
@@ -150,7 +150,7 @@ Q_SIGNALS:
     void finished( QKeychain::Job* );
 
 protected:
-    explicit Job( JobPrivate *q, QObject* parent=0 );
+    explicit Job( JobPrivate *q, QObject* parent=nullptr );
     Q_INVOKABLE void doStart();
 
 private:
@@ -185,8 +185,8 @@ public:
      * @param service The service string used by this job (can be empty).
      * @param parent The parent of this job.
      */
-    explicit ReadPasswordJob( const QString& service, QObject* parent=0 );
-    ~ReadPasswordJob();
+    explicit ReadPasswordJob( const QString& service, QObject* parent=nullptr );
+    ~ReadPasswordJob() override;
 
     /**
      * @return The binary data stored as value of this job's key().
@@ -222,8 +222,8 @@ public:
      * @param service The service string used by this job (can be empty).
      * @param parent The parent of this job.
      */
-    explicit WritePasswordJob( const QString& service, QObject* parent=0 );
-    ~WritePasswordJob();
+    explicit WritePasswordJob( const QString& service, QObject* parent=nullptr );
+    ~WritePasswordJob() override;
 
     /**
      * Set the @p data that the job will store in the keychain as binary data.
@@ -259,8 +259,8 @@ public:
      * @param service The service string used by this job (can be empty).
      * @param parent The parent of this job.
      */
-    explicit DeletePasswordJob( const QString& service, QObject* parent=0 );
-    ~DeletePasswordJob();
+    explicit DeletePasswordJob( const QString& service, QObject* parent=nullptr );
+    ~DeletePasswordJob() override;
 
 private:
     friend class QKeychain::DeletePasswordJobPrivate;
