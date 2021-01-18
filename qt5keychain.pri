@@ -6,21 +6,21 @@ lessThan(QT_MAJOR_VERSION, 5) {
     error("qtkeychain requires Qt 5 or later")
 }
 
-QT5KEYCHAIN_PWD = $$PWD
+QTKEYCHAIN_PWD = $$PWD
 
 CONFIG += depend_includepath
 DEFINES += QTKEYCHAIN_NO_EXPORT
 
 INCLUDEPATH += \
     $$PWD/.. \
-    $$QT5KEYCHAIN_PWD
+    $$QTKEYCHAIN_PWD
 
 HEADERS += \
-    $$QT5KEYCHAIN_PWD/keychain_p.h \
-    $$QT5KEYCHAIN_PWD/keychain.h
+    $$QTKEYCHAIN_PWD/keychain_p.h \
+    $$QTKEYCHAIN_PWD/keychain.h
 
 SOURCES += \
-    $$QT5KEYCHAIN_PWD/keychain.cpp
+    $$QTKEYCHAIN_PWD/keychain.cpp
 
 unix:!android:!macx:!ios {
     # Remove the following LIBSECRET_SUPPORT line
@@ -46,26 +46,26 @@ unix:!android:!macx:!ios {
     DBUS_INTERFACES += kwallet_interface
 
     HEADERS += \
-        $$QT5KEYCHAIN_PWD/gnomekeyring_p.h \
-        $$QT5KEYCHAIN_PWD/plaintextstore_p.h \
-        $$QT5KEYCHAIN_PWD/libsecret_p.h
+        $$QTKEYCHAIN_PWD/gnomekeyring_p.h \
+        $$QTKEYCHAIN_PWD/plaintextstore_p.h \
+        $$QTKEYCHAIN_PWD/libsecret_p.h
     SOURCES += \
-        $$QT5KEYCHAIN_PWD/keychain_unix.cpp \
-        $$QT5KEYCHAIN_PWD/plaintextstore.cpp \
-        $$QT5KEYCHAIN_PWD/gnomekeyring.cpp \
-        $$QT5KEYCHAIN_PWD/libsecret.cpp
+        $$QTKEYCHAIN_PWD/keychain_unix.cpp \
+        $$QTKEYCHAIN_PWD/plaintextstore.cpp \
+        $$QTKEYCHAIN_PWD/gnomekeyring.cpp \
+        $$QTKEYCHAIN_PWD/libsecret.cpp
 }
 
 android {
     QT += androidextras
 
     HEADERS += \
-        $$QT5KEYCHAIN_PWD/androidkeystore_p.h \
-        $$QT5KEYCHAIN_PWD/plaintextstore_p.h
+        $$QTKEYCHAIN_PWD/androidkeystore_p.h \
+        $$QTKEYCHAIN_PWD/plaintextstore_p.h
     SOURCES += \
-        $$QT5KEYCHAIN_PWD/androidkeystore.cpp \
-        $$QT5KEYCHAIN_PWD/keychain_android.cpp \
-        $$QT5KEYCHAIN_PWD/plaintextstore.cpp
+        $$QTKEYCHAIN_PWD/androidkeystore.cpp \
+        $$QTKEYCHAIN_PWD/keychain_android.cpp \
+        $$QTKEYCHAIN_PWD/plaintextstore.cpp
 }
 
 win32 {
@@ -79,21 +79,21 @@ win32 {
     } else {
         !build_pass:message("Windows Credential Store support: off")
         LIBS += -lcrypt32
-        HEADERS += $$QT5KEYCHAIN_PWD/plaintextstore_p.h
-        SOURCES += $$QT5KEYCHAIN_PWD/plaintextstore.cpp
+        HEADERS += $$QTKEYCHAIN_PWD/plaintextstore_p.h
+        SOURCES += $$QTKEYCHAIN_PWD/plaintextstore.cpp
     }
-    HEADERS += $$QT5KEYCHAIN_PWD/libsecret_p.h
+    HEADERS += $$QTKEYCHAIN_PWD/libsecret_p.h
     SOURCES += \
-        $$QT5KEYCHAIN_PWD/keychain_win.cpp \
-        $$QT5KEYCHAIN_PWD/libsecret.cpp
+        $$QTKEYCHAIN_PWD/keychain_win.cpp \
+        $$QTKEYCHAIN_PWD/libsecret.cpp
 }
 
 macx:!ios {
     LIBS += -framework Security -framework Foundation
-    SOURCES += $$QT5KEYCHAIN_PWD/keychain_mac.cpp
+    SOURCES += $$QTKEYCHAIN_PWD/keychain_mac.cpp
 }
 
 ios {
     LIBS += -framework Security -framework Foundation
-    OBJECTIVE_SOURCES += $$QT5KEYCHAIN_PWD/keychain_ios.mm
+    OBJECTIVE_SOURCES += $$QTKEYCHAIN_PWD/keychain_ios.mm
 }
