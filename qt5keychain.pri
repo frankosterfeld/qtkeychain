@@ -41,6 +41,7 @@ unix:!android:!macx:!ios {
     }
 
     # Generate D-Bus interface:
+    DEFINES += KEYCHAIN_DBUS
     QT += dbus
     kwallet_interface.files = $$PWD/org.kde.KWallet.xml
     DBUS_INTERFACES += kwallet_interface
