@@ -9,14 +9,10 @@ include("${CMAKE_CURRENT_LIST_DIR}/Qt@QTKEYCHAIN_VERSION_INFIX@KeychainLibraryDe
 
 include(CMakeFindDependencyMacro)
 
-if("@QTKEYCHAIN_VERSION_INFIX@" STREQUAL "5")
-    find_dependency(Qt5Core)
-    
-    if(UNIX AND NOT APPLE)
-        find_dependency(Qt5DBus)
-    endif()
-else()
-    find_dependency(Qt4 COMPONENTS QtCore)
+find_dependency(Qt@QTKEYCHAIN_VERSION_INFIX@Core)
+
+if(UNIX AND NOT APPLE)
+    find_dependency(Qt@QTKEYCHAIN_VERSION_INFIX@DBus)
 endif()
 
 set(QTKEYCHAIN_LIBRARIES "@QTKEYCHAIN_TARGET_NAME@")
