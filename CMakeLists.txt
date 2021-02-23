@@ -170,11 +170,8 @@ if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT HAIKU)
     option(LIBSECRET_SUPPORT "Build with libsecret support" ON)
 
     if(LIBSECRET_SUPPORT)
-        pkg_check_modules(LIBSECRET libsecret-1)
-
-        if (LIBSECRET_FOUND)
-            add_definitions(-DHAVE_LIBSECRET=1)
-        endif()
+        pkg_check_modules(LIBSECRET REQUIRED libsecret-1)
+        add_definitions(-DHAVE_LIBSECRET=1)
         INCLUDE_DIRECTORIES(${LIBSECRET_INCLUDE_DIRS})
         LINK_DIRECTORIES(${LIBSECRET_LIBRARY_DIRS})
         list(APPEND qtkeychain_LIBRARIES_PRIVATE ${LIBSECRET_LIBRARIES})
