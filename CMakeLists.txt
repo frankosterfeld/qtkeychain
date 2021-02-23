@@ -20,7 +20,7 @@ include(ECMSetupVersion)
 include(ECMGeneratePriFile)
 
 option(BUILD_WITH_QT6 "Build qtkeychain with Qt 6" OFF)
-option(BUILD_TEST_APPLICATION "Build test application" ON)
+option(BUILD_TEST_APPLICATION "Build test application" OFF)
 option(BUILD_TRANSLATIONS "Build translations" ON)
 option(QTKEYCHAIN_STATIC "Build static library" OFF)
 
