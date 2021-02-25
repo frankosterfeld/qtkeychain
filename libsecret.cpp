@@ -5,7 +5,6 @@
 #include "libsecret_p.h"
 
 #include <QLibrary>
-#include <QDebug>
 
 #if defined(HAVE_LIBSECRET)
 const SecretSchema* qtkeychainSchema(void) {
@@ -236,7 +235,6 @@ bool LibSecretKeyring::findPassword(const QString &user, const QString &server,
     arg->user = user;
     arg->server = server;
 
-    qDebug() << Q_FUNC_INFO;
     secret_password_lookup_fn (qtkeychainSchema(), NULL, on_password_lookup, arg,
                                "user", user.toUtf8().constData(),
                                "server", server.toUtf8().constData(),
@@ -274,7 +272,6 @@ bool LibSecretKeyring::writePassword(const QString &display_name,
         break;
     }
 
-    qDebug() << Q_FUNC_INFO;
     secret_password_store_fn (qtkeychainSchema(), SECRET_COLLECTION_DEFAULT,
                               display_name.toUtf8().constData(),
                               pwd.constData(), NULL, on_password_stored, self,
@@ -302,7 +299,6 @@ bool LibSecretKeyring::deletePassword(const QString &key, const QString &service
         return false;
     }
 
-    qDebug() << Q_FUNC_INFO;
     secret_password_clear_fn (qtkeychainSchema(), NULL, on_password_cleared, self,
                               "user", key.toUtf8().constData(),
                               "server", service.toUtf8().constData(),
