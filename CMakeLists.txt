@@ -185,7 +185,7 @@ endif()
 
 if(ANDROID)
     list(APPEND qtkeychain_SOURCES keychain_android.cpp androidkeystore.cpp plaintextstore.cpp)
-    list(APPEND qtkeychain_LIBRARIES ${QTANDROIDEXTRAS_LIBRARIES} )
+    list(APPEND qtkeychain_LIBRARIES_PRIVATE ${QTANDROIDEXTRAS_LIBRARIES} )
 endif()
 
 QT_WRAP_CPP(qtkeychain_MOC_OUTFILES keychain.h keychain_p.h gnomekeyring_p.h)
