@@ -89,12 +89,7 @@ win32 {
         $$QTKEYCHAIN_PWD/libsecret.cpp
 }
 
-macx:!ios {
+macx|ios {
     LIBS += -framework Security -framework Foundation
-    SOURCES += $$QTKEYCHAIN_PWD/keychain_mac.cpp
-}
-
-ios {
-    LIBS += -framework Security -framework Foundation
-    OBJECTIVE_SOURCES += $$QTKEYCHAIN_PWD/keychain_ios.mm
+    OBJECTIVE_SOURCES += $$QTKEYCHAIN_PWD/keychain_apple.mm
 }
