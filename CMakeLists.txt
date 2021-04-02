@@ -198,12 +198,24 @@ set(qtkeychain_TR_FILES
       translations/qtkeychain_zh.ts
 )
 
+set(QTKEYCHAIN_TARGET_NAME qt${QTKEYCHAIN_VERSION_INFIX}keychain)
+if(NOT QTKEYCHAIN_STATIC)
+    add_library(${QTKEYCHAIN_TARGET_NAME} SHARED ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
+else()
+    add_library(${QTKEYCHAIN_TARGET_NAME} STATIC ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
+endif()
+if(WIN32)
+    set_target_properties( ${QTKEYCHAIN_TARGET_NAME} PROPERTIES DEBUG_POSTFIX "d" )
+endif()
+
 file(GLOB qtkeychain_TR_SOURCES *.cpp *.h *.ui)
 if ( BUILD_TRANSLATIONS )
     qt_create_translation(qtkeychain_MESSAGES ${qtkeychain_TR_SOURCES} ${qtkeychain_TR_FILES})
     qt_add_translation(qtkeychain_QM_FILES ${qtkeychain_TR_FILES})
     add_custom_target(messages DEPENDS ${qtkeychain_MESSAGES})
     add_custom_target(translations DEPENDS ${qtkeychain_QM_FILES} messages)
+    # https://github.com/frankosterfeld/qtkeychain/issues/185
+    add_dependencies(${QTKEYCHAIN_TARGET_NAME} translations)
 
     if(QTKEYCHAIN_VERSION_INFIX EQUAL 5 AND QT_TRANSLATIONS_DIR AND NOT QTKEYCHAIN_TRANSLATIONS_DIR)
         # Back compatibility with pre-0.11 versions
@@ -216,21 +228,8 @@ if ( BUILD_TRANSLATIONS )
             CACHE PATH "The location of the QtKeychain translations" )
     endif()
 
-    install(FILES ${qtkeychain_QM_FILES}
-	    DESTINATION ${QTKEYCHAIN_TRANSLATIONS_DIR})
+    install(FILES ${qtkeychain_QM_FILES} DESTINATION ${QTKEYCHAIN_TRANSLATIONS_DIR})
 endif( BUILD_TRANSLATIONS )
-
-set(QTKEYCHAIN_TARGET_NAME qt${QTKEYCHAIN_VERSION_INFIX}keychain)
-if(NOT QTKEYCHAIN_STATIC)
-    add_library(${QTKEYCHAIN_TARGET_NAME} SHARED ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
-else()
-    add_library(${QTKEYCHAIN_TARGET_NAME} STATIC ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
-endif()
-# https://github.com/frankosterfeld/qtkeychain/issues/185
-add_dependencies(${QTKEYCHAIN_TARGET_NAME} translations)
-if(WIN32)
-    set_target_properties( ${QTKEYCHAIN_TARGET_NAME} PROPERTIES DEBUG_POSTFIX "d" )
-endif()
 
 target_link_libraries(${QTKEYCHAIN_TARGET_NAME} PUBLIC ${qtkeychain_LIBRARIES} PRIVATE ${qtkeychain_LIBRARIES_PRIVATE})
 if(NOT INTERFACE_INCLUDE_SUFFIX)
