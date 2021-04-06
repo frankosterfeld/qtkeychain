@@ -89,7 +89,7 @@ void ReadPasswordJobPrivate::scheduledStart()
     }
 
     if (dataRef)
-        [dataRef release];
+        CFRelease(dataRef);
 }
 
 void WritePasswordJobPrivate::scheduledStart()
