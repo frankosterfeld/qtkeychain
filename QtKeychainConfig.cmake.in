@@ -2,6 +2,9 @@
 # It defines the following variables
 #  QTKEYCHAIN_INCLUDE_DIRS - include directories for QtKeychain
 #  QTKEYCHAIN_LIBRARIES    - libraries to link against
+# as well as the following imported targets
+#  qt5keychain / qt6keychain
+#  Qt5Keychain::Qt5Keychain / Qt6Keychain::Qt6Keychain
 
 @PACKAGE_INIT@
 
@@ -17,3 +20,5 @@ endif()
 
 set(QTKEYCHAIN_LIBRARIES "@QTKEYCHAIN_TARGET_NAME@")
 get_target_property(QTKEYCHAIN_INCLUDE_DIRS "@QTKEYCHAIN_TARGET_NAME@" INTERFACE_INCLUDE_DIRECTORIES)
+
+add_library(Qt@QTKEYCHAIN_VERSION_INFIX@Keychain::Qt@QTKEYCHAIN_VERSION_INFIX@Keychain ALIAS qt@QTKEYCHAIN_VERSION_INFIX@keychain)
