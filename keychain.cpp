@@ -57,7 +57,7 @@ void Job::doStart() {
 }
 
 void Job::emitFinished() {
-    emit finished( this );
+    Q_EMIT finished( this );
     if ( d->autoDelete )
         deleteLater();
 }

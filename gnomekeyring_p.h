@@ -45,7 +45,7 @@ public:
         } attributes[32];
     } PasswordSchema;
 
-    typedef void ( *OperationGetStringCallback )( Result result, bool binary,
+    typedef void ( *OperationGetStringCallback )( Result result,
                                                   const char* string, gpointer data );
     typedef void ( *OperationDoneCallback )( Result result, gpointer data );
     typedef void ( *GDestroyNotify )( gpointer data );
