@@ -236,8 +236,8 @@ public:
     bool containsAlias(const QString &alias) const;
     bool deleteEntry(const QString &alias) const;
     static KeyStore getInstance(const QString &type);
-    Entry getEntry(const QString &alias, const ProtectionParameter &param = Q_NULLPTR) const;
-    bool load(const LoadStoreParameter &param = Q_NULLPTR) const;
+    Entry getEntry(const QString &alias, const ProtectionParameter &param = nullptr) const;
+    bool load(const LoadStoreParameter &param = nullptr) const;
 };
 
 namespace interfaces {

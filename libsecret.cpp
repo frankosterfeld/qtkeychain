@@ -53,14 +53,14 @@ typedef gboolean (*secret_password_clear_finish_t) (GAsyncResult *result,
 typedef void (*secret_password_free_t) (gchar *password);
 typedef GQuark (*secret_error_get_quark_t) (void) G_GNUC_CONST;
 
-static secret_password_lookup_t secret_password_lookup_fn = NULL;
-static secret_password_lookup_finish_t secret_password_lookup_finish_fn = NULL;
-static secret_password_store_t secret_password_store_fn = NULL;
-static secret_password_store_finish_t secret_password_store_finish_fn = NULL;
-static secret_password_clear_t secret_password_clear_fn = NULL;
-static secret_password_clear_finish_t secret_password_clear_finish_fn = NULL;
-static secret_password_free_t secret_password_free_fn = NULL;
-static secret_error_get_quark_t secret_error_get_quark_fn = NULL;
+static secret_password_lookup_t secret_password_lookup_fn = nullptr;
+static secret_password_lookup_finish_t secret_password_lookup_finish_fn = nullptr;
+static secret_password_store_t secret_password_store_fn = nullptr;
+static secret_password_store_finish_t secret_password_store_finish_fn = nullptr;
+static secret_password_clear_t secret_password_clear_fn = nullptr;
+static secret_password_clear_finish_t secret_password_clear_finish_fn = nullptr;
+static secret_password_free_t secret_password_free_fn = nullptr;
+static secret_error_get_quark_t secret_error_get_quark_fn = nullptr;
 
 static QKeychain::Error gerrorToCode(const GError *error) {
     if (error->domain != secret_error_get_quark_fn()) {
@@ -82,7 +82,7 @@ on_password_lookup (GObject *source,
                     GAsyncResult *result,
                     gpointer inst)
 {
-    GError *error = NULL;
+    GError *error = nullptr;
     callbackArg *arg = (callbackArg*)inst;
     gchar *password = secret_password_lookup_finish_fn (result, &error);
 
@@ -94,7 +94,7 @@ on_password_lookup (GObject *source,
 
             arg->self->q->emitFinishedWithError( code, QString::fromUtf8(error->message) );
         } else {
-            if (password != NULL) {
+            if (password) {
                 QByteArray raw = QByteArray(password);
                 switch(arg->self->mode) {
                 case QKeychain::JobPrivate::Binary:
@@ -108,12 +108,12 @@ on_password_lookup (GObject *source,
                 arg->self->q->emitFinished();
             } else if (arg->self->mode == QKeychain::JobPrivate::Text) {
                 arg->self->mode = QKeychain::JobPrivate::Binary;
-                secret_password_lookup_fn (qtkeychainSchema(), NULL,
+                secret_password_lookup_fn (qtkeychainSchema(), nullptr,
                                            on_password_lookup, arg,
                                            "user", arg->user.toUtf8().constData(),
                                            "server", arg->server.toUtf8().constData(),
                                            "type", "base64",
-                                           NULL);
+                                           nullptr);
                 return;
             } else {
                 arg->self->q->emitFinishedWithError( QKeychain::EntryNotFound, QObject::tr("Entry not found") );
@@ -138,7 +138,7 @@ on_password_stored (GObject *source,
                     GAsyncResult *result,
                     gpointer inst)
 {
-    GError *error = NULL;
+    GError *error = nullptr;
     QKeychain::JobPrivate *self = (QKeychain::JobPrivate*)inst;
 
     Q_UNUSED(source);
@@ -146,14 +146,14 @@ on_password_stored (GObject *source,
     secret_password_store_finish_fn (result, &error);
 
     if (self) {
-        if (error != NULL) {
+        if (error) {
             self->q->emitFinishedWithError( gerrorToCode(error),
                                             QString::fromUtf8(error->message) );
         } else {
             self->q->emitFinished();
         }
     }
-    if (error != NULL) {
+    if (error) {
         g_error_free (error);
     }
 }
@@ -163,7 +163,7 @@ on_password_cleared (GObject *source,
                      GAsyncResult *result,
                      gpointer inst)
 {
-    GError *error = NULL;
+    GError *error = nullptr;
     QKeychain::JobPrivate *self = (QKeychain::JobPrivate*)inst;
     gboolean removed = secret_password_clear_finish_fn (result, &error);
 
@@ -177,7 +177,7 @@ on_password_cleared (GObject *source,
             self->q->emitFinished();
         }
     }
-    if (error != NULL) {
+    if (error) {
         g_error_free (error);
     }
 }
@@ -197,21 +197,21 @@ bool LibSecretKeyring::isAvailable() {
     const LibSecretKeyring& keyring = instance();
     if (!keyring.isLoaded())
         return false;
-    if (secret_password_lookup_fn == NULL)
+    if (secret_password_lookup_fn == nullptr)
         return false;
-    if (secret_password_lookup_finish_fn == NULL)
+    if (secret_password_lookup_finish_fn == nullptr)
         return false;
-    if (secret_password_store_fn == NULL)
+    if (secret_password_store_fn == nullptr)
         return false;
-    if (secret_password_store_finish_fn == NULL)
+    if (secret_password_store_finish_fn == nullptr)
         return false;
-    if (secret_password_clear_fn == NULL)
+    if (secret_password_clear_fn == nullptr)
         return false;
-    if (secret_password_clear_finish_fn == NULL)
+    if (secret_password_clear_finish_fn == nullptr)
         return false;
-    if (secret_password_free_fn == NULL)
+    if (secret_password_free_fn == nullptr)
         return false;
-    if (secret_error_get_quark_fn == NULL)
+    if (secret_error_get_quark_fn == nullptr)
         return false;
     return true;
 #else
@@ -235,11 +235,11 @@ bool LibSecretKeyring::findPassword(const QString &user, const QString &server,
     arg->user = user;
     arg->server = server;
 
-    secret_password_lookup_fn (qtkeychainSchema(), NULL, on_password_lookup, arg,
+    secret_password_lookup_fn (qtkeychainSchema(), nullptr, on_password_lookup, arg,
                                "user", user.toUtf8().constData(),
                                "server", server.toUtf8().constData(),
                                "type", "plaintext",
-                               NULL);
+                               nullptr);
     return true;
 #else
     Q_UNUSED(user)
@@ -274,11 +274,11 @@ bool LibSecretKeyring::writePassword(const QString &display_name,
 
     secret_password_store_fn (qtkeychainSchema(), SECRET_COLLECTION_DEFAULT,
                               display_name.toUtf8().constData(),
-                              pwd.constData(), NULL, on_password_stored, self,
+                              pwd.constData(), nullptr, on_password_stored, self,
                               "user", user.toUtf8().constData(),
                               "server", server.toUtf8().constData(),
                               "type", type.toUtf8().constData(),
-                              NULL);
+                              nullptr);
     return true;
 #else
     Q_UNUSED(display_name)
@@ -299,11 +299,10 @@ bool LibSecretKeyring::deletePassword(const QString &key, const QString &service
         return false;
     }
 
-    secret_password_clear_fn (qtkeychainSchema(), NULL, on_password_cleared, self,
+    secret_password_clear_fn (qtkeychainSchema(), nullptr, on_password_cleared, self,
                               "user", key.toUtf8().constData(),
                               "server", service.toUtf8().constData(),
-                              NULL);
-    return true;
+                              nullptr);
 #else
     Q_UNUSED(key)
     Q_UNUSED(service)

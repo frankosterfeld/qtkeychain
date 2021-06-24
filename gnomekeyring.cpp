@@ -1,6 +1,6 @@
 #include "gnomekeyring_p.h"
 
-const char* GnomeKeyring::GNOME_KEYRING_DEFAULT = NULL;
+const char* GnomeKeyring::GNOME_KEYRING_DEFAULT = nullptr;
 
 bool GnomeKeyring::isAvailable()
 {

@@ -29,9 +29,9 @@ public:
 
 
 AutoApp::AutoApp()
-    : app(NULL)
+    : app(nullptr)
 {
-    if (be_app != NULL)
+    if (be_app)
         return;
 
     // no BApplication object, probably using QCoreApplication

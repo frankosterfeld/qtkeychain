@@ -55,7 +55,7 @@ using JNIObject = QAndroidJniObject;
 QByteArray fromArray(const jbyteArray array)
 {
     QAndroidJniEnvironment env;
-    jbyte *const bytes = env->GetByteArrayElements(array, Q_NULLPTR);
+    jbyte *const bytes = env->GetByteArrayElements(array, nullptr);
     const QByteArray result(reinterpret_cast<const char *>(bytes), env->GetArrayLength(array));
     env->ReleaseByteArrayElements(array, bytes, JNI_ABORT);
     return result;
