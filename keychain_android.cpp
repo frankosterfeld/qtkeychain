@@ -12,7 +12,9 @@
 #include "androidkeystore_p.h"
 #include "plaintextstore_p.h"
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QtAndroid>
+#endif
 
 using namespace QKeychain;
 
@@ -101,7 +103,11 @@ void WritePasswordJobPrivate::scheduledStart()
         end.add(Calendar::YEAR, 99);
 
         const KeyPairGeneratorSpec spec =
+            #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
                 KeyPairGeneratorSpec::Builder(Context(QtAndroid::androidActivity())).
+            #else
+                KeyPairGeneratorSpec::Builder(QNativeInterface::QAndroidApplication::context()).
+            #endif
                 setAlias(alias).
                 setSubject(X500Principal(QStringLiteral("CN=QtKeychain, O=Android Authority"))).
                 setSerialNumber(java::math::BigInteger::ONE).

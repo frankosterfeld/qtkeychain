@@ -58,7 +58,9 @@ unix:!android:!macx:!ios {
 }
 
 android {
-    QT += androidextras
+    lessThan(QT_MAJOR_VERSION, 6) {
+        QT += androidextras
+    }
 
     HEADERS += \
         $$QTKEYCHAIN_PWD/androidkeystore_p.h \
