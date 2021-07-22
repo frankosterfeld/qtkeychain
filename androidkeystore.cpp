@@ -4,7 +4,9 @@
 #include "private/qjni_p.h"
 #endif
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QAndroidJniEnvironment>
+#endif
 
 using namespace QKeychain;
 

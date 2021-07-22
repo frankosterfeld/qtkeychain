@@ -10,7 +10,18 @@
 #ifndef QTKEYCHAIN_ANDROIDKEYSTORE_P_H
 #define QTKEYCHAIN_ANDROIDKEYSTORE_P_H
 
+#include <QtGlobal>
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QAndroidJniObject>
+#else
+#include <QJniObject>
+#include <QJniEnvironment>
+
+typedef QJniObject QAndroidJniObject;
+typedef QJniEnvironment QAndroidJniEnvironment;
+
+#endif
 
 namespace QKeychain {
 
