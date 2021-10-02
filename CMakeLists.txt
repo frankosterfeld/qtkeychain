@@ -139,7 +139,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     endif()
 else()
     # MSVC's STL / Qt headers are not MSVC -Wall clean, so don't enable it there
-    add_definitions( -Wall )
+    add_definitions( -Wall -Werror=return-type )
 endif()
 
 if(WIN32)

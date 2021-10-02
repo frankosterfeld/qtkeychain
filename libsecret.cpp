@@ -303,6 +303,7 @@ bool LibSecretKeyring::deletePassword(const QString &key, const QString &service
                               "user", key.toUtf8().constData(),
                               "server", service.toUtf8().constData(),
                               nullptr);
+    return true;
 #else
     Q_UNUSED(key)
     Q_UNUSED(service)
