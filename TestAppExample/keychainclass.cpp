@@ -19,7 +19,7 @@ void KeyChainClass::readKey(const QString &key)
 
     QObject::connect(&m_readCredentialJob, &QKeychain::ReadPasswordJob::finished, [=](){
         if (m_readCredentialJob.error()) {
-            emit error(QString("Write key failed: %1").arg(qPrintable(m_readCredentialJob.errorString())));
+            emit error(tr("Read key failed: %1").arg(qPrintable(m_readCredentialJob.errorString())));
             return;
         }
         emit keyRestored(key, m_readCredentialJob.textData());
@@ -34,7 +34,7 @@ void KeyChainClass::writeKey(const QString &key, const QString &value)
 
     QObject::connect(&m_writeCredentialJob, &QKeychain::WritePasswordJob::finished, [=](){
         if (m_writeCredentialJob.error()) {
-            emit error(QString("Write key failed: %1").arg(qPrintable(m_writeCredentialJob.errorString())));
+            emit error(tr("Write key failed: %1").arg(qPrintable(m_writeCredentialJob.errorString())));
             return;
         }
 
@@ -51,7 +51,7 @@ void KeyChainClass::deleteKey(const QString &key)
 
     QObject::connect(&m_deleteCredentialJob, &QKeychain::DeletePasswordJob::finished, [=](){
         if (m_deleteCredentialJob.error()) {
-            emit error(QString("Delete key failed: %1").arg(qPrintable(m_deleteCredentialJob.errorString())));
+            emit error(tr("Delete key failed: %1").arg(qPrintable(m_deleteCredentialJob.errorString())));
             return;
         }
         emit keyDeleted(key);
