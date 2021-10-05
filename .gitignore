@@ -47,4 +47,4 @@ qtkeychain.build
 *.sw?
 *~
 
-
+/build-*/
