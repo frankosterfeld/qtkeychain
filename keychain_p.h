@@ -102,9 +102,9 @@ private Q_SLOTS:
     void kwalletFinished( QDBusPendingCallWatcher* watcher ) override;
 #else //moc's too dumb to respect above macros, so just define empty slot implementations
 private Q_SLOTS:
-    void kwalletOpenFinished( QDBusPendingCallWatcher* ) {}
+    void kwalletOpenFinished( QDBusPendingCallWatcher* ) override {}
     void kwalletEntryTypeFinished( QDBusPendingCallWatcher* ) {}
-    void kwalletFinished( QDBusPendingCallWatcher* ) {}
+    void kwalletFinished( QDBusPendingCallWatcher* ) override {}
 #endif
 
     friend class ReadPasswordJob;
