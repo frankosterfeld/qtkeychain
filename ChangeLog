@@ -1,6 +1,10 @@
 ChangeLog
 =========
 
+version 0.13.1 (release 2021-11-08)
+
+ - KWallet: Fix deletion of entries (Issue #199)
+
 version 0.13.0 (release 2021-11-07)
 
  - Linux: Require libsecret if not explicitly disabled
