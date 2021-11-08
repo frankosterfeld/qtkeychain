@@ -512,12 +512,16 @@ void JobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watcher ) {
 
     QDBusPendingReply<int> nextReply;
 
-    if ( mode == Text )
-        nextReply = iface->writePassword( handle, q->service(), key, QString::fromUtf8(data), q->service() );
-    else if ( mode == Binary )
-        nextReply = iface->writeEntry( handle, q->service(), key, data, q->service() );
-    else
+    if ( !data.isNull() ) {
+        if ( mode == Text ) {
+            nextReply = iface->writePassword( handle, q->service(), key, QString::fromUtf8(data), q->service() );
+        } else {
+            Q_ASSERT( mode == Binary );
+            nextReply = iface->writeEntry( handle, q->service(), key, data, q->service() );
+        }
+    } else {
         nextReply = iface->removeEntry( handle, q->service(), key, q->service() );
+    }
 
     QDBusPendingCallWatcher* nextWatcher = new QDBusPendingCallWatcher( nextReply, this );
     connect( nextWatcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(kwalletFinished(QDBusPendingCallWatcher*)) );
