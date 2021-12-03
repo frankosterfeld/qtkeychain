@@ -1,6 +1,20 @@
 ChangeLog
 =========
 
+version 0.13.2 (release 2021-11-18)
+
+ - CMake: Deprecate QTKEYCHAIN_STATIC in favor of BUILD_SHARED_LIBS (be@mixxx.org)
+
+version 0.13.1 (release 2021-11-08)
+
+ - KWallet: Fix deletion of entries (Issue #199)
+
+version 0.13.0 (release 2021-11-07)
+
+ - Linux: Require libsecret if not explicitly disabled
+ - Unify implementations for macOS and iOS
+ - CMake: lots of fixes
+
 version 0.12.0 (release 2020-12-16)
 
   * Add Qt 6 support, drop Qt 4 support

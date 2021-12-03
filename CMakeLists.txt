@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(QTKEYCHAIN_VERSION 0.12.90)
+set(QTKEYCHAIN_VERSION 0.13.99)
 set(QTKEYCHAIN_SOVERSION 1)
 
 project(qtkeychain VERSION ${QTKEYCHAIN_VERSION} LANGUAGES CXX)
@@ -22,7 +22,11 @@ include(ECMGeneratePriFile)
 option(BUILD_WITH_QT6 "Build qtkeychain with Qt 6" OFF)
 option(BUILD_TEST_APPLICATION "Build test application" OFF)
 option(BUILD_TRANSLATIONS "Build translations" ON)
-option(QTKEYCHAIN_STATIC "Build static library" OFF)
+option(BUILD_SHARED_LIBS "Build dynamic library" ON)
+if(QTKEYCHAIN_STATIC)
+    set(BUILD_SHARED_LIBS OFF)
+    message(WARNING "QTKEYCHAIN_STATIC is deprecated. Use BUILD_SHARED_LIBS=OFF instead.")
+endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL Android)
     set(ANDROID 1)
@@ -199,11 +203,7 @@ set(qtkeychain_TR_FILES
 )
 
 set(QTKEYCHAIN_TARGET_NAME qt${QTKEYCHAIN_VERSION_INFIX}keychain)
-if(NOT QTKEYCHAIN_STATIC)
-    add_library(${QTKEYCHAIN_TARGET_NAME} SHARED ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
-else()
-    add_library(${QTKEYCHAIN_TARGET_NAME} STATIC ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
-endif()
+add_library(${QTKEYCHAIN_TARGET_NAME} ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
 if(WIN32)
     set_target_properties( ${QTKEYCHAIN_TARGET_NAME} PROPERTIES DEBUG_POSTFIX "d" )
 endif()
