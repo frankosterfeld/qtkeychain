@@ -156,7 +156,7 @@
     </method>
     <method name="readEntryList">
       <arg type="a{sv}" direction="out"/>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QVariantMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QVariantMap"/>
       <arg name="handle" type="i" direction="in"/>
       <arg name="folder" type="s" direction="in"/>
       <arg name="key" type="s" direction="in"/>
@@ -164,7 +164,7 @@
     </method>
     <method name="readMapList">
       <arg type="a{sv}" direction="out"/>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QVariantMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QVariantMap"/>
       <arg name="handle" type="i" direction="in"/>
       <arg name="folder" type="s" direction="in"/>
       <arg name="key" type="s" direction="in"/>
@@ -172,7 +172,7 @@
     </method>
     <method name="readPasswordList">
       <arg type="a{sv}" direction="out"/>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QVariantMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QVariantMap"/>
       <arg name="handle" type="i" direction="in"/>
       <arg name="folder" type="s" direction="in"/>
       <arg name="key" type="s" direction="in"/>
