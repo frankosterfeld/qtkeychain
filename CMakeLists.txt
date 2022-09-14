@@ -91,11 +91,6 @@ else()
   find_package(Qt6 COMPONENTS Core REQUIRED)
   set(QTKEYCHAIN_VERSION_INFIX 6)
 
-  if(ANDROID)
-    find_package(Qt6 COMPONENTS AndroidExtras REQUIRED)
-    include_directories(${Qt6AndroidExtras_INCLUDE_DIRS})
-    set(QTANDROIDEXTRAS_LIBRARIES ${Qt6AndroidExtras_LIBRARIES})
-  endif()
 
   if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT HAIKU)
     find_package(Qt6 COMPONENTS DBus REQUIRED)
