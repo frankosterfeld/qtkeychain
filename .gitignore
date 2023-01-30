@@ -119,3 +119,4 @@ qtkeychain.build
 *.sw?
 
 /build-*/
+/compile_commands.json
