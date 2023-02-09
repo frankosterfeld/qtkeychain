@@ -72,24 +72,26 @@ void ReadPasswordJobPrivate::scheduledStart()
             (__bridge id) kSecReturnData: @YES,
     };
 
-    CFTypeRef dataRef = nil;
-    const OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef) query, &dataRef);
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        CFTypeRef dataRef = nil;
+        const OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef) query, &dataRef);
 
-    data.clear();
-    mode = Binary;
+        data.clear();
+        mode = Binary;
 
-    if (status == errSecSuccess) {
+        if (status == errSecSuccess) {
+            if (dataRef)
+                data = QByteArray::fromCFData((CFDataRef) dataRef);
+
+            q->emitFinished();
+        } else {
+            const ErrorDescription error = ErrorDescription::fromStatus(status);
+            q->emitFinishedWithError(error.code, Job::tr("Could not retrieve private key from keystore: %1").arg(error.message));
+        }
+
         if (dataRef)
-            data = QByteArray::fromCFData((CFDataRef) dataRef);
-
-        q->emitFinished();
-    } else {
-        const ErrorDescription error = ErrorDescription::fromStatus(status);
-        q->emitFinishedWithError(error.code, Job::tr("Could not retrieve private key from keystore: %1").arg(error.message));
-    }
-
-    if (dataRef)
-        CFRelease(dataRef);
+            CFRelease(dataRef);
+    });
 }
 
 void WritePasswordJobPrivate::scheduledStart()
@@ -100,31 +102,33 @@ void WritePasswordJobPrivate::scheduledStart()
             (__bridge id) kSecAttrAccount: (__bridge NSString *) key.toCFString(),
     };
 
-    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef) query, nil);
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef) query, nil);
 
-    if (status == errSecSuccess) {
-        NSDictionary *const update = @{
-                (__bridge id) kSecValueData: (__bridge NSData *) data.toCFData(),
-        };
+        if (status == errSecSuccess) {
+            NSDictionary *const update = @{
+                    (__bridge id) kSecValueData: (__bridge NSData *) data.toCFData(),
+            };
 
-        status = SecItemUpdate((__bridge CFDictionaryRef) query, (__bridge CFDictionaryRef) update);
-    } else {
-        NSDictionary *const insert = @{
-                (__bridge id) kSecClass: (__bridge id) kSecClassGenericPassword,
-                (__bridge id) kSecAttrService: (__bridge NSString *) service.toCFString(),
-                (__bridge id) kSecAttrAccount: (__bridge NSString *) key.toCFString(),
-                (__bridge id) kSecValueData: (__bridge NSData *) data.toCFData(),
-        };
+            status = SecItemUpdate((__bridge CFDictionaryRef) query, (__bridge CFDictionaryRef) update);
+        } else {
+            NSDictionary *const insert = @{
+                    (__bridge id) kSecClass: (__bridge id) kSecClassGenericPassword,
+                    (__bridge id) kSecAttrService: (__bridge NSString *) service.toCFString(),
+                    (__bridge id) kSecAttrAccount: (__bridge NSString *) key.toCFString(),
+                    (__bridge id) kSecValueData: (__bridge NSData *) data.toCFData(),
+            };
 
-        status = SecItemAdd((__bridge CFDictionaryRef) insert, nil);
-    }
+            status = SecItemAdd((__bridge CFDictionaryRef) insert, nil);
+        }
 
-    if (status == errSecSuccess) {
-        q->emitFinished();
-    } else {
-        const ErrorDescription error = ErrorDescription::fromStatus(status);
-        q->emitFinishedWithError(error.code,  tr("Could not store data in settings: %1").arg(error.message));
-    }
+        if (status == errSecSuccess) {
+            q->emitFinished();
+        } else {
+            const ErrorDescription error = ErrorDescription::fromStatus(status);
+            q->emitFinishedWithError(error.code,  tr("Could not store data in settings: %1").arg(error.message));
+        }
+    });
 }
 
 void DeletePasswordJobPrivate::scheduledStart()
@@ -135,12 +139,14 @@ void DeletePasswordJobPrivate::scheduledStart()
             (__bridge id) kSecAttrAccount: (__bridge NSString *) key.toCFString(),
     };
 
-    const OSStatus status = SecItemDelete((__bridge CFDictionaryRef) query);
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        const OSStatus status = SecItemDelete((__bridge CFDictionaryRef) query);
 
-    if (status == errSecSuccess) {
-        q->emitFinished();
-    } else {
-        const ErrorDescription error = ErrorDescription::fromStatus(status);
-        q->emitFinishedWithError(error.code, Job::tr("Could not remove private key from keystore: %1").arg(error.message));
-    }
+        if (status == errSecSuccess) {
+            q->emitFinished();
+        } else {
+            const ErrorDescription error = ErrorDescription::fromStatus(status);
+            q->emitFinishedWithError(error.code, Job::tr("Could not remove private key from keystore: %1").arg(error.message));
+        }
+    });
 }
