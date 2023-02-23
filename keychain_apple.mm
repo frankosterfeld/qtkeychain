@@ -198,6 +198,47 @@ static void StartReadPassword(const QString &service, const QString &key)
     });
 }
 
+static void StartWritePassword(const QString &service, const QString &key, const QByteArray &data)
+{
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        NSDictionary * const query = @{
+                (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
+                (__bridge NSString *)kSecAttrService: service.toNSString(),
+                (__bridge NSString *)kSecAttrAccount: key.toNSString(),
+        };
+
+        OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, nil);
+
+        if (status == errSecSuccess) {
+            NSDictionary * const update = @{
+                    (__bridge NSString *)kSecValueData: data.toNSData(),
+            };
+
+            status = SecItemUpdate((__bridge CFDictionaryRef)query, (__bridge CFDictionaryRef)update);
+        } else {
+            NSDictionary * const insert = @{
+                    (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
+                    (__bridge NSString *)kSecAttrService: service.toNSString(),
+                    (__bridge NSString *)kSecAttrAccount: key.toNSString(),
+                    (__bridge NSString *)kSecValueData: data.toNSData(),
+            };
+
+            status = SecItemAdd((__bridge const CFDictionaryRef)insert, nil);
+        }
+
+        if (status == errSecSuccess) {
+            [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinished object:nil];
+        } else {
+            NSNumber * const statusNumber = [NSNumber numberWithInt:status];
+            NSString * const descriptiveErrorString = @"Could not store data in settings";
+            [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinishedWithError
+                                                              object:nil
+                                                            userInfo:@{ KeychainNotificationUserInfoStatusKey: statusNumber,
+                                                                        KeychainNotificationUserInfoDescriptiveErrorKey: descriptiveErrorString }];
+        }
+    });
+}
+
 void ReadPasswordJobPrivate::scheduledStart()
 {
     [[AppleKeychainInterface alloc] initWithJob:q andPrivateJob:this];
@@ -206,39 +247,8 @@ void ReadPasswordJobPrivate::scheduledStart()
 
 void WritePasswordJobPrivate::scheduledStart()
 {
-    NSDictionary *const query = @{
-            (__bridge id) kSecClass: (__bridge id) kSecClassGenericPassword,
-            (__bridge id) kSecAttrService: (__bridge NSString *) service.toCFString(),
-            (__bridge id) kSecAttrAccount: (__bridge NSString *) key.toCFString(),
-    };
-
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-        OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef) query, nil);
-
-        if (status == errSecSuccess) {
-            NSDictionary *const update = @{
-                    (__bridge id) kSecValueData: (__bridge NSData *) data.toCFData(),
-            };
-
-            status = SecItemUpdate((__bridge CFDictionaryRef) query, (__bridge CFDictionaryRef) update);
-        } else {
-            NSDictionary *const insert = @{
-                    (__bridge id) kSecClass: (__bridge id) kSecClassGenericPassword,
-                    (__bridge id) kSecAttrService: (__bridge NSString *) service.toCFString(),
-                    (__bridge id) kSecAttrAccount: (__bridge NSString *) key.toCFString(),
-                    (__bridge id) kSecValueData: (__bridge NSData *) data.toCFData(),
-            };
-
-            status = SecItemAdd((__bridge CFDictionaryRef) insert, nil);
-        }
-
-        if (status == errSecSuccess) {
-            q->emitFinished();
-        } else {
-            const ErrorDescription error = ErrorDescription::fromStatus(status);
-            q->emitFinishedWithError(error.code,  tr("Could not store data in settings: %1").arg(error.message));
-        }
-    });
+    [[AppleKeychainInterface alloc] initWithJob:q andPrivateJob:this];
+    StartWritePassword(service, key, data);
 }
 
 void DeletePasswordJobPrivate::scheduledStart()
