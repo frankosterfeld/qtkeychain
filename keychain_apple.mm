@@ -14,11 +14,13 @@
 
 using namespace QKeychain;
 
-NSString *AppleKeychainTaskFinishedWithError = @"AppleKeychainTaskFinishedWithError";
+NSString * const AppleKeychainTaskFinished = @"AppleKeychainTaskFinished";
+NSString * const AppleKeychainReadTaskFinished = @"AppleKeychainReadTaskFinished";
+NSString * const AppleKeychainTaskFinishedWithError = @"AppleKeychainTaskFinishedWithError";
 
-NSString *KeychainNotificationUserInfoStatusKey = @"status";
-NSString *KeychainNotificationUserInfoDataKey = @"data";
-NSString *KeychainNotificationUserInfoDescriptiveErrorKey = @"descriptiveError";
+NSString * const KeychainNotificationUserInfoStatusKey = @"status";
+NSString * const KeychainNotificationUserInfoDataKey = @"data";
+NSString * const KeychainNotificationUserInfoDescriptiveErrorKey = @"descriptiveError";
 
 struct ErrorDescription
 {
@@ -72,20 +74,30 @@ struct ErrorDescription
 @interface AppleKeychainInterface : NSObject
 
 @property (readonly) Job *job;
+@property (readonly) JobPrivate *privateJob;
 
-- (instancetype)initWithOwner:(Job *)job;
+- (instancetype)initWithJob:(Job *)job andPrivateJob:(JobPrivate *)privateJob;
 
 @end
 
 @implementation AppleKeychainInterface
 
-- (instancetype)initWithOwner:(Job *)job
+- (instancetype)initWithJob:(Job *)job andPrivateJob:(JobPrivate *)privateJob
 {
     self = [super init];
     if (self) {
         _job = job;
+        _privateJob = privateJob;
 
         NSNotificationCenter * const notificationCenter = NSNotificationCenter.defaultCenter;
+        [notificationCenter addObserver:self
+                               selector:@selector(keychainTaskFinished:)
+                                   name:AppleKeychainTaskFinished
+                                 object:nil];
+        [notificationCenter addObserver:self
+                               selector:@selector(keychainReadTaskFinished:)
+                                   name:AppleKeychainReadTaskFinished
+                                 object:nil];
         [notificationCenter addObserver:self
                                selector:@selector(keychainTaskFinishedWithError:)
                                    name:AppleKeychainTaskFinishedWithError
@@ -98,6 +110,28 @@ struct ErrorDescription
 {
     [NSNotificationCenter.defaultCenter removeObserver:self];
     [super dealloc];
+}
+
+- (void)keychainTaskFinished:(NSNotification *)notification
+{
+    _job->emitFinished();
+}
+
+- (void)keychainReadTaskFinished:(NSNotification *)notification
+{
+    NSParameterAssert(notification);
+    NSDictionary * const userInfo = notification.userInfo;
+    NSAssert(userInfo, @"Keychain task finished with error notification should contain nonnull user info dictionary");
+
+    _privateJob->data.clear();
+    _privateJob->mode = JobPrivate::Binary;
+
+    NSData * const retrievedData = (NSData *)[userInfo objectForKey:KeychainNotificationUserInfoDataKey];
+    if (retrievedData != nil) {
+        _privateJob->data = QByteArray::fromNSData(retrievedData);
+    }
+
+    _job->emitFinished();
 }
 
 - (void)keychainTaskFinishedWithError:(NSNotification *)notification
