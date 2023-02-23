@@ -115,6 +115,7 @@ struct ErrorDescription
 - (void)keychainTaskFinished:(NSNotification *)notification
 {
     _job->emitFinished();
+    [self release];
 }
 
 - (void)keychainReadTaskFinished:(NSNotification *)notification
@@ -129,9 +130,15 @@ struct ErrorDescription
     NSData * const retrievedData = (NSData *)[userInfo objectForKey:KeychainNotificationUserInfoDataKey];
     if (retrievedData != nil) {
         _privateJob->data = QByteArray::fromNSData(retrievedData);
+
+        const CFDataRef dataRef = (__bridge CFDataRef)retrievedData;
+        if (dataRef) {
+            CFRelease(dataRef);
+        }
     }
 
     _job->emitFinished();
+    [self release];
 }
 
 - (void)keychainTaskFinishedWithError:(NSNotification *)notification
@@ -151,6 +158,7 @@ struct ErrorDescription
     const auto fullMessage = localisedDescriptiveMessage.isEmpty() ? error.message : QStringLiteral("%1: %2").arg(localisedDescriptiveMessage, error.message);
 
     _job->emitFinishedWithError(error.code, fullMessage);
+    [self release];
 }
 
 @end
