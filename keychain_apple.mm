@@ -73,11 +73,15 @@ struct ErrorDescription
 
 @interface AppleKeychainInterface : NSObject
 
-@property (readonly) Job *job;
-@property (readonly) JobPrivate *privateJob;
-
 - (instancetype)initWithJob:(Job *)job andPrivateJob:(JobPrivate *)privateJob;
 
+@end
+
+@interface AppleKeychainInterface()
+{
+    QPointer<Job> _job;
+    QPointer<JobPrivate> _privateJob;
+}
 @end
 
 @implementation AppleKeychainInterface
@@ -114,7 +118,10 @@ struct ErrorDescription
 
 - (void)keychainTaskFinished:(NSNotification *)notification
 {
-    _job->emitFinished();
+    if (_job) {
+        _job->emitFinished();
+    }
+
     [self release];
 }
 
@@ -129,7 +136,9 @@ struct ErrorDescription
 
     NSData * const retrievedData = (NSData *)[userInfo objectForKey:KeychainNotificationUserInfoDataKey];
     if (retrievedData != nil) {
-        _privateJob->data = QByteArray::fromNSData(retrievedData);
+        if (_privateJob) {
+            _privateJob->data = QByteArray::fromNSData(retrievedData);
+        }
 
         const CFDataRef dataRef = (__bridge CFDataRef)retrievedData;
         if (dataRef) {
@@ -137,7 +146,10 @@ struct ErrorDescription
         }
     }
 
-    _job->emitFinished();
+    if (_job) {
+        _job->emitFinished();
+    }
+
     [self release];
 }
 
@@ -157,7 +169,10 @@ struct ErrorDescription
     const ErrorDescription error = ErrorDescription::fromStatus(status);
     const auto fullMessage = localisedDescriptiveMessage.isEmpty() ? error.message : QStringLiteral("%1: %2").arg(localisedDescriptiveMessage, error.message);
 
-    _job->emitFinishedWithError(error.code, fullMessage);
+    if (_job) {
+        _job->emitFinishedWithError(error.code, fullMessage);
+    }
+
     [self release];
 }
 
