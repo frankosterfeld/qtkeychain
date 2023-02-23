@@ -14,27 +14,11 @@
 
 using namespace QKeychain;
 
-@interface AppleKeychainInterface : NSObject
+NSString *AppleKeychainTaskFinishedWithError = @"AppleKeychainTaskFinishedWithError";
 
-@property (readonly) JobPrivate *ownerJob;
-
-- (instancetype)initWithOwner:(JobPrivate *)ownerJob;
-
-@end
-
-@implementation AppleKeychainInterface
-
-- (instancetype)initWithOwner:(JobPrivate *)ownerJob
-{
-    self = [super init];
-    if (self) {
-        _ownerJob = ownerJob;
-    }
-    return self;
-}
-
-@end
-
+NSString *KeychainNotificationUserInfoStatusKey = @"status";
+NSString *KeychainNotificationUserInfoDataKey = @"data";
+NSString *KeychainNotificationUserInfoDescriptiveErrorKey = @"descriptiveError";
 
 struct ErrorDescription
 {
@@ -84,6 +68,59 @@ struct ErrorDescription
         return ErrorDescription(QKeychain::OtherError, Job::tr("Unknown error"));
     }
 };
+
+@interface AppleKeychainInterface : NSObject
+
+@property (readonly) Job *job;
+
+- (instancetype)initWithOwner:(Job *)job;
+
+@end
+
+@implementation AppleKeychainInterface
+
+- (instancetype)initWithOwner:(Job *)job
+{
+    self = [super init];
+    if (self) {
+        _job = job;
+
+        NSNotificationCenter * const notificationCenter = NSNotificationCenter.defaultCenter;
+        [notificationCenter addObserver:self
+                               selector:@selector(keychainTaskFinishedWithError:)
+                                   name:AppleKeychainTaskFinishedWithError
+                                 object:nil];
+    }
+    return self;
+}
+
+- (void)dealloc
+{
+    [NSNotificationCenter.defaultCenter removeObserver:self];
+    [super dealloc];
+}
+
+- (void)keychainTaskFinishedWithError:(NSNotification *)notification
+{
+    NSParameterAssert(notification);
+    NSDictionary * const userInfo = notification.userInfo;
+    NSAssert(userInfo, @"Keychain task finished with error notification should contain nonnull user info dictionary");
+
+    NSNumber * const statusNumber = (NSNumber *)[userInfo objectForKey:KeychainNotificationUserInfoStatusKey];
+    NSAssert(statusNumber, @"Keychain task notification user info dict should contain valid status number");
+    const OSStatus status = statusNumber.intValue;
+
+    NSString * const descriptiveMessage = (NSString *)[userInfo objectForKey:KeychainNotificationUserInfoDescriptiveErrorKey];
+    const auto localisedDescriptiveMessage = Job::tr([descriptiveMessage UTF8String]);
+
+    const ErrorDescription error = ErrorDescription::fromStatus(status);
+    const auto fullMessage = localisedDescriptiveMessage.isEmpty() ? error.message : QStringLiteral("%1: %2").arg(localisedDescriptiveMessage, error.message);
+
+    _job->emitFinishedWithError(error.code, fullMessage);
+}
+
+@end
+
 
 void ReadPasswordJobPrivate::scheduledStart()
 {
