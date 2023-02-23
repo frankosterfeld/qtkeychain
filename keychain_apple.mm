@@ -14,6 +14,28 @@
 
 using namespace QKeychain;
 
+@interface AppleKeychainInterface : NSObject
+
+@property (readonly) JobPrivate *ownerJob;
+
+- (instancetype)initWithOwner:(JobPrivate *)ownerJob;
+
+@end
+
+@implementation AppleKeychainInterface
+
+- (instancetype)initWithOwner:(JobPrivate *)ownerJob
+{
+    self = [super init];
+    if (self) {
+        _ownerJob = ownerJob;
+    }
+    return self;
+}
+
+@end
+
+
 struct ErrorDescription
 {
     QKeychain::Error code;
