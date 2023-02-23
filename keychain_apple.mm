@@ -223,18 +223,23 @@ static void StartReadPassword(const QString &service, const QString &key, const 
         if (status == errSecSuccess) {
             const CFDataRef castedDataRef = (CFDataRef)dataRef;
             NSData * const data = (__bridge NSData *)castedDataRef;
-            [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainReadTaskFinished
-                                                              object:nil
-                                                            userInfo:@{ KeychainNotificationUserInfoDataKey: data,
-                                                                        KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainReadTaskFinished
+                                                                  object:nil
+                                                                userInfo:@{ KeychainNotificationUserInfoDataKey: data,
+                                                                            KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+            });
         } else {
             NSNumber * const statusNumber = [NSNumber numberWithInt:status];
             NSString * const descriptiveErrorString = @"Could not retrieve private key from keystore";
-            [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinishedWithError
-                                                              object:nil
-                                                            userInfo:@{ KeychainNotificationUserInfoStatusKey: statusNumber,
-                                                                        KeychainNotificationUserInfoDescriptiveErrorKey: descriptiveErrorString,
-                                                                        KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinishedWithError
+                                                                  object:nil
+                                                                userInfo:@{ KeychainNotificationUserInfoStatusKey: statusNumber,
+                                                                            KeychainNotificationUserInfoDescriptiveErrorKey: descriptiveErrorString,
+                                                                            KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+            });
+
             if (dataRef) {
                 CFRelease(dataRef);
             }
@@ -273,17 +278,22 @@ static void StartWritePassword(const QString &service, const QString &key, const
         }
 
         if (status == errSecSuccess) {
-            [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinished
-                                                              object:nil
-                                                            userInfo:@{ KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinished
+                                                                  object:nil
+                                                                userInfo:@{ KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+            });
         } else {
             NSNumber * const statusNumber = [NSNumber numberWithInt:status];
             NSString * const descriptiveErrorString = @"Could not store data in settings";
-            [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinishedWithError
-                                                              object:nil
-                                                            userInfo:@{ KeychainNotificationUserInfoStatusKey: statusNumber,
-                                                                        KeychainNotificationUserInfoDescriptiveErrorKey: descriptiveErrorString,
-                                                                        KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinishedWithError
+                                                                  object:nil
+                                                                userInfo:@{ KeychainNotificationUserInfoStatusKey: statusNumber,
+                                                                            KeychainNotificationUserInfoDescriptiveErrorKey: descriptiveErrorString,
+                                                                            KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+            });
         }
     });
 }
@@ -302,17 +312,21 @@ static void StartDeletePassword(const QString &service, const QString &key, cons
         const OSStatus status = SecItemDelete((__bridge CFDictionaryRef)query);
 
         if (status == errSecSuccess) {
-            [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinished
-                                                              object:nil
-                                                            userInfo:@{ KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinished
+                                                                  object:nil
+                                                                userInfo:@{ KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+            });
         } else {
             NSNumber * const statusNumber = [NSNumber numberWithInt:status];
             NSString * const descriptiveErrorString = @"Could not remove private key from keystore";
-            [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinishedWithError
-                                                              object:nil
-                                                            userInfo:@{ KeychainNotificationUserInfoStatusKey: statusNumber,
-                                                                        KeychainNotificationUserInfoDescriptiveErrorKey: descriptiveErrorString,
-                                                                        KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinishedWithError
+                                                                  object:nil
+                                                                userInfo:@{ KeychainNotificationUserInfoStatusKey: statusNumber,
+                                                                            KeychainNotificationUserInfoDescriptiveErrorKey: descriptiveErrorString,
+                                                                            KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+            });
         }
     });
 }
