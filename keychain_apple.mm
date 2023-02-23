@@ -164,35 +164,44 @@ struct ErrorDescription
 @end
 
 
-void ReadPasswordJobPrivate::scheduledStart()
+static void StartReadPassword(const QString &service, const QString &key)
 {
-    NSDictionary *const query = @{
-        (__bridge id) kSecClass: (__bridge id) kSecClassGenericPassword,
-            (__bridge id) kSecAttrService: (__bridge NSString *) service.toCFString(),
-            (__bridge id) kSecAttrAccount: (__bridge NSString *) key.toCFString(),
-            (__bridge id) kSecReturnData: @YES,
-    };
-
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+
+        NSDictionary * const query = @{
+            (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
+            (__bridge NSString *)kSecAttrService: service.toNSString(),
+            (__bridge NSString *)kSecAttrAccount: key.toNSString(),
+            (__bridge NSString *)kSecReturnData: @YES,
+        };
+
         CFTypeRef dataRef = nil;
         const OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef) query, &dataRef);
 
-        data.clear();
-        mode = Binary;
-
         if (status == errSecSuccess) {
-            if (dataRef)
-                data = QByteArray::fromCFData((CFDataRef) dataRef);
-
-            q->emitFinished();
+            const CFDataRef castedDataRef = (CFDataRef)dataRef;
+            NSData * const data = (__bridge NSData *)castedDataRef;
+            [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainReadTaskFinished
+                                                              object:nil
+                                                            userInfo:@{ KeychainNotificationUserInfoDataKey: data }];
         } else {
-            const ErrorDescription error = ErrorDescription::fromStatus(status);
-            q->emitFinishedWithError(error.code, Job::tr("Could not retrieve private key from keystore: %1").arg(error.message));
+            NSNumber * const statusNumber = [NSNumber numberWithInt:status];
+            NSString * const descriptiveErrorString = @"Could not retrieve private key from keystore";
+            [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinishedWithError
+                                                              object:nil
+                                                            userInfo:@{ KeychainNotificationUserInfoStatusKey: statusNumber,
+                                                                        KeychainNotificationUserInfoDescriptiveErrorKey: descriptiveErrorString}];
+            if (dataRef) {
+                CFRelease(dataRef);
+            }
         }
-
-        if (dataRef)
-            CFRelease(dataRef);
     });
+}
+
+void ReadPasswordJobPrivate::scheduledStart()
+{
+    [[AppleKeychainInterface alloc] initWithJob:q andPrivateJob:this];
+    StartReadPassword(service, key);
 }
 
 void WritePasswordJobPrivate::scheduledStart()
