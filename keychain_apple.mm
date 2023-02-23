@@ -239,6 +239,30 @@ static void StartWritePassword(const QString &service, const QString &key, const
     });
 }
 
+static void StartDeletePassword(const QString &service, const QString &key)
+{
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        NSDictionary * const query = @{
+            (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
+            (__bridge NSString *)kSecAttrService: service.toNSString(),
+            (__bridge NSString *)kSecAttrAccount: key.toNSString(),
+        };
+
+        const OSStatus status = SecItemDelete((__bridge CFDictionaryRef)query);
+
+        if (status == errSecSuccess) {
+            [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinished object:nil];
+        } else {
+            NSNumber * const statusNumber = [NSNumber numberWithInt:status];
+            NSString * const descriptiveErrorString = @"Could not remove private key from keystore";
+            [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinishedWithError
+                                                              object:nil
+                                                            userInfo:@{ KeychainNotificationUserInfoStatusKey: statusNumber,
+                                                                        KeychainNotificationUserInfoDescriptiveErrorKey: descriptiveErrorString }];
+        }
+    });
+}
+
 void ReadPasswordJobPrivate::scheduledStart()
 {
     [[AppleKeychainInterface alloc] initWithJob:q andPrivateJob:this];
@@ -253,20 +277,6 @@ void WritePasswordJobPrivate::scheduledStart()
 
 void DeletePasswordJobPrivate::scheduledStart()
 {
-    const NSDictionary *const query = @{
-            (__bridge id) kSecClass: (__bridge id) kSecClassGenericPassword,
-            (__bridge id) kSecAttrService: (__bridge NSString *) service.toCFString(),
-            (__bridge id) kSecAttrAccount: (__bridge NSString *) key.toCFString(),
-    };
-
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-        const OSStatus status = SecItemDelete((__bridge CFDictionaryRef) query);
-
-        if (status == errSecSuccess) {
-            q->emitFinished();
-        } else {
-            const ErrorDescription error = ErrorDescription::fromStatus(status);
-            q->emitFinishedWithError(error.code, Job::tr("Could not remove private key from keystore: %1").arg(error.message));
-        }
-    });
+    [[AppleKeychainInterface alloc] initWithJob:q andPrivateJob:this];
+    StartDeletePassword(service, key);
 }
