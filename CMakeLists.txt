@@ -24,7 +24,6 @@ option(BUILD_WITH_QT6 "Build qtkeychain with Qt 6" OFF)
 option(BUILD_TEST_APPLICATION "Build test application" OFF)
 option(BUILD_TRANSLATIONS "Build translations" ON)
 option(BUILD_SHARED_LIBS "Build dynamic library" ON)
-option(QTKEYCHAIN_TARGET_NAME "Custom output name of QtKeychain" "")
 if(QTKEYCHAIN_STATIC)
     set(BUILD_SHARED_LIBS OFF)
     message(WARNING "QTKEYCHAIN_STATIC is deprecated. Use BUILD_SHARED_LIBS=OFF instead.")
@@ -200,9 +199,8 @@ set(qtkeychain_TR_FILES
       translations/qtkeychain_ru.ts
       translations/qtkeychain_zh.ts
 )
-if(NOT QTKEYCHAIN_TARGET_NAME)
-	set(QTKEYCHAIN_TARGET_NAME Qt${QTKEYCHAIN_VERSION_INFIX}Keychain)
-endif()
+
+set(QTKEYCHAIN_TARGET_NAME qt${QTKEYCHAIN_VERSION_INFIX}keychain)
 add_library(${QTKEYCHAIN_TARGET_NAME} ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
 if(WIN32)
     set_target_properties( ${QTKEYCHAIN_TARGET_NAME} PROPERTIES DEBUG_POSTFIX "d" )
@@ -233,7 +231,7 @@ if ( BUILD_TRANSLATIONS )
                 CACHE PATH "The location of the QtKeychain translations" FORCE)
         else()
             set(QTKEYCHAIN_TRANSLATIONS_DIR
-                ${CMAKE_INSTALL_DATADIR}/${QTKEYCHAIN_TARGET_NAME}/translations
+                ${CMAKE_INSTALL_DATADIR}/qt${QTKEYCHAIN_VERSION_INFIX}keychain/translations
                 CACHE PATH "The location of the QtKeychain translations" )
         endif()
 
@@ -265,11 +263,11 @@ if (NOT APPLE)
 endif()
 
 install(FILES keychain.h ${CMAKE_CURRENT_BINARY_DIR}/qkeychain_export.h
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${QTKEYCHAIN_TARGET_NAME}/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qt${QTKEYCHAIN_VERSION_INFIX}keychain/
 )
 
 install(TARGETS ${QTKEYCHAIN_TARGET_NAME}
-  EXPORT ${QTKEYCHAIN_TARGET_NAME}LibraryDepends
+  EXPORT Qt${QTKEYCHAIN_VERSION_INFIX}KeychainLibraryDepends
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -286,17 +284,17 @@ endif()
 ###
 
 configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/QtKeychainConfig.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/${QTKEYCHAIN_TARGET_NAME}Config.cmake"
-  INSTALL_DESTINATION ${QTKEYCHAIN_TARGET_NAME})
+  "${CMAKE_CURRENT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfig.cmake"
+  INSTALL_DESTINATION Qt${QTKEYCHAIN_VERSION_INFIX}Keychain)
 
 ecm_setup_version("${QTKEYCHAIN_VERSION}" VARIABLE_PREFIX SNORE
-  PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/${QTKEYCHAIN_TARGET_NAME}ConfigVersion.cmake"
+  PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfigVersion.cmake"
   SOVERSION ${QTKEYCHAIN_VERSION})
 
 if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT HAIKU)
     set(PRI_EXTRA_DEPS "dbus")
 endif()
-ecm_generate_pri_file(BASE_NAME ${QTKEYCHAIN_TARGET_NAME}
+ecm_generate_pri_file(BASE_NAME Qt${QTKEYCHAIN_VERSION_INFIX}Keychain
   LIB_NAME ${QTKEYCHAIN_TARGET_NAME}
   DEPS "core ${PRI_EXTRA_DEPS}"
   INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR}
@@ -305,12 +303,12 @@ ecm_generate_pri_file(BASE_NAME ${QTKEYCHAIN_TARGET_NAME}
 install(FILES ${pri_filename} DESTINATION ${ECM_MKSPECS_INSTALL_DIR})
 
 
-install(EXPORT ${QTKEYCHAIN_TARGET_NAME}LibraryDepends
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${QTKEYCHAIN_TARGET_NAME}"
+install(EXPORT Qt${QTKEYCHAIN_VERSION_INFIX}KeychainLibraryDepends
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Qt${QTKEYCHAIN_VERSION_INFIX}Keychain"
 )
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${QTKEYCHAIN_TARGET_NAME}Config.cmake
-              ${CMAKE_CURRENT_BINARY_DIR}/${QTKEYCHAIN_TARGET_NAME}ConfigVersion.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${QTKEYCHAIN_TARGET_NAME}
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfig.cmake
+              ${CMAKE_CURRENT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Qt${QTKEYCHAIN_VERSION_INFIX}Keychain
 )
 
