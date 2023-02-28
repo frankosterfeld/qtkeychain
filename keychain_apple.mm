@@ -160,11 +160,6 @@ struct ErrorDescription
         if (_privateJob) {
             _privateJob->data = QByteArray::fromNSData(retrievedData);
         }
-
-        const CFDataRef dataRef = (__bridge CFDataRef)retrievedData;
-        if (dataRef) {
-            CFRelease(dataRef);
-        }
     }
 
     if (_job) {
@@ -222,7 +217,7 @@ static void StartReadPassword(const QString &service, const QString &key, const 
 
         if (status == errSecSuccess) {
             const CFDataRef castedDataRef = (CFDataRef)dataRef;
-            NSData * const data = (__bridge NSData *)castedDataRef;
+            NSData * const data = [NSData dataWithBytes:CFDataGetBytePtr(castedDataRef) length:CFDataGetLength(castedDataRef)];
             dispatch_async(dispatch_get_main_queue(), ^{
                 [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainReadTaskFinished
                                                                   object:nil
@@ -239,11 +234,11 @@ static void StartReadPassword(const QString &service, const QString &key, const 
                                                                             KeychainNotificationUserInfoDescriptiveErrorKey: descriptiveErrorString,
                                                                             KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
             });
-
-            if (dataRef) {
-                CFRelease(dataRef);
-            }
         }
+
+         if (dataRef) {
+             CFRelease(dataRef);
+         }
     });
 }
 
