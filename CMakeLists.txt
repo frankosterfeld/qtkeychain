@@ -274,8 +274,22 @@ install(TARGETS ${QTKEYCHAIN_TARGET_NAME}
 )
 
 if(BUILD_TEST_APPLICATION)
+    set( testclient_LIBRARIES ${QTKEYCHAIN_TARGET_NAME} )
+
+    if(APPLE)
+        list(APPEND testclient_LIBRARIES "-framework Cocoa")
+
+        if (BUILD_WITH_QT6)
+            find_package(Qt6 COMPONENTS Gui REQUIRED)
+            list(APPEND testclient_LIBRARIES Qt6::Gui)
+        else()
+            find_package(Qt5 COMPONENTS Gui REQUIRED)
+            list(APPEND testclient_LIBRARIES Qt5::Gui)
+        endif()
+
+    endif()
     add_executable( testclient testclient.cpp )
-    target_link_libraries( testclient ${QTKEYCHAIN_TARGET_NAME})
+    target_link_libraries( testclient ${testclient_LIBRARIES})
 endif()
 
 

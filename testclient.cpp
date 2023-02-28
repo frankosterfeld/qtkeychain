@@ -6,7 +6,14 @@
  * or FITNESS FOR A PARTICULAR PURPOSE. For licensing and distribution        *
  * details, check the accompanying file 'COPYING'.                            *
  *****************************************************************************/
+
+#include <QtGlobal>
+#ifdef Q_OS_DARWIN
+#include <QGuiApplication>
+#else
 #include <QCoreApplication>
+#endif
+
 #include <QStringList>
 
 #include "keychain.h"
@@ -22,7 +29,14 @@ static int printUsage() {
 }
 
 int main( int argc, char** argv ) {
+#ifdef Q_OS_DARWIN
+    // Since we use NSNotificationCenter under the hood in keychain_apple,
+    // we use QGuiApplication to automatically configure the platform
+    // integration stuff done in this class and not in QCoreApplication
+    QGuiApplication app( argc, argv );
+#else
     QCoreApplication app( argc, argv );
+#endif
     const QStringList args = app.arguments();
     if ( args.count() < 2 )
         return printUsage();
