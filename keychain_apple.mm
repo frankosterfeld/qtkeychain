@@ -14,19 +14,6 @@
 
 using namespace QKeychain;
 
-NSString * const AppleKeychainTaskFinished = @"AppleKeychainTaskFinished";
-NSString * const AppleKeychainReadTaskFinished = @"AppleKeychainReadTaskFinished";
-NSString * const AppleKeychainTaskFinishedWithError = @"AppleKeychainTaskFinishedWithError";
-
-NSString * const KeychainNotificationUserInfoStatusKey = @"status";
-NSString * const KeychainNotificationUserInfoDataKey = @"data";
-NSString * const KeychainNotificationUserInfoDescriptiveErrorKey = @"descriptiveError";
-NSString * const KeychainNotificationUserInfoNotificationId = @"notificationId";
-
-namespace {
-    static unsigned int currentNotificationId = 0;
-}
-
 struct ErrorDescription
 {
     QKeychain::Error code;
@@ -78,7 +65,10 @@ struct ErrorDescription
 
 @interface AppleKeychainInterface : NSObject
 
-- (instancetype)initWithJob:(Job *)job andPrivateJob:(JobPrivate *)privateJob andNotificationId:(unsigned int)notificationId;
+- (instancetype)initWithJob:(Job *)job andPrivateJob:(JobPrivate *)privateJob;
+- (void)keychainTaskFinished;
+- (void)keychainReadTaskFinished:(NSData *)retrievedData;
+- (void)keychainTaskFinishedWithError:(OSStatus)status descriptiveMessage:(NSString *)descriptiveMessage;
 
 @end
 
@@ -86,33 +76,17 @@ struct ErrorDescription
 {
     QPointer<Job> _job;
     QPointer<JobPrivate> _privateJob;
-    unsigned int _notificationId;
 }
 @end
 
 @implementation AppleKeychainInterface
 
-- (instancetype)initWithJob:(Job *)job andPrivateJob:(JobPrivate *)privateJob andNotificationId:(unsigned int)notificationId
+- (instancetype)initWithJob:(Job *)job andPrivateJob:(JobPrivate *)privateJob
 {
     self = [super init];
     if (self) {
         _job = job;
         _privateJob = privateJob;
-        _notificationId = notificationId;
-
-        NSNotificationCenter * const notificationCenter = NSNotificationCenter.defaultCenter;
-        [notificationCenter addObserver:self
-                               selector:@selector(keychainTaskFinished:)
-                                   name:AppleKeychainTaskFinished
-                                 object:nil];
-        [notificationCenter addObserver:self
-                               selector:@selector(keychainReadTaskFinished:)
-                                   name:AppleKeychainReadTaskFinished
-                                 object:nil];
-        [notificationCenter addObserver:self
-                               selector:@selector(keychainTaskFinishedWithError:)
-                                   name:AppleKeychainTaskFinishedWithError
-                                 object:nil];
     }
     return self;
 }
@@ -123,39 +97,18 @@ struct ErrorDescription
     [super dealloc];
 }
 
-- (void)keychainTaskFinished:(NSNotification *)notification
+- (void)keychainTaskFinished
 {
-    NSParameterAssert(notification);
-    NSDictionary * const userInfo = notification.userInfo;
-    NSAssert(userInfo, @"Keychain task finished with error notification should contain nonnull user info dictionary");
-
-    NSNumber * const retrievedNotificationId = (NSNumber *)[userInfo objectForKey:KeychainNotificationUserInfoNotificationId];
-    if (retrievedNotificationId.unsignedIntValue != _notificationId) {
-        return;
-    }
-
     if (_job) {
         _job->emitFinished();
     }
-
-    [self release];
 }
 
-- (void)keychainReadTaskFinished:(NSNotification *)notification
+- (void)keychainReadTaskFinished:(NSData *)retrievedData
 {
-    NSParameterAssert(notification);
-    NSDictionary * const userInfo = notification.userInfo;
-    NSAssert(userInfo, @"Keychain task finished with error notification should contain nonnull user info dictionary");
-
-    NSNumber * const retrievedNotificationId = (NSNumber *)[userInfo objectForKey:KeychainNotificationUserInfoNotificationId];
-    if (retrievedNotificationId.unsignedIntValue != _notificationId) {
-        return;
-    }
-
     _privateJob->data.clear();
     _privateJob->mode = JobPrivate::Binary;
 
-    NSData * const retrievedData = (NSData *)[userInfo objectForKey:KeychainNotificationUserInfoDataKey];
     if (retrievedData != nil) {
         if (_privateJob) {
             _privateJob->data = QByteArray::fromNSData(retrievedData);
@@ -165,26 +118,10 @@ struct ErrorDescription
     if (_job) {
         _job->emitFinished();
     }
-
-    [self release];
 }
 
-- (void)keychainTaskFinishedWithError:(NSNotification *)notification
+- (void)keychainTaskFinishedWithError:(OSStatus)status descriptiveMessage:(NSString *)descriptiveMessage
 {
-    NSParameterAssert(notification);
-    NSDictionary * const userInfo = notification.userInfo;
-    NSAssert(userInfo, @"Keychain task finished with error notification should contain nonnull user info dictionary");
-
-    NSNumber * const retrievedNotificationId = (NSNumber *)[userInfo objectForKey:KeychainNotificationUserInfoNotificationId];
-    if (retrievedNotificationId.unsignedIntValue != _notificationId) {
-        return;
-    }
-
-    NSNumber * const statusNumber = (NSNumber *)[userInfo objectForKey:KeychainNotificationUserInfoStatusKey];
-    NSAssert(statusNumber, @"Keychain task notification user info dict should contain valid status number");
-    const OSStatus status = statusNumber.intValue;
-
-    NSString * const descriptiveMessage = (NSString *)[userInfo objectForKey:KeychainNotificationUserInfoDescriptiveErrorKey];
     const auto localisedDescriptiveMessage = Job::tr([descriptiveMessage UTF8String]);
 
     const ErrorDescription error = ErrorDescription::fromStatus(status);
@@ -193,18 +130,14 @@ struct ErrorDescription
     if (_job) {
         _job->emitFinishedWithError(error.code, fullMessage);
     }
-
-    [self release];
 }
 
 @end
 
 
-static void StartReadPassword(const QString &service, const QString &key, const unsigned int notificationId)
+static void StartReadPassword(const QString &service, const QString &key, AppleKeychainInterface * const interface)
 {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-        NSNumber * const notificationIdNumber = [NSNumber numberWithUnsignedInt:notificationId];
-
         NSDictionary * const query = @{
             (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
             (__bridge NSString *)kSecAttrService: service.toNSString(),
@@ -217,22 +150,16 @@ static void StartReadPassword(const QString &service, const QString &key, const 
 
         if (status == errSecSuccess) {
             const CFDataRef castedDataRef = (CFDataRef)dataRef;
-            NSData * const data = [NSData dataWithBytes:CFDataGetBytePtr(castedDataRef) length:CFDataGetLength(castedDataRef)];
+            NSData * const data = (__bridge NSData *)castedDataRef;
             dispatch_async(dispatch_get_main_queue(), ^{
-                [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainReadTaskFinished
-                                                                  object:nil
-                                                                userInfo:@{ KeychainNotificationUserInfoDataKey: data,
-                                                                            KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+                [interface keychainReadTaskFinished:data];
+                [interface release];
             });
         } else {
-            NSNumber * const statusNumber = [NSNumber numberWithInt:status];
             NSString * const descriptiveErrorString = @"Could not retrieve private key from keystore";
             dispatch_async(dispatch_get_main_queue(), ^{
-                [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinishedWithError
-                                                                  object:nil
-                                                                userInfo:@{ KeychainNotificationUserInfoStatusKey: statusNumber,
-                                                                            KeychainNotificationUserInfoDescriptiveErrorKey: descriptiveErrorString,
-                                                                            KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+                [interface keychainTaskFinishedWithError:status descriptiveMessage:descriptiveErrorString];
+                [interface release];
             });
         }
 
@@ -242,11 +169,9 @@ static void StartReadPassword(const QString &service, const QString &key, const 
     });
 }
 
-static void StartWritePassword(const QString &service, const QString &key, const QByteArray &data, const unsigned int notificationId)
+static void StartWritePassword(const QString &service, const QString &key, const QByteArray &data, AppleKeychainInterface * const interface)
 {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-        NSNumber * const notificationIdNumber = [NSNumber numberWithUnsignedInt:notificationId];
-
         NSDictionary * const query = @{
                 (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
                 (__bridge NSString *)kSecAttrService: service.toNSString(),
@@ -274,30 +199,23 @@ static void StartWritePassword(const QString &service, const QString &key, const
 
         if (status == errSecSuccess) {
             dispatch_async(dispatch_get_main_queue(), ^{
-                [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinished
-                                                                  object:nil
-                                                                userInfo:@{ KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+                [interface keychainTaskFinished];
+                [interface release];
             });
         } else {
-            NSNumber * const statusNumber = [NSNumber numberWithInt:status];
             NSString * const descriptiveErrorString = @"Could not store data in settings";
 
             dispatch_async(dispatch_get_main_queue(), ^{
-                [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinishedWithError
-                                                                  object:nil
-                                                                userInfo:@{ KeychainNotificationUserInfoStatusKey: statusNumber,
-                                                                            KeychainNotificationUserInfoDescriptiveErrorKey: descriptiveErrorString,
-                                                                            KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+                [interface keychainTaskFinishedWithError:status descriptiveMessage:descriptiveErrorString];
+                [interface release];
             });
         }
     });
 }
 
-static void StartDeletePassword(const QString &service, const QString &key, const unsigned int notificationId)
+static void StartDeletePassword(const QString &service, const QString &key, AppleKeychainInterface * const interface)
 {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-        NSNumber * const notificationIdNumber = [NSNumber numberWithUnsignedInt:notificationId];
-
         NSDictionary * const query = @{
             (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
             (__bridge NSString *)kSecAttrService: service.toNSString(),
@@ -308,19 +226,14 @@ static void StartDeletePassword(const QString &service, const QString &key, cons
 
         if (status == errSecSuccess) {
             dispatch_async(dispatch_get_main_queue(), ^{
-                [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinished
-                                                                  object:nil
-                                                                userInfo:@{ KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+                [interface keychainTaskFinished];
+                [interface release];
             });
         } else {
-            NSNumber * const statusNumber = [NSNumber numberWithInt:status];
             NSString * const descriptiveErrorString = @"Could not remove private key from keystore";
             dispatch_async(dispatch_get_main_queue(), ^{
-                [NSNotificationCenter.defaultCenter postNotificationName:AppleKeychainTaskFinishedWithError
-                                                                  object:nil
-                                                                userInfo:@{ KeychainNotificationUserInfoStatusKey: statusNumber,
-                                                                            KeychainNotificationUserInfoDescriptiveErrorKey: descriptiveErrorString,
-                                                                            KeychainNotificationUserInfoNotificationId: notificationIdNumber }];
+                [interface keychainTaskFinishedWithError:status descriptiveMessage:descriptiveErrorString];
+                [interface release];
             });
         }
     });
@@ -328,21 +241,18 @@ static void StartDeletePassword(const QString &service, const QString &key, cons
 
 void ReadPasswordJobPrivate::scheduledStart()
 {
-    const auto notificationId = ++currentNotificationId;
-    [[AppleKeychainInterface alloc] initWithJob:q andPrivateJob:this andNotificationId:notificationId];
-    StartReadPassword(service, key, currentNotificationId);
+    AppleKeychainInterface * const interface = [[AppleKeychainInterface alloc] initWithJob:q andPrivateJob:this];
+    StartReadPassword(service, key, interface);
 }
 
 void WritePasswordJobPrivate::scheduledStart()
 {
-    const auto notificationId = ++currentNotificationId;
-    [[AppleKeychainInterface alloc] initWithJob:q andPrivateJob:this andNotificationId:notificationId];
-    StartWritePassword(service, key, data, currentNotificationId);
+    AppleKeychainInterface * const interface = [[AppleKeychainInterface alloc] initWithJob:q andPrivateJob:this];
+    StartWritePassword(service, key, data, interface);
 }
 
 void DeletePasswordJobPrivate::scheduledStart()
 {
-    const auto notificationId = ++currentNotificationId;
-    [[AppleKeychainInterface alloc] initWithJob:q andPrivateJob:this andNotificationId:notificationId];
-    StartDeletePassword(service, key, currentNotificationId);
+    AppleKeychainInterface * const interface = [[AppleKeychainInterface alloc] initWithJob:q andPrivateJob:this];
+    StartDeletePassword(service, key, interface);
 }
