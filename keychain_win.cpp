@@ -186,3 +186,8 @@ void DeletePasswordJobPrivate::scheduledStart() {
     }
 }
 #endif
+
+bool isAvailable()
+{
+    return true;
+}

@@ -185,3 +185,8 @@ void DeletePasswordJobPrivate::scheduledStart()
 
     q->emitFinishedWithError( error, errorString );
 }
+
+bool isAvailable()
+{
+    return true;
+}
