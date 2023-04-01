@@ -256,3 +256,8 @@ void DeletePasswordJobPrivate::scheduledStart()
     AppleKeychainInterface * const interface = [[AppleKeychainInterface alloc] initWithJob:q andPrivateJob:this];
     StartDeletePassword(service, key, interface);
 }
+
+bool isAvailable()
+{
+    return true;
+}

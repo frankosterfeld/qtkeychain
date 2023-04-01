@@ -266,6 +266,17 @@ private:
     friend class QKeychain::DeletePasswordJobPrivate;
 };
 
+/**
+ * Checks whether there is a viable secure backend available.
+ * This particularly matters on UNIX platforms where multiple different backends
+ * exist and none might be available.
+ *
+ * Note that using the insecure fallback will work even if no secure backend is available.
+ *
+ * @since 0.14.0
+ */
+bool isAvailable();
+
 } // namespace QtKeychain
 
 #endif

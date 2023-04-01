@@ -188,3 +188,8 @@ void DeletePasswordJobPrivate::scheduledStart()
     else
         q->emitFinished();
 }
+
+bool isAvailable()
+{
+    return true;
+}
