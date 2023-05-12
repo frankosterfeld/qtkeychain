@@ -115,7 +115,7 @@ bool KeyStore::containsAlias(const QString &alias) const
 
 bool KeyStore::deleteEntry(const QString &alias) const
 {
-    callMethod<void>("deleteEntry", "(Ljava/lang/String;)Z", fromString(alias).object());
+    callMethod<void>("deleteEntry", "(Ljava/lang/String;)V", fromString(alias).object());
     return handleExceptions();
 }
 
