@@ -1,6 +1,14 @@
 ChangeLog
 =========
 
+version 0.14.0 (release 2023-05-12)
+
+ - Add Qt 6 Android support (Igor Bugaev <freedbrt@gmail.com>)
+ - Add QtQuick client example ((Igor Bugaev <freedbrt@gmail.com>)
+ - Added Dutch translation (Heimen Stoffels <vistausss@fastmail.com>)
+ - Fix potential freezing with Apple keychain (Claudio Cambra <developer@claudiocambra.com>)
+ - Add API to check whether a secure backend is available at all (Volker Krause <vkrause@kde.org>)
+
 version 0.13.2 (release 2021-11-18)
 
  - CMake: Deprecate QTKEYCHAIN_STATIC in favor of BUILD_SHARED_LIBS (be@mixxx.org)
