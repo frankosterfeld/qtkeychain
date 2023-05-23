@@ -50,8 +50,10 @@ class JobPrivate;
  */
 class QKEYCHAIN_EXPORT Job : public QObject {
     Q_OBJECT
+    Q_PROPERTY(QString service READ service WRITE setService)
     Q_PROPERTY(QString key READ key WRITE setKey)
     Q_PROPERTY(Error error READ error)
+
 public:
     ~Job() override;
 
@@ -92,7 +94,7 @@ public:
      *
      * @see finished()
      */
-    void start();
+    Q_INVOKABLE void start();
 
     QString service() const;
 
@@ -105,7 +107,7 @@ public:
     /**
      * @return An error message that might provide details if error() returns OtherError.
      */
-    QString errorString() const;
+    Q_INVOKABLE QString errorString() const;
 
     /**
      * @return Whether this job autodeletes itself once finished() has been emitted. Default is true.
@@ -146,6 +148,8 @@ public:
 
     void emitFinished();
     void emitFinishedWithError(Error, const QString& errorString);
+
+    void setService(const QString &newService);
 
 Q_SIGNALS:
     /**
@@ -194,7 +198,12 @@ public:
      * @param service The service string used by this job (can be empty).
      * @param parent The parent of this job.
      */
-    explicit ReadPasswordJob( const QString& service, QObject* parent=nullptr );
+    #ifdef BUILD_WITH_QML
+        //make objecte creatabble from QML - Just to make sure original code will not broke
+        explicit ReadPasswordJob( const QString& service="", QObject* parent=nullptr );
+    #else
+        explicit ReadPasswordJob( const QString& service, QObject* parent=nullptr );
+    #endif
     ~ReadPasswordJob() override;
 
     /**
@@ -234,21 +243,26 @@ public:
      * @param service The service string used by this job (can be empty).
      * @param parent The parent of this job.
      */
-    explicit WritePasswordJob( const QString& service, QObject* parent=nullptr );
+    #ifdef BUILD_WITH_QML
+        //make objecte creatabble from QML - Just to make sure original code will not broke
+        explicit WritePasswordJob(const QString& service="", QObject* parent=nullptr );
+    #else
+        explicit WritePasswordJob( const QString& service, QObject* parent=nullptr );
+    #endif
     ~WritePasswordJob() override;
 
     /**
      * Set the @p data that the job will store in the keychain as binary data.
      * @warning setBinaryData() and setTextData() are mutually exclusive.
      */
-    void setBinaryData( const QByteArray& data );
+    Q_INVOKABLE void setBinaryData( const QByteArray& data );
 
     /**
      * Set the @p data that the job will store in the keychain as string.
      * Typically @p data is a password.
      * @warning setBinaryData() and setTextData() are mutually exclusive.
      */
-    void setTextData( const QString& data );
+    Q_INVOKABLE void setTextData( const QString& data );
 
 private:
 
