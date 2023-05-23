@@ -194,7 +194,12 @@ public:
      * @param service The service string used by this job (can be empty).
      * @param parent The parent of this job.
      */
-    explicit ReadPasswordJob( const QString& service, QObject* parent=nullptr );
+    #ifdef BUILD_WITH_QML
+        //make objecte creatabble from QML - Just to make sure original code will not broke
+        explicit ReadPasswordJob( const QString& service="", QObject* parent=nullptr );
+    #else
+        explicit ReadPasswordJob( const QString& service, QObject* parent=nullptr );
+    #endif
     ~ReadPasswordJob() override;
 
     /**
@@ -234,7 +239,12 @@ public:
      * @param service The service string used by this job (can be empty).
      * @param parent The parent of this job.
      */
-    explicit WritePasswordJob( const QString& service, QObject* parent=nullptr );
+    #ifdef BUILD_WITH_QML
+        //make objecte creatabble from QML - Just to make sure original code will not broke
+        explicit WritePasswordJob(const QString& service="", QObject* parent=nullptr );
+    #else
+        explicit WritePasswordJob( const QString& service, QObject* parent=nullptr );
+    #endif
     ~WritePasswordJob() override;
 
     /**
