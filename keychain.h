@@ -18,6 +18,10 @@
 #include <QtCore/QObject>
 #include <QtCore/QString>
 
+//#ifdef BUILD_WITH_QML
+#include <QtQmlIntegration>
+//#endif
+
 class QSettings;
 
 #define QTKEYCHAIN_VERSION 0x000100
@@ -46,6 +50,8 @@ class JobPrivate;
  */
 class QKEYCHAIN_EXPORT Job : public QObject {
     Q_OBJECT
+    Q_PROPERTY(QString key READ key WRITE setKey)
+    Q_PROPERTY(Error error READ error)
 public:
     ~Job() override;
 
@@ -179,6 +185,9 @@ class ReadPasswordJobPrivate;
  */
 class QKEYCHAIN_EXPORT ReadPasswordJob : public Job {
     Q_OBJECT
+//    #ifdef BUILD_WITH_QML
+    QML_NAMED_ELEMENT(ReadPasswordJob)
+//    #endif
 public:
     /**
      * Create a new ReadPasswordJob.
@@ -192,7 +201,7 @@ public:
      * @return The binary data stored as value of this job's key().
      * @see Job::key()
      */
-    QByteArray binaryData() const;
+    Q_INVOKABLE QByteArray binaryData() const;
 
     /**
      * @return The string stored as value of this job's key().
@@ -200,7 +209,7 @@ public:
      * @warning Returns meaningless data if the data was stored as binary data.
      * @see WritePasswordJob::setTextData()
      */
-    QString textData() const;
+    Q_INVOKABLE QString textData() const;
 
 private:
     friend class QKeychain::ReadPasswordJobPrivate;
@@ -216,6 +225,9 @@ class WritePasswordJobPrivate;
  */
 class QKEYCHAIN_EXPORT WritePasswordJob : public Job {
     Q_OBJECT
+    #ifdef BUILD_WITH_QML
+        QML_NAMED_ELEMENT(WritePasswordJob)
+    #endif
 public:
     /**
      * Create a new WritePasswordJob.
