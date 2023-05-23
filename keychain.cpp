@@ -233,3 +233,8 @@ WritePasswordJobPrivate::WritePasswordJobPrivate(const QString &service_, WriteP
     JobPrivate(service_, qq) {
 
 }
+
+void Job::setService(const QString &newService)
+{
+   d->service = newService;
+}

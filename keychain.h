@@ -50,8 +50,10 @@ class JobPrivate;
  */
 class QKEYCHAIN_EXPORT Job : public QObject {
     Q_OBJECT
+    Q_PROPERTY(QString service READ service WRITE setService)
     Q_PROPERTY(QString key READ key WRITE setKey)
     Q_PROPERTY(Error error READ error)
+
 public:
     ~Job() override;
 
@@ -92,7 +94,7 @@ public:
      *
      * @see finished()
      */
-    void start();
+    Q_INVOKABLE void start();
 
     QString service() const;
 
@@ -146,6 +148,8 @@ public:
 
     void emitFinished();
     void emitFinishedWithError(Error, const QString& errorString);
+
+    void setService(const QString &newService);
 
 Q_SIGNALS:
     /**
