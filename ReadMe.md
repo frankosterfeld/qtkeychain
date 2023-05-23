@@ -27,3 +27,45 @@ License
 -------
 
 QtKeychain is available under the [Modified BSD License](http://www.gnu.org/licenses/license-list.html#ModifiedBSD). See the file COPYING for details.
+
+
+**New:**
+==========
+Added QML support on Qt6 using cmake
+To activate set the qt6 and qml flags
+
+```CMAKE
+-DBUILD_WITH_QT6=ON -DQTKEYCHAIN_BUILD_WITH_QML=ON
+```
+
+```QML
+import QtKeychain 1.0
+```
+
+```QML
+WritePasswordJob{
+        id: storeJobObject
+        service: ""
+        onFinished: {
+            console.debug("Store password complete")
+        }
+    }
+    ReadPasswordJob{
+        id: readJobObject
+        service: ""
+
+    }
+```
+
+```javascript
+storeJobObject.key = "username";
+storeJobObject.setTextData("password");
+storeJobObject.start();
+
+readJobObject.key = "username"
+readJobObject.finished.connect(function (returnedPassword){
+                console.debug("Password is: "+returnedPassword.textData())
+})
+readJobObject.start();
+
+```
