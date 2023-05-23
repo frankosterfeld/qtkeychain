@@ -107,7 +107,7 @@ public:
     /**
      * @return An error message that might provide details if error() returns OtherError.
      */
-    QString errorString() const;
+    Q_INVOKABLE QString errorString() const;
 
     /**
      * @return Whether this job autodeletes itself once finished() has been emitted. Default is true.
@@ -255,14 +255,14 @@ public:
      * Set the @p data that the job will store in the keychain as binary data.
      * @warning setBinaryData() and setTextData() are mutually exclusive.
      */
-    void setBinaryData( const QByteArray& data );
+    Q_INVOKABLE void setBinaryData( const QByteArray& data );
 
     /**
      * Set the @p data that the job will store in the keychain as string.
      * Typically @p data is a password.
      * @warning setBinaryData() and setTextData() are mutually exclusive.
      */
-    void setTextData( const QString& data );
+    Q_INVOKABLE void setTextData( const QString& data );
 
 private:
 
