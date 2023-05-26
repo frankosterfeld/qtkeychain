@@ -275,7 +275,7 @@ private:
  *
  * @since 0.14.0
  */
-bool isAvailable();
+QKEYCHAIN_EXPORT bool isAvailable();
 
 } // namespace QtKeychain
 

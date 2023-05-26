@@ -189,7 +189,7 @@ void DeletePasswordJobPrivate::scheduledStart()
         q->emitFinished();
 }
 
-bool isAvailable()
+bool QKeychain::isAvailable()
 {
     return true;
 }

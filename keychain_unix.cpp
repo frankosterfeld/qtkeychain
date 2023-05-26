@@ -589,7 +589,7 @@ void DeletePasswordJobPrivate::fallbackOnError(const QDBusError &err) {
     q->emitFinished();
 }
 
-bool isAvailable()
+bool QKeychain::isAvailable()
 {
     return LibSecretKeyring::isAvailable() || GnomeKeyring::isAvailable() || isKwallet5Available();
 }
