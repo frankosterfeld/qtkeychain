@@ -187,7 +187,7 @@ void DeletePasswordJobPrivate::scheduledStart() {
 }
 #endif
 
-bool isAvailable()
+bool QKeychain::isAvailable()
 {
     return true;
 }
