@@ -118,11 +118,11 @@ static KeyringBackend detectKeyringBackend()
         return Backend_Kwallet4;
 
     case DesktopEnv_Plasma5:
-        if (isKwallet5Available()) {
-            return Backend_Kwallet5;
-        }
         if (LibSecretKeyring::isAvailable()) {
             return Backend_LibSecretKeyring;
+        }
+        if (isKwallet5Available()) {
+            return Backend_Kwallet5;
         }
         if (GnomeKeyring::isAvailable()) {
             return Backend_GnomeKeyring;
