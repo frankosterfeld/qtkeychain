@@ -19,24 +19,35 @@ enum KeyringBackend {
     Backend_LibSecretKeyring,
     Backend_GnomeKeyring,
     Backend_Kwallet4,
-    Backend_Kwallet5
+    Backend_Kwallet5,
+    Backend_Kwallet6,
 };
 
 enum DesktopEnvironment {
     DesktopEnv_Gnome,
     DesktopEnv_Kde4,
     DesktopEnv_Plasma5,
+    DesktopEnv_Plasma6,
     DesktopEnv_Unity,
     DesktopEnv_Xfce,
     DesktopEnv_Other
 };
+
+static constexpr const char KWALLET6_DBUS_IFACE[] = "org.kde.kwalletd6";
+static constexpr const char KWALLET6_DBUS_PATH[] = "/modules/kwalletd6";
+static constexpr const char KWALLET5_DBUS_IFACE[] = "org.kde.kwalletd5";
+static constexpr const char KWALLET5_DBUS_PATH[] = "/modules/kwalletd5";
+static constexpr const char KWALLET4_DBUS_IFACE[] = "org.kde.kwalletd";
+static constexpr const char KWALLET4_DBUS_PATH[] = "/modules/kwalletd";
 
 // the following detection algorithm is derived from chromium,
 // licensed under BSD, see base/nix/xdg_util.cc
 
 static DesktopEnvironment getKdeVersion() {
     QByteArray value = qgetenv("KDE_SESSION_VERSION");
-    if ( value == "5" ) {
+    if ( value == "6" ) {
+        return DesktopEnv_Plasma6;
+    } else if ( value == "5" ) {
         return DesktopEnv_Plasma5;
     } else if (value == "4" ) {
         return DesktopEnv_Kde4;
@@ -78,14 +89,14 @@ static DesktopEnvironment detectDesktopEnvironment() {
     return DesktopEnv_Other;
 }
 
-static bool isKwallet5Available()
+static bool isKwalletAvailable(const char *dbusIface, const char *dbusPath)
 {
     if (!QDBusConnection::sessionBus().isConnected())
         return false;
 
     org::kde::KWallet iface(
-        QLatin1String("org.kde.kwalletd5"),
-        QLatin1String("/modules/kwalletd5"),
+        QLatin1String(dbusIface),
+        QLatin1String(dbusPath),
         QDBusConnection::sessionBus());
 
     // At this point iface.isValid() can return false even though the
@@ -118,7 +129,7 @@ static KeyringBackend detectKeyringBackend()
         return Backend_Kwallet4;
 
     case DesktopEnv_Plasma5:
-        if (isKwallet5Available()) {
+        if (isKwalletAvailable(KWALLET5_DBUS_IFACE, KWALLET5_DBUS_PATH)) {
             return Backend_Kwallet5;
         }
         if (LibSecretKeyring::isAvailable()) {
@@ -129,6 +140,19 @@ static KeyringBackend detectKeyringBackend()
         }
         // During startup the keychain backend might just not have started yet
         return Backend_Kwallet5;
+
+    case DesktopEnv_Plasma6:
+        if (isKwalletAvailable(KWALLET6_DBUS_IFACE, KWALLET6_DBUS_PATH)) {
+            return Backend_Kwallet6;
+        }
+        if (LibSecretKeyring::isAvailable()) {
+            return Backend_LibSecretKeyring;
+        }
+        if (GnomeKeyring::isAvailable()) {
+            return Backend_GnomeKeyring;
+        }
+        // During startup the keychain backend might just not have started yet
+        return Backend_Kwallet6;
 
     case DesktopEnv_Gnome:
     case DesktopEnv_Unity:
@@ -141,7 +165,10 @@ static KeyringBackend detectKeyringBackend()
         if (GnomeKeyring::isAvailable()) {
             return Backend_GnomeKeyring;
         }
-        if (isKwallet5Available()) {
+        if (isKwalletAvailable(KWALLET6_DBUS_IFACE, KWALLET6_DBUS_PATH)) {
+            return Backend_Kwallet6;
+        }
+        if (isKwalletAvailable(KWALLET5_DBUS_IFACE, KWALLET5_DBUS_PATH)) {
             return Backend_Kwallet5;
         }
         // During startup the keychain backend might just not have started yet
@@ -198,10 +225,13 @@ void ReadPasswordJobPrivate::scheduledStart() {
         break;
 
     case Backend_Kwallet4:
-        kwalletReadPasswordScheduledStartImpl("org.kde.kwalletd", "/modules/kwalletd", this);
+        kwalletReadPasswordScheduledStartImpl(KWALLET4_DBUS_IFACE, KWALLET4_DBUS_PATH, this);
         break;
     case Backend_Kwallet5:
-        kwalletReadPasswordScheduledStartImpl("org.kde.kwalletd5", "/modules/kwalletd5", this);
+        kwalletReadPasswordScheduledStartImpl(KWALLET5_DBUS_IFACE, KWALLET5_DBUS_PATH, this);
+        break;
+    case Backend_Kwallet6:
+        kwalletReadPasswordScheduledStartImpl(KWALLET6_DBUS_IFACE, KWALLET6_DBUS_PATH, this);
         break;
     }
 }
@@ -454,10 +484,13 @@ void WritePasswordJobPrivate::scheduledStart() {
         break;
 
     case Backend_Kwallet4:
-        kwalletWritePasswordScheduledStart("org.kde.kwalletd", "/modules/kwalletd", this);
+        kwalletWritePasswordScheduledStart(KWALLET4_DBUS_IFACE, KWALLET4_DBUS_PATH, this);
         break;
     case Backend_Kwallet5:
-        kwalletWritePasswordScheduledStart("org.kde.kwalletd5", "/modules/kwalletd5", this);
+        kwalletWritePasswordScheduledStart(KWALLET5_DBUS_IFACE, KWALLET5_DBUS_PATH, this);
+        break;
+    case Backend_Kwallet6:
+        kwalletWritePasswordScheduledStart(KWALLET6_DBUS_IFACE, KWALLET6_DBUS_PATH, this);
         break;
     }
 }
@@ -562,10 +595,13 @@ void DeletePasswordJobPrivate::scheduledStart() {
         break;
 
     case Backend_Kwallet4:
-        kwalletWritePasswordScheduledStart("org.kde.kwalletd", "/modules/kwalletd", this);
+        kwalletWritePasswordScheduledStart(KWALLET4_DBUS_IFACE, KWALLET4_DBUS_PATH, this);
         break;
     case Backend_Kwallet5:
-        kwalletWritePasswordScheduledStart("org.kde.kwalletd5", "/modules/kwalletd5", this);
+        kwalletWritePasswordScheduledStart(KWALLET5_DBUS_IFACE, KWALLET5_DBUS_PATH, this);
+        break;
+    case Backend_Kwallet6:
+        kwalletWritePasswordScheduledStart(KWALLET6_DBUS_IFACE, KWALLET6_DBUS_PATH, this);
         break;
     }
 }
@@ -591,5 +627,7 @@ void DeletePasswordJobPrivate::fallbackOnError(const QDBusError &err) {
 
 bool QKeychain::isAvailable()
 {
-    return LibSecretKeyring::isAvailable() || GnomeKeyring::isAvailable() || isKwallet5Available();
+    return LibSecretKeyring::isAvailable() || GnomeKeyring::isAvailable()
+        || isKwalletAvailable(KWALLET6_DBUS_IFACE, KWALLET6_DBUS_PATH)
+        || isKwalletAvailable(KWALLET5_DBUS_IFACE, KWALLET5_DBUS_PATH);
 }
