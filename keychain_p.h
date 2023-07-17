@@ -14,6 +14,7 @@
 #include <QPointer>
 #include <QSettings>
 #include <QQueue>
+#include <QEventLoopLocker>
 
 #if defined(KEYCHAIN_DBUS)
 
@@ -79,6 +80,9 @@ protected:
     bool insecureFallback;
     QPointer<QSettings> settings;
     QString key;
+
+private:
+    QEventLoopLocker lock;
 
 friend class Job;
 friend class JobExecutor;
