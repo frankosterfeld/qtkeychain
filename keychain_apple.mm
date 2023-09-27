@@ -257,7 +257,7 @@ void DeletePasswordJobPrivate::scheduledStart()
     StartDeletePassword(service, key, interface);
 }
 
-bool isAvailable()
+bool QKeychain::isAvailable()
 {
     return true;
 }

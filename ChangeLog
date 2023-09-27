@@ -1,6 +1,11 @@
 ChangeLog
 =========
 
+version 0.14.1 (release 2023-06-01)
+
+ - Export QKeychain::isAvailable() to make it usable in a shared build (Volker Krause <vkrause@kde.org>)
+ - Protect against creating the QtKeychain::QtKeychain alias target twice (Volker Krause <vkrause@kde.org>)
+
 version 0.14.0 (release 2023-05-12)
 
  - Add Qt 6 Android support (Igor Bugaev <freedbrt@gmail.com>)
