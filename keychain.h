@@ -18,9 +18,9 @@
 #include <QtCore/QObject>
 #include <QtCore/QString>
 
-//#ifdef BUILD_WITH_QML
+#ifdef BUILD_WITH_QML
 #include <QtQmlIntegration>
-//#endif
+#endif
 
 class QSettings;
 
@@ -71,30 +71,6 @@ public:
      */
     void setSettings( QSettings* settings );
 
-    /**
-     * Call this method to start the job.
-     * Typically you want to connect some slot to the finished() signal first:
-     *
-     * \code
-     * SomeClass::startJob()
-     * {
-     *     connect(job, &Job::finished, this, &SomeClass::slotJobFinished);
-     *     job->start();
-     * }
-     *
-     * SomeClass::slotJobFinished(Job *job)
-     * {
-     *     if (job->error()) {
-     *         // handle error
-     *     } else {
-     *         // do job-specific stuff
-     *     }
-     * }
-     * \endcode
-     *
-     * @see finished()
-     */
-    Q_INVOKABLE void start();
 
     QString service() const;
 
@@ -104,10 +80,7 @@ public:
      */
     Error error() const;
 
-    /**
-     * @return An error message that might provide details if error() returns OtherError.
-     */
-    Q_INVOKABLE QString errorString() const;
+
 
     /**
      * @return Whether this job autodeletes itself once finished() has been emitted. Default is true.
@@ -151,6 +124,37 @@ public:
 
     void setService(const QString &newService);
 
+public Q_SLOTS:
+    /**
+     * @return An error message that might provide details if error() returns OtherError.
+     */
+    QString errorString() const;
+
+    /**
+     * Call this method to start the job.
+     * Typically you want to connect some slot to the finished() signal first:
+     *
+     * \code
+     * SomeClass::startJob()
+     * {
+     *     connect(job, &Job::finished, this, &SomeClass::slotJobFinished);
+     *     job->start();
+     * }
+     *
+     * SomeClass::slotJobFinished(Job *job)
+     * {
+     *     if (job->error()) {
+     *         // handle error
+     *     } else {
+     *         // do job-specific stuff
+     *     }
+     * }
+     * \endcode
+     *
+     * @see finished()
+     */
+    void start();
+
 Q_SIGNALS:
     /**
      * Emitted when this job is finished.
@@ -161,7 +165,9 @@ Q_SIGNALS:
 
 protected:
     explicit Job( JobPrivate *q, QObject* parent=nullptr );
-    Q_INVOKABLE void doStart();
+
+public Q_SLOTS:
+    void doStart();
 
 private:
     void setError( Error error );
@@ -172,11 +178,11 @@ private:
 protected:
     JobPrivate* const d;
 
-friend class JobExecutor;
-friend class JobPrivate;
-friend class ReadPasswordJobPrivate;
-friend class WritePasswordJobPrivate;
-friend class DeletePasswordJobPrivate;
+    friend class JobExecutor;
+    friend class JobPrivate;
+    friend class ReadPasswordJobPrivate;
+    friend class WritePasswordJobPrivate;
+    friend class DeletePasswordJobPrivate;
 };
 
 class ReadPasswordJobPrivate;
@@ -189,23 +195,24 @@ class ReadPasswordJobPrivate;
  */
 class QKEYCHAIN_EXPORT ReadPasswordJob : public Job {
     Q_OBJECT
-//    #ifdef BUILD_WITH_QML
+#ifdef BUILD_WITH_QML
     QML_NAMED_ELEMENT(ReadPasswordJob)
-//    #endif
+#endif
 public:
-    /**
+/**
      * Create a new ReadPasswordJob.
      * @param service The service string used by this job (can be empty).
      * @param parent The parent of this job.
      */
-    #ifdef BUILD_WITH_QML
+#ifdef BUILD_WITH_QML
         //make objecte creatabble from QML - Just to make sure original code will not broke
-        explicit ReadPasswordJob( const QString& service="", QObject* parent=nullptr );
-    #else
-        explicit ReadPasswordJob( const QString& service, QObject* parent=nullptr );
-    #endif
+    explicit ReadPasswordJob( const QString& service="", QObject* parent=nullptr );
+#else
+    explicit ReadPasswordJob( const QString& service, QObject* parent=nullptr );
+#endif
     ~ReadPasswordJob() override;
 
+public Q_SLOTS:
     /**
      * @return The binary data stored as value of this job's key().
      * @see Job::key()
@@ -234,35 +241,42 @@ class WritePasswordJobPrivate;
  */
 class QKEYCHAIN_EXPORT WritePasswordJob : public Job {
     Q_OBJECT
-    #ifdef BUILD_WITH_QML
-        QML_NAMED_ELEMENT(WritePasswordJob)
-    #endif
+#ifdef BUILD_WITH_QML
+    QML_NAMED_ELEMENT(WritePasswordJob)
+#endif
+    Q_PROPERTY(const QByteArray& binaryData READ binaryData WRITE setBinaryData NOTIFY binaryDataChanged)
+    Q_PROPERTY(const QString& textData READ textData WRITE setTextData NOTIFY textDataChanged)
 public:
     /**
      * Create a new WritePasswordJob.
      * @param service The service string used by this job (can be empty).
      * @param parent The parent of this job.
      */
-    #ifdef BUILD_WITH_QML
-        //make objecte creatabble from QML - Just to make sure original code will not broke
-        explicit WritePasswordJob(const QString& service="", QObject* parent=nullptr );
-    #else
-        explicit WritePasswordJob( const QString& service, QObject* parent=nullptr );
-    #endif
+
+    explicit WritePasswordJob( const QString& service="", QObject* parent=nullptr );
+
     ~WritePasswordJob() override;
 
     /**
      * Set the @p data that the job will store in the keychain as binary data.
      * @warning setBinaryData() and setTextData() are mutually exclusive.
      */
-    Q_INVOKABLE void setBinaryData( const QByteArray& data );
+    void setBinaryData( const QByteArray& data );
 
     /**
      * Set the @p data that the job will store in the keychain as string.
      * Typically @p data is a password.
      * @warning setBinaryData() and setTextData() are mutually exclusive.
      */
-    Q_INVOKABLE void setTextData( const QString& data );
+    void setTextData( const QString& data );
+
+    const QByteArray &binaryData() const;
+
+    const QString &textData() const;
+
+signals:
+    void binaryDataChanged();
+    void textDataChanged();
 
 private:
 

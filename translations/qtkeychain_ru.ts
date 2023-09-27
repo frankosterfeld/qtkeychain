@@ -4,13 +4,13 @@
 <context>
     <name>QKeychain::DeletePasswordJobPrivate</name>
     <message>
-        <location filename="../keychain_unix.cpp" line="552"/>
-        <location filename="../keychain_unix.cpp" line="560"/>
+        <location filename="../keychain_unix.cpp" line="548"/>
+        <location filename="../keychain_unix.cpp" line="556"/>
         <source>Unknown error</source>
         <translation>Неизвестная ошибка</translation>
     </message>
     <message>
-        <location filename="../keychain_unix.cpp" line="578"/>
+        <location filename="../keychain_unix.cpp" line="574"/>
         <source>Could not open wallet: %1; %2</source>
         <translation>Не удалось открыть бумажник: %1; %2</translation>
     </message>
@@ -23,21 +23,6 @@
         <location filename="../keychain_win.cpp" line="108"/>
         <source>Could not decrypt data</source>
         <translation>Не удалось расшифровать данные</translation>
-    </message>
-    <message>
-        <location filename="../keychain_haiku.cpp" line="177"/>
-        <source>Password not found</source>
-        <translation type="unfinished">Пароль не найден</translation>
-    </message>
-    <message>
-        <location filename="../keychain_android.cpp" line="173"/>
-        <source>Could not open keystore</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../keychain_android.cpp" line="179"/>
-        <source>Could not remove private key from keystore</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -84,7 +69,7 @@
 <context>
     <name>QKeychain::ReadPasswordJobPrivate</name>
     <message>
-        <location filename="../keychain_haiku.cpp" line="96"/>
+        <location filename="../keychain_mac.cpp" line="75"/>
         <source>Password not found</source>
         <translation>Пароль не найден</translation>
     </message>
@@ -121,7 +106,6 @@
     </message>
     <message>
         <location filename="../keychain_unix.cpp" line="363"/>
-        <location filename="../keychain_android.cpp" line="52"/>
         <source>Entry not found</source>
         <translation>Запись не найдена</translation>
     </message>
@@ -145,21 +129,6 @@
         <location filename="../keychain_win.cpp" line="139"/>
         <source>Could not decrypt data</source>
         <translation>Не удалось расшифровать данные</translation>
-    </message>
-    <message>
-        <location filename="../keychain_android.cpp" line="60"/>
-        <source>Could not open keystore</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../keychain_android.cpp" line="68"/>
-        <source>Could not retrieve private key from keystore</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../keychain_android.cpp" line="75"/>
-        <source>Could not create decryption cipher</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -200,51 +169,18 @@
         <source>Encryption failed</source>
         <translation>Шифрование не удалось</translation>
     </message>
-    <message>
-        <location filename="../keychain_haiku.cpp" line="144"/>
-        <source>Password not found</source>
-        <translation type="unfinished">Пароль не найден</translation>
-    </message>
-    <message>
-        <location filename="../keychain_android.cpp" line="95"/>
-        <source>Could not open keystore</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../keychain_android.cpp" line="124"/>
-        <source>Could not create private key generator</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../keychain_android.cpp" line="131"/>
-        <source>Could not generate new private key</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../keychain_android.cpp" line="139"/>
-        <source>Could not retrieve private key from keystore</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../keychain_android.cpp" line="147"/>
-        <source>Could not create encryption cipher</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../keychain_android.cpp" line="155"/>
-        <source>Could not encrypt data</source>
-        <translation type="unfinished"></translation>
-    </message>
 </context>
 <context>
     <name>QObject</name>
     <message>
+        <location filename="../keychain_mac.cpp" line="31"/>
         <source>OS X Keychain error (OSStatus %1)</source>
-        <translation type="vanished">Ошибка связки ключей OS X (OSStatus %1)</translation>
+        <translation>Ошибка связки ключей OS X (OSStatus %1)</translation>
     </message>
     <message>
+        <location filename="../keychain_mac.cpp" line="32"/>
         <source>%1 (OSStatus %2)</source>
-        <translation type="vanished">%1 (OSStatus %2)</translation>
+        <translation>%1 (OSStatus %2)</translation>
     </message>
     <message>
         <location filename="../keychain_unix.cpp" line="225"/>
@@ -297,14 +233,9 @@
         <translation>Неизвестная ошибка</translation>
     </message>
     <message>
-        <location filename="../libsecret.cpp" line="119"/>
+        <location filename="../libsecret.cpp" line="120"/>
         <source>Entry not found</source>
         <translation>Запись не найдена</translation>
-    </message>
-    <message>
-        <location filename="../keychain_haiku.cpp" line="72"/>
-        <source>error 0x%1: %2</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

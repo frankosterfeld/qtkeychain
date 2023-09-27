@@ -194,8 +194,6 @@ if(ANDROID)
     list(APPEND qtkeychain_LIBRARIES_PRIVATE ${QTANDROIDEXTRAS_LIBRARIES} )
 endif()
 
-#QT_WRAP_CPP(qtkeychain_MOC_OUTFILES keychain.h keychain_p.h gnomekeyring_p.h)
-
 set(qtkeychain_TR_FILES
       translations/qtkeychain_de.ts
       translations/qtkeychain_fr.ts
@@ -212,7 +210,7 @@ if (QTKEYCHAIN_BUILD_WITH_QML)
     qt_policy(SET QTP0001 OLD)
     qt_add_qml_module(${QTKEYCHAIN_TARGET_NAME}
         URI "QtKeychain"
-        VERSION ${QTKEYCHAIN_VERSION}
+        VERSION "${CMAKE_PROJECT_VERSION_MAJOR}.${CMAKE_PROJECT_VERSION_MINOR}"
         OUTPUT_DIRECTORY QtKeychain
     )
     target_compile_definitions(${QTKEYCHAIN_TARGET_NAME} PRIVATE BUILD_WITH_QML=ON)
