@@ -19,8 +19,17 @@ using namespace QKeychain;
 #if defined(USE_CREDENTIAL_STORE)
 #include <wincred.h>
 
+static QString makeEntryName(const QString& service, const QString& key) {
+    auto entryName = service;
+    if (!service.isEmpty() && !key.isEmpty())
+        entryName += QLatin1Char('/');
+    entryName += key;
+    return entryName;
+}
+
 void ReadPasswordJobPrivate::scheduledStart() {
-    LPCWSTR name = (LPCWSTR)key.utf16();
+    const auto entryName = makeEntryName(service, key);
+    LPCWSTR name = (LPCWSTR)entryName.utf16();
     PCREDENTIALW cred;
 
     if (!CredReadW(name, CRED_TYPE_GENERIC, 0, &cred)) {
@@ -50,7 +59,8 @@ void ReadPasswordJobPrivate::scheduledStart() {
 void WritePasswordJobPrivate::scheduledStart() {
     CREDENTIALW cred;
     char *pwd = data.data();
-    LPWSTR name = (LPWSTR)key.utf16();
+    auto entryName = makeEntryName(service, key);
+    LPWSTR name = (LPWSTR)entryName.utf16();
 
     memset(&cred, 0, sizeof(cred));
     cred.Comment = const_cast<wchar_t*>(L"QtKeychain");
@@ -93,7 +103,8 @@ void WritePasswordJobPrivate::scheduledStart() {
 }
 
 void DeletePasswordJobPrivate::scheduledStart() {
-    LPCWSTR name = (LPCWSTR)key.utf16();
+    const auto entryName = makeEntryName(service, key);
+    LPCWSTR name = (LPCWSTR)entryName.utf16();
 
     if (!CredDeleteW(name, CRED_TYPE_GENERIC, 0)) {
         Error err;
