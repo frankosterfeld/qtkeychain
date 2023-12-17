@@ -1,6 +1,10 @@
 ChangeLog
 =========
 
+version 0.14.2 (release 2023-12-17)
+
+ - Add support for KWallet 6 (Volker Krause <vkrause@kde.org>)
+
 version 0.14.1 (release 2023-06-01)
 
  - Export QKeychain::isAvailable() to make it usable in a shared build (Volker Krause <vkrause@kde.org>)
