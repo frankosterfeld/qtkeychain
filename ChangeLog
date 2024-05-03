@@ -1,6 +1,10 @@
 ChangeLog
 =========
 
+version 0.14.3 (release 2024-05-03)
+
+ - Fix Android build for Qt 6.7 (Volker Krause <vkrause@kde.org>)
+
 version 0.14.2 (release 2023-12-17)
 
  - Add support for KWallet 6 (Volker Krause <vkrause@kde.org>)
