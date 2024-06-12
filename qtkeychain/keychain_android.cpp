@@ -108,7 +108,7 @@ void WritePasswordJobPrivate::scheduledStart()
             #elif QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
                 KeyPairGeneratorSpec::Builder(Context(QNativeInterface::QAndroidApplication::context())).
             #else
-                KeyPairGeneratorSpec::Builder(Context((jobject)QNativeInterface::QAndroidApplication::context())).
+                KeyPairGeneratorSpec::Builder(Context(QNativeInterface::QAndroidApplication::context().object())).
             #endif
                 setAlias(alias).
                 setSubject(X500Principal(QStringLiteral("CN=QtKeychain, O=Android Authority"))).
