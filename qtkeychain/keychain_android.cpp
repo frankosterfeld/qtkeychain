@@ -107,6 +107,8 @@ void WritePasswordJobPrivate::scheduledStart()
                 KeyPairGeneratorSpec::Builder(Context(QtAndroid::androidActivity())).
             #elif QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
                 KeyPairGeneratorSpec::Builder(Context(QNativeInterface::QAndroidApplication::context())).
+            #elif QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
+                KeyPairGeneratorSpec::Builder(Context((jobject)QNativeInterface::QAndroidApplication::context())).
             #else
                 KeyPairGeneratorSpec::Builder(Context(QNativeInterface::QAndroidApplication::context().object())).
             #endif
