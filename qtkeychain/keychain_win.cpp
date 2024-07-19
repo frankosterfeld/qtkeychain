@@ -9,12 +9,68 @@
 #include "keychain_p.h"
 #include "plaintextstore_p.h"
 
+#include <comdef.h>
 #include <windows.h>
 #include <wincrypt.h>
 
 #include <memory>
 
 using namespace QKeychain;
+
+namespace {
+    QString formatWinError(unsigned long errorCode)
+    {
+        return QStringLiteral("WindowsError: %1: %2").arg(QString::number(errorCode, 16), QString::fromWCharArray(_com_error(errorCode).ErrorMessage()));
+    }
+
+    // decrpyted data, error
+    std::pair<QByteArray, QString> unprotectData(const QByteArray &encrypted)
+    {
+        DATA_BLOB blob_in, blob_out;
+
+        blob_in.pbData = const_cast<unsigned char*>(reinterpret_cast<const unsigned char*>(encrypted.data()));
+        blob_in.cbData = encrypted.size();
+
+        if ( !CryptUnprotectData( &blob_in,
+                                             nullptr,
+                                             nullptr,
+                                             nullptr,
+                                             nullptr,
+                                             0,
+                                             &blob_out ) ) {
+            return {{}, formatWinError(GetLastError())};
+        }
+
+        QByteArray decrypted( reinterpret_cast<char*>( blob_out.pbData ), blob_out.cbData );
+        SecureZeroMemory( blob_out.pbData, blob_out.cbData );
+        LocalFree( blob_out.pbData );
+        return {decrypted, {}};
+    }
+
+    // encrypted data, error
+    std::pair<QByteArray, QString> protectData(const QByteArray &data)
+    {
+        DATA_BLOB blob_in, blob_out;
+        blob_in.pbData = const_cast<unsigned char*>(reinterpret_cast<const unsigned char*>(data.data()));
+        blob_in.cbData = data.size();
+        if(!CryptProtectData( &blob_in,
+                                           L"QKeychain-encrypted data",
+                                           nullptr,
+                                           nullptr,
+                                           nullptr,
+                                           0,
+                                           &blob_out )) {
+
+            return {{}, formatWinError(GetLastError())};
+        }
+
+        QByteArray encrypted( reinterpret_cast<char*>( blob_out.pbData ), blob_out.cbData );
+        LocalFree( blob_out.pbData );
+        return {encrypted, {}};
+    }
+
+
+}
 
 #if defined(USE_CREDENTIAL_STORE)
 #include <wincred.h>
@@ -116,51 +172,26 @@ void ReadPasswordJobPrivate::scheduledStart() {
         return;
     }
 
-    DATA_BLOB blob_in, blob_out;
-
-    blob_in.pbData = reinterpret_cast<BYTE*>( encrypted.data() );
-    blob_in.cbData = encrypted.size();
-
-    const BOOL ret = CryptUnprotectData( &blob_in,
-                                         nullptr,
-                                         nullptr,
-                                         nullptr,
-                                         nullptr,
-                                         0,
-                                         &blob_out );
-    if ( !ret ) {
-        q->emitFinishedWithError( OtherError, tr("Could not decrypt data") );
+    const auto result = unprotectData(encrypted);
+    if (!result.second.isEmpty())
+    {
+        q->emitFinishedWithError( OtherError, tr("Could not decrypt data: %1").arg(result.second) );
         return;
     }
-
-    data = QByteArray( reinterpret_cast<char*>( blob_out.pbData ), blob_out.cbData );
-    SecureZeroMemory( blob_out.pbData, blob_out.cbData );
-    LocalFree( blob_out.pbData );
-
+    data = result.first;
     q->emitFinished();
 }
 
 void WritePasswordJobPrivate::scheduledStart() {
-    DATA_BLOB blob_in, blob_out;
-    blob_in.pbData = reinterpret_cast<BYTE*>( data.data() );
-    blob_in.cbData = data.size();
-    const BOOL res = CryptProtectData( &blob_in,
-                                       L"QKeychain-encrypted data",
-                                       nullptr,
-                                       nullptr,
-                                       nullptr,
-                                       0,
-                                       &blob_out );
-    if ( !res ) {
-        q->emitFinishedWithError( OtherError, tr("Encryption failed") ); //TODO more details available?
+    const auto result = protectData(data);
+    if(!result.second.isEmpty())
+    {
+        q->emitFinishedWithError( OtherError,  tr("Encryption failed: %1").arg(result.second));
         return;
     }
 
-    const QByteArray encrypted( reinterpret_cast<char*>( blob_out.pbData ), blob_out.cbData );
-    LocalFree( blob_out.pbData );
-
     PlainTextStore plainTextStore( q->service(), q->settings() );
-    plainTextStore.write( key, encrypted, Binary );
+    plainTextStore.write( key, result.first, Binary );
     if ( plainTextStore.error() != NoError ) {
         q->emitFinishedWithError( plainTextStore.error(), plainTextStore.errorString() );
         return;
