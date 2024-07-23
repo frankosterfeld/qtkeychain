@@ -11,6 +11,11 @@ SET(CMAKE_CXX_STANDARD 11)
 include(FindPkgConfig)
 
 ###
+# write binaries and libraries into a shared folder, this simplifies the execution of tests on Windows
+# see https://github.com/KDE/extra-cmake-modules/blob/b3a13868f7f54ab0b7ac19fd26b6dfead8907d25/kde-modules/KDECMakeSettings.cmake#L256C1-L258C69
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/Modules")
 include(GNUInstallDirs)
