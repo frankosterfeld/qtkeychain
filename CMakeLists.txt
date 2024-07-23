@@ -191,6 +191,12 @@ if(BUILD_TEST_APPLICATION)
     target_link_libraries( testclient ${testclient_LIBRARIES})
 endif()
 
+include(CTest)
+if(BUILD_TESTING)
+    add_subdirectory(autotest)
+endif()
+
+
 
 ###
 ### CMake config file
