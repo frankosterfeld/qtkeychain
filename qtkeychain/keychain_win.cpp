@@ -20,10 +20,9 @@ using namespace QKeychain;
 #include <wincred.h>
 
 void ReadPasswordJobPrivate::scheduledStart() {
-    LPCWSTR name = (LPCWSTR)key.utf16();
     PCREDENTIALW cred;
 
-    if (!CredReadW(name, CRED_TYPE_GENERIC, 0, &cred)) {
+    if (!CredReadW(reinterpret_cast<const wchar_t*>(key.utf16()), CRED_TYPE_GENERIC, 0, &cred)) {
         Error err;
         QString msg;
         switch(GetLastError()) {
@@ -41,23 +40,19 @@ void ReadPasswordJobPrivate::scheduledStart() {
         return;
     }
 
-    data = QByteArray((char*)cred->CredentialBlob, cred->CredentialBlobSize);
+    data = QByteArray(reinterpret_cast<char*>(cred->CredentialBlob), cred->CredentialBlobSize);
     CredFree(cred);
 
     q->emitFinished();
 }
 
 void WritePasswordJobPrivate::scheduledStart() {
-    CREDENTIALW cred;
-    char *pwd = data.data();
-    LPWSTR name = (LPWSTR)key.utf16();
-
-    memset(&cred, 0, sizeof(cred));
+    CREDENTIALW cred = {};
     cred.Comment = const_cast<wchar_t*>(L"QtKeychain");
     cred.Type = CRED_TYPE_GENERIC;
-    cred.TargetName = name;
+    cred.TargetName = const_cast<wchar_t*>(reinterpret_cast<const wchar_t*>(key.utf16()));
     cred.CredentialBlobSize = data.size();
-    cred.CredentialBlob = (LPBYTE)pwd;
+    cred.CredentialBlob = reinterpret_cast<uchar*>(data.data());
     cred.Persist = CRED_PERSIST_ENTERPRISE;
 
     if (CredWriteW(&cred, 0)) {
@@ -65,7 +60,7 @@ void WritePasswordJobPrivate::scheduledStart() {
         return;
     }
 
-    DWORD err = GetLastError();
+    const DWORD err = GetLastError();
 
     // Detect size-exceeded errors and provide nicer messages.
     // Unfortunately these error codes aren't documented.
@@ -93,9 +88,7 @@ void WritePasswordJobPrivate::scheduledStart() {
 }
 
 void DeletePasswordJobPrivate::scheduledStart() {
-    LPCWSTR name = (LPCWSTR)key.utf16();
-
-    if (!CredDeleteW(name, CRED_TYPE_GENERIC, 0)) {
+    if (!CredDeleteW(reinterpret_cast<const wchar_t*>(key.utf16()), CRED_TYPE_GENERIC, 0)) {
         Error err;
         QString msg;
         switch(GetLastError()) {

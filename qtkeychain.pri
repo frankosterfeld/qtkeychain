@@ -6,7 +6,7 @@ lessThan(QT_MAJOR_VERSION, 5) {
     error("qtkeychain requires Qt 5 or later")
 }
 
-QTKEYCHAIN_PWD = $$PWD
+QTKEYCHAIN_PWD = $$PWD/qtkeychain
 
 CONFIG += depend_includepath
 DEFINES += QTKEYCHAIN_NO_EXPORT
@@ -43,7 +43,7 @@ unix:!android:!macx:!ios {
     # Generate D-Bus interface:
     DEFINES += KEYCHAIN_DBUS
     QT += dbus
-    kwallet_interface.files = $$PWD/org.kde.KWallet.xml
+    kwallet_interface.files = $$QTKEYCHAIN_PWD/org.kde.KWallet.xml
     DBUS_INTERFACES += kwallet_interface
 
     HEADERS += \
