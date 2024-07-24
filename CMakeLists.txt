@@ -7,7 +7,7 @@ project(qtkeychain VERSION ${QTKEYCHAIN_VERSION} LANGUAGES CXX)
 
 # Enable C++11
 SET(CMAKE_CXX_STANDARD 11)
-
+SET(CMAKE_AUTOMOC ON)
 include(FindPkgConfig)
 
 ###
@@ -21,6 +21,7 @@ include(ECMGeneratePriFile)
 include(CMakeDependentOption)
 
 option(BUILD_WITH_QT6 "Build qtkeychain with Qt 6" OFF)
+option(QTKEYCHAIN_BUILD_WITH_QML "Build qtkeychain with Qt 6 and QML module support" OFF)
 option(BUILD_TEST_APPLICATION "Build test application" OFF)
 option(BUILD_TRANSLATIONS "Build translations" ON)
 option(BUILD_SHARED_LIBS "Build dynamic library" ON)
@@ -92,6 +93,9 @@ if (Qt5Core_FOUND AND NOT BUILD_WITH_QT6)
   include_directories(${Qt5Core_INCLUDE_DIRS})
 else()
   find_package(Qt6 COMPONENTS Core REQUIRED)
+  if(QTKEYCHAIN_BUILD_WITH_QML)
+      find_package(Qt6 COMPONENTS QML REQUIRED)
+  endif()
   set(QTKEYCHAIN_VERSION_INFIX 6)
 
 
