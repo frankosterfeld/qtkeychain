@@ -7,7 +7,7 @@ project(qtkeychain VERSION ${QTKEYCHAIN_VERSION} LANGUAGES CXX)
 
 # Enable C++11
 SET(CMAKE_CXX_STANDARD 11)
-SET(CMAKE_AUTOMOC ON)
+
 include(FindPkgConfig)
 
 ###
@@ -21,7 +21,6 @@ include(ECMGeneratePriFile)
 include(CMakeDependentOption)
 
 option(BUILD_WITH_QT6 "Build qtkeychain with Qt 6" OFF)
-option(QTKEYCHAIN_BUILD_WITH_QML "Build qtkeychain with Qt 6 and QML module support" OFF)
 option(BUILD_TEST_APPLICATION "Build test application" OFF)
 option(BUILD_TRANSLATIONS "Build translations" ON)
 option(BUILD_SHARED_LIBS "Build dynamic library" ON)
@@ -93,9 +92,6 @@ if (Qt5Core_FOUND AND NOT BUILD_WITH_QT6)
   include_directories(${Qt5Core_INCLUDE_DIRS})
 else()
   find_package(Qt6 COMPONENTS Core REQUIRED)
-  if(QTKEYCHAIN_BUILD_WITH_QML)
-      find_package(Qt6 COMPONENTS QML REQUIRED)
-  endif()
   set(QTKEYCHAIN_VERSION_INFIX 6)
 
 
@@ -132,21 +128,6 @@ add_subdirectory(qtkeychain)
 ###
 ### Translations
 ###
-
-if (QTKEYCHAIN_BUILD_WITH_QML)
-    qt_policy(SET QTP0001 OLD)
-    qt_add_qml_module(${QTKEYCHAIN_TARGET_NAME}
-        URI "QtKeychain"
-        VERSION "${CMAKE_PROJECT_VERSION_MAJOR}.${CMAKE_PROJECT_VERSION_MINOR}"
-        OUTPUT_DIRECTORY QtKeychain
-    )
-    target_compile_definitions(${QTKEYCHAIN_TARGET_NAME} PRIVATE BUILD_WITH_QML=ON)
-    target_link_libraries(${QTKEYCHAIN_TARGET_NAME} PUBLIC
-        Qt6::Qml
-    )
-else()
-endif()
-target_sources(${QTKEYCHAIN_TARGET_NAME} PRIVATE ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
 
 file(GLOB qtkeychain_TR_SOURCES qtkeychain/*.cpp qtkeychain/*.h qtkeychain/*.ui)
 if ( BUILD_TRANSLATIONS )
@@ -229,13 +210,12 @@ ecm_generate_pri_file(BASE_NAME Qt${QTKEYCHAIN_VERSION_INFIX}Keychain
 
 install(FILES ${pri_filename} DESTINATION ${ECM_MKSPECS_INSTALL_DIR})
 
-#INFO Removed to build on mac....
-#install(EXPORT Qt${QTKEYCHAIN_VERSION_INFIX}KeychainLibraryDepends
-#    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Qt${QTKEYCHAIN_VERSION_INFIX}Keychain"
-#)
+
+install(EXPORT Qt${QTKEYCHAIN_VERSION_INFIX}KeychainLibraryDepends
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Qt${QTKEYCHAIN_VERSION_INFIX}Keychain"
+)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfig.cmake
               ${CMAKE_CURRENT_BINARY_DIR}/Qt${QTKEYCHAIN_VERSION_INFIX}KeychainConfigVersion.cmake
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Qt${QTKEYCHAIN_VERSION_INFIX}Keychain
 )
-
