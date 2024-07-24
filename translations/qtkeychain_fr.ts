@@ -30,12 +30,12 @@
         <translation>Mot de passe introuvable</translation>
     </message>
     <message>
-        <location filename="../keychain_android.cpp" line="173"/>
+        <location filename="../keychain_android.cpp" line="175"/>
         <source>Could not open keystore</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../keychain_android.cpp" line="179"/>
+        <location filename="../keychain_android.cpp" line="181"/>
         <source>Could not remove private key from keystore</source>
         <translation type="unfinished"></translation>
     </message>
@@ -235,27 +235,27 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../keychain_android.cpp" line="124"/>
+        <location filename="../keychain_android.cpp" line="126"/>
         <source>Could not create private key generator</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../keychain_android.cpp" line="131"/>
+        <location filename="../keychain_android.cpp" line="133"/>
         <source>Could not generate new private key</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../keychain_android.cpp" line="139"/>
+        <location filename="../keychain_android.cpp" line="141"/>
         <source>Could not retrieve private key from keystore</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../keychain_android.cpp" line="147"/>
+        <location filename="../keychain_android.cpp" line="149"/>
         <source>Could not create encryption cipher</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../keychain_android.cpp" line="155"/>
+        <location filename="../keychain_android.cpp" line="157"/>
         <source>Could not encrypt data</source>
         <translation type="unfinished"></translation>
     </message>

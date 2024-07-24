@@ -103,13 +103,15 @@ void WritePasswordJobPrivate::scheduledStart()
         end.add(Calendar::YEAR, 99);
 
         const KeyPairGeneratorSpec spec =
-            #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-                KeyPairGeneratorSpec::Builder(Context(QtAndroid::androidActivity())).
-            #elif QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
-                KeyPairGeneratorSpec::Builder(Context(QNativeInterface::QAndroidApplication::context())).
-            #else
-                KeyPairGeneratorSpec::Builder(Context((jobject)QNativeInterface::QAndroidApplication::context())).
-            #endif
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+            KeyPairGeneratorSpec::Builder(Context(QtAndroid::androidActivity())).
+#elif QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
+            KeyPairGeneratorSpec::Builder(Context(QNativeInterface::QAndroidApplication::context())).
+#elif QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
+            KeyPairGeneratorSpec::Builder(Context((jobject)QNativeInterface::QAndroidApplication::context())).
+#else
+            KeyPairGeneratorSpec::Builder(Context(QNativeInterface::QAndroidApplication::context().object<jobject>())).
+#endif
                 setAlias(alias).
                 setSubject(X500Principal(QStringLiteral("CN=QtKeychain, O=Android Authority"))).
                 setSerialNumber(java::math::BigInteger::ONE).
