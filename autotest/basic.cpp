@@ -24,6 +24,8 @@ private Q_SLOTS:
         QTest::newRow("1000") << generateRandomString(1000);
         QTest::newRow("2000") << generateRandomString(2000);
         QTest::newRow("3000") << generateRandomString(3000);
+        QTest::newRow("10000") << generateRandomString(10000);
+        QTest::newRow("18944") << generateRandomString(18944);
 
     }
 
@@ -42,8 +44,9 @@ private Q_SLOTS:
             writeJob.start();
             writeSpy.wait();
 #ifdef Q_OS_WIN
-            QEXPECT_FAIL("3000", "Maximum for Windows is 2560", Abort);
+            QEXPECT_FAIL("18944", "Maximum for Windows is exceeded", Abort);
 #endif
+            qDebug() << writeJob.errorString();
             QCOMPARE(writeJob.error(), QKeychain::NoError);
         }
         {
