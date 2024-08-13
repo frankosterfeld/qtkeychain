@@ -11,6 +11,7 @@
 
 #include <comdef.h>
 #include <windows.h>
+#include <wincred.h>
 #include <wincrypt.h>
 
 #include <memory>
@@ -18,7 +19,15 @@
 using namespace QKeychain;
 
 namespace {
-    QString formatWinError(unsigned long errorCode)
+    const std::wstring PRODUCT_NAME = L"QtKeychain";
+    const std::wstring ENCRYPTED_DATA_KEY = L"QtKeychain-encrypted data";
+    const std::wstring ATTRIBUTE_KEY = L"QtKeychain Attrib";
+
+    constexpr quint64 MAX_ATTRIBUTE_SIZE = 256;
+    constexpr quint64 MAX_ATTRIBUTE_COUNT =  64;
+    constexpr quint64 MAX_BLOB_SIZE = CRED_MAX_CREDENTIAL_BLOB_SIZE + MAX_ATTRIBUTE_SIZE * MAX_ATTRIBUTE_COUNT;
+
+    QString formatWinError(ulong errorCode)
     {
         return QStringLiteral("WindowsError: %1: %2").arg(QString::number(errorCode, 16), QString::fromWCharArray(_com_error(errorCode).ErrorMessage()));
     }
@@ -54,7 +63,7 @@ namespace {
         blob_in.pbData = const_cast<unsigned char*>(reinterpret_cast<const unsigned char*>(data.data()));
         blob_in.cbData = data.size();
         if(!CryptProtectData( &blob_in,
-                                           L"QKeychain-encrypted data",
+                                           ENCRYPTED_DATA_KEY.data(),
                                            nullptr,
                                            nullptr,
                                            nullptr,
@@ -73,10 +82,18 @@ namespace {
 }
 
 #if defined(USE_CREDENTIAL_STORE)
-#include <wincred.h>
 
+/***
+ * The credentials store has a limit of CRED_MAX_CREDENTIAL_BLOB_SIZE (5* 512)
+ * As this might not be enough in some scenarios, for bigger payloads we use CryptProtectData which offers similar protection as CredWrite
+ * in combination with CredWrite.
+ * We distribute the protected payload to the PCREDENTIALW->CredentialBlob as well as PCREDENTIALW->AttributeCount.
+ * This increases the max payload size to CRED_MAX_CREDENTIAL_BLOB_SIZE + 64 * 256 = 18944.
+ * As the protected data requires more space than the original payload, the effective max payload is smaller than that.
+ * As we continue to use PCREDENTIALW as storage medium, the credentials are still roaming.
+*/
 void ReadPasswordJobPrivate::scheduledStart() {
-    PCREDENTIALW cred;
+    PCREDENTIALW cred = {};
 
     if (!CredReadW(reinterpret_cast<const wchar_t*>(key.utf16()), CRED_TYPE_GENERIC, 0, &cred)) {
         Error err;
@@ -96,7 +113,28 @@ void ReadPasswordJobPrivate::scheduledStart() {
         return;
     }
 
-    data = QByteArray(reinterpret_cast<char*>(cred->CredentialBlob), cred->CredentialBlobSize);
+    if(cred->AttributeCount == 0)
+    {
+        data = QByteArray(reinterpret_cast<char*>(cred->CredentialBlob), cred->CredentialBlobSize);
+    }
+    else
+    {
+        QByteArray encrypted;
+        encrypted.reserve(CRED_MAX_CREDENTIAL_BLOB_SIZE + cred->AttributeCount * MAX_ATTRIBUTE_SIZE);
+        encrypted.append(reinterpret_cast<char*>(cred->CredentialBlob), cred->CredentialBlobSize);
+        for (ulong i = 0; i < cred->AttributeCount; ++i)
+        {
+            encrypted.append(reinterpret_cast<char*>(cred->Attributes[i].Value), cred->Attributes[i].ValueSize);
+        }
+        const auto result = unprotectData(encrypted);
+        if (!result.second.isEmpty())
+        {
+            q->emitFinishedWithError( OtherError, tr("Could not decrypt data: %1").arg(result.second) );
+            return;
+        }
+        data = result.first;
+    }
+
     CredFree(cred);
 
     q->emitFinished();
@@ -104,13 +142,59 @@ void ReadPasswordJobPrivate::scheduledStart() {
 
 void WritePasswordJobPrivate::scheduledStart() {
     CREDENTIALW cred = {};
-    cred.Comment = const_cast<wchar_t*>(L"QtKeychain");
+    cred.Comment = const_cast<wchar_t*>(PRODUCT_NAME.data());
     cred.Type = CRED_TYPE_GENERIC;
     cred.TargetName = const_cast<wchar_t*>(reinterpret_cast<const wchar_t*>(key.utf16()));
-    cred.CredentialBlobSize = data.size();
-    cred.CredentialBlob = reinterpret_cast<uchar*>(data.data());
     cred.Persist = CRED_PERSIST_ENTERPRISE;
 
+    QByteArray buffer;
+    std::vector<CREDENTIAL_ATTRIBUTEW> attributes;
+
+    if (data.size() < CRED_MAX_CREDENTIAL_BLOB_SIZE)
+    {
+        cred.CredentialBlob = reinterpret_cast<uchar*>(data.data());
+        cred.CredentialBlobSize = data.size();
+    }
+    else
+    {
+        // data is too big for CredentialBlob
+        // we encrpyt it instead with CryptProtectData which also encrpyt the data with the users credentials
+        // The data is also protected with the roaming profile
+        {
+            auto result = protectData(data);
+            if(!result.second.isEmpty())
+            {
+                q->emitFinishedWithError( OtherError,  tr("Encryption failed: %1").arg(result.second));
+                return;
+            }
+            if (result.first.size() > MAX_BLOB_SIZE)
+            {
+                q->emitFinishedWithError(
+                    OtherError,
+                    tr("Credential size exceeds maximum size of %1: %2").arg(QString::number(MAX_BLOB_SIZE), QString::number(result.first.size())));
+                return;
+            }
+            // the data must be valid outside of the scope of result
+            buffer = std::move(result.first);
+        }
+
+        quint64 pos = 0;
+        auto read = [&buffer, &pos](const quint64 size, auto &dest, auto &sizeOut)
+        {
+            dest = reinterpret_cast<std::remove_reference<decltype(dest)>::type>(buffer.data()) + pos;
+            sizeOut = std::min<ulong>(size, buffer.size() - pos);
+            pos += sizeOut;
+        };
+        read(CRED_MAX_CREDENTIAL_BLOB_SIZE, cred.CredentialBlob, cred.CredentialBlobSize);
+
+        cred.AttributeCount = std::ceil((buffer.size() - pos) / static_cast<double>(MAX_ATTRIBUTE_SIZE));
+        attributes.resize(cred.AttributeCount, {});
+        cred.Attributes = attributes.data();
+        for(ulong i = 0; i < cred.AttributeCount; ++i)        {
+            attributes[i].Keyword = const_cast<wchar_t*>(ATTRIBUTE_KEY.data());
+            read(MAX_ATTRIBUTE_SIZE, attributes[i].Value, attributes[i].ValueSize);
+        }
+    }
     if (CredWriteW(&cred, 0)) {
         q->emitFinished();
         return;
@@ -121,15 +205,6 @@ void WritePasswordJobPrivate::scheduledStart() {
     // Detect size-exceeded errors and provide nicer messages.
     // Unfortunately these error codes aren't documented.
     // Found empirically on Win10 1803 build 17134.523.
-    if (err == RPC_X_BAD_STUB_DATA) {
-        const size_t maxBlob = CRED_MAX_CREDENTIAL_BLOB_SIZE;
-        if (cred.CredentialBlobSize > maxBlob) {
-            q->emitFinishedWithError(
-                OtherError,
-                tr("Credential size exceeds maximum size of %1").arg(maxBlob));
-            return;
-        }
-    }
     if (err == RPC_S_INVALID_BOUND) {
         const size_t maxTargetName = CRED_MAX_GENERIC_TARGET_NAME_LENGTH;
         if (key.size() > maxTargetName) {
@@ -140,7 +215,7 @@ void WritePasswordJobPrivate::scheduledStart() {
         }
     }
 
-    q->emitFinishedWithError( OtherError, tr("Writing credentials failed: Win32 error code %1").arg(err) );
+    q->emitFinishedWithError( OtherError, tr("Writing credentials failed: %1").arg(formatWinError(err)));
 }
 
 void DeletePasswordJobPrivate::scheduledStart() {

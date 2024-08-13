@@ -21,8 +21,8 @@ endif()
 
 if(WIN32)
     list(APPEND qtkeychain_SOURCES keychain_win.cpp)
+    list(APPEND qtkeychain_LIBRARIES crypt32)
     if (NOT USE_CREDENTIAL_STORE)
-        list(APPEND qtkeychain_LIBRARIES crypt32)
         list(APPEND qtkeychain_SOURCES plaintextstore.cpp)
     endif()
     #FIXME: mingw bug; otherwise getting undefined refs to RtlSecureZeroMemory there
