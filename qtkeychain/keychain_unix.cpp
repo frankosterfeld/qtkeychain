@@ -240,6 +240,10 @@ void JobPrivate::kwalletWalletFound(QDBusPendingCallWatcher *watcher)
 {
     watcher->deleteLater();
     const QDBusPendingReply<QString> reply = *watcher;
+    // Don't timeout after 25s, but 24 days
+    // This allows to wait for user to unlock wallet, e.g. at Plasma startup
+    iface->setTimeout(0x7FFFFFFF);
+
     const QDBusPendingReply<int> pendingReply = iface->open( reply.value(), 0, q->service() );
     QDBusPendingCallWatcher* pendingWatcher = new QDBusPendingCallWatcher( pendingReply, this );
     connect( pendingWatcher, SIGNAL(finished(QDBusPendingCallWatcher*)),
