@@ -220,7 +220,7 @@ void ReadPasswordJobPrivate::scheduledStart() {
                                                    q->service().toUtf8().constData(),
                                                    "plaintext",
                                                    reinterpret_cast<GnomeKeyring::OperationGetStringCallback>( &JobPrivate::gnomeKeyring_readCb ),
-                                                   this, 0 ) )
+                                                   this, nullptr ) )
             q->emitFinishedWithError( OtherError, tr("Unknown error") );
         break;
 
@@ -295,7 +295,7 @@ void JobPrivate::gnomeKeyring_readCb( int result, const char* string, JobPrivate
                                                    self->q->service().toUtf8().constData(),
                                                    "base64",
                                                    reinterpret_cast<GnomeKeyring::OperationGetStringCallback>( &JobPrivate::gnomeKeyring_readCb ),
-                                                   self, 0 ) )
+                                                   self, nullptr ) )
             self->q->emitFinishedWithError( OtherError, tr("Unknown error") );
     } else {
         const QPair<Error, QString> errorResult = mapGnomeKeyringError( result );
@@ -345,7 +345,7 @@ void ReadPasswordJobPrivate::kwalletOpenFinished( QDBusPendingCallWatcher* watch
         q->emitFinished();
 
 
-        WritePasswordJob* j = new WritePasswordJob( q->service(), 0 );
+        WritePasswordJob* j = new WritePasswordJob( q->service(), nullptr );
         j->setSettings( q->settings() );
         j->setKey( key );
         j->setAutoDelete( true );
@@ -482,7 +482,7 @@ void WritePasswordJobPrivate::scheduledStart() {
                                                     type.toUtf8().constData(),
                                                     password.constData(),
                                                     reinterpret_cast<GnomeKeyring::OperationDoneCallback>( &JobPrivate::gnomeKeyring_writeCb ),
-                                                    this, 0 ) )
+                                                    this, nullptr ) )
             q->emitFinishedWithError( OtherError, tr("Unknown error") );
     }
         break;
@@ -593,7 +593,7 @@ void DeletePasswordJobPrivate::scheduledStart() {
         if ( !GnomeKeyring::delete_network_password(
                  key.toUtf8().constData(), q->service().toUtf8().constData(),
                  reinterpret_cast<GnomeKeyring::OperationDoneCallback>( &JobPrivate::gnomeKeyring_writeCb ),
-                 this, 0 ) )
+                 this, nullptr ) )
             q->emitFinishedWithError( OtherError, tr("Unknown error") );
     }
         break;
@@ -611,7 +611,7 @@ void DeletePasswordJobPrivate::scheduledStart() {
 }
 
 void DeletePasswordJobPrivate::fallbackOnError(const QDBusError &err) {
-    QScopedPointer<QSettings> local( !q->settings() ? new QSettings( q->service() ) : 0 );
+    QScopedPointer<QSettings> local( !q->settings() ? new QSettings( q->service() ) : nullptr );
     QSettings* actual = q->settings() ? q->settings() : local.data();
 
     if ( !q->insecureFallback() ) {
