@@ -134,6 +134,14 @@ add_subdirectory(qtkeychain)
 ### Translations
 ###
 
+set(qtkeychain_TR_FILES
+      translations/qtkeychain_de.ts
+      translations/qtkeychain_fr.ts
+      translations/qtkeychain_ro.ts
+      translations/qtkeychain_ru.ts
+      translations/qtkeychain_zh.ts
+)
+
 file(GLOB qtkeychain_TR_SOURCES qtkeychain/*.cpp qtkeychain/*.h qtkeychain/*.ui)
 if ( BUILD_TRANSLATIONS )
     qt_create_translation(qtkeychain_MESSAGES ${qtkeychain_TR_SOURCES} ${qtkeychain_TR_FILES})

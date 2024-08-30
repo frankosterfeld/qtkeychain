@@ -67,14 +67,6 @@ endif()
 
 QT_WRAP_CPP(qtkeychain_MOC_OUTFILES keychain.h keychain_p.h gnomekeyring_p.h)
 
-set(qtkeychain_TR_FILES
-      translations/qtkeychain_de.ts
-      translations/qtkeychain_fr.ts
-      translations/qtkeychain_ro.ts
-      translations/qtkeychain_ru.ts
-      translations/qtkeychain_zh.ts
-)
-
 add_library(${QTKEYCHAIN_TARGET_NAME} ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
 if(WIN32)
     set_target_properties( ${QTKEYCHAIN_TARGET_NAME} PROPERTIES DEBUG_POSTFIX "d" )
