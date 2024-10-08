@@ -32,7 +32,7 @@ private Q_SLOTS:
     void test()
     {
 #ifdef Q_OS_MACOS
-        QSKIP("This test case has no access to the keychain")
+        QSKIP("This test case has no access to the keychain");
 #endif
         const QString serviceKey = QStringLiteral("QtKeychainTest-%1").arg(QTest::currentDataTag());
         QFETCH(QByteArray, password);
