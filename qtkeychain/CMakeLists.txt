@@ -6,7 +6,7 @@ set(qtkeychain_SOURCES
     keychain.h
 )
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+if(MSVC)
     # CMake < 3.15 sneaks in /W# flags for us, so we need a replacement,
     # or we'll get a warning (cf. CMP0092)
     if (CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
