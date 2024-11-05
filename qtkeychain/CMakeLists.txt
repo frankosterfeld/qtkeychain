@@ -29,6 +29,9 @@ if(WIN32)
     if(MINGW)
         add_definitions( -O2 )
     endif()
+
+    set(CMAKE_CXX_STANDARD 17)
+    add_definitions( /utf-8 -DUNICODE )
 endif()
 
 if(APPLE)
