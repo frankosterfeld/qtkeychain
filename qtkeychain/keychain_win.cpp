@@ -25,7 +25,7 @@ namespace {
 
     constexpr quint64 MAX_ATTRIBUTE_SIZE = 256;
     constexpr quint64 MAX_ATTRIBUTE_COUNT =  64;
-    constexpr quint64 MAX_BLOB_SIZE = CRED_MAX_CREDENTIAL_BLOB_SIZE + MAX_ATTRIBUTE_SIZE * MAX_ATTRIBUTE_COUNT;
+    constexpr qsizetype MAX_BLOB_SIZE = CRED_MAX_CREDENTIAL_BLOB_SIZE + MAX_ATTRIBUTE_SIZE * MAX_ATTRIBUTE_COUNT;
 
     QString formatWinError(ulong errorCode)
     {
@@ -181,7 +181,7 @@ void WritePasswordJobPrivate::scheduledStart() {
         quint64 pos = 0;
         auto read = [&buffer, &pos](const quint64 size, auto &dest, auto &sizeOut)
         {
-            dest = reinterpret_cast<std::remove_reference<decltype(dest)>::type>(buffer.data()) + pos;
+            dest = reinterpret_cast<typename std::remove_reference<decltype(dest)>::type>(buffer.data()) + pos;
             sizeOut = std::min<ulong>(size, buffer.size() - pos);
             pos += sizeOut;
         };
@@ -206,7 +206,7 @@ void WritePasswordJobPrivate::scheduledStart() {
     // Unfortunately these error codes aren't documented.
     // Found empirically on Win10 1803 build 17134.523.
     if (err == RPC_S_INVALID_BOUND) {
-        const size_t maxTargetName = CRED_MAX_GENERIC_TARGET_NAME_LENGTH;
+        const QString::size_type maxTargetName = CRED_MAX_GENERIC_TARGET_NAME_LENGTH;
         if (key.size() > maxTargetName) {
             q->emitFinishedWithError(
                 OtherError,
