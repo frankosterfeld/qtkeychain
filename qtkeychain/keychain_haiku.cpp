@@ -86,7 +86,7 @@ void ReadPasswordJobPrivate::scheduledStart()
                                       q->key().toUtf8().constData(),
                                       false, password);
 
-    data = QByteArray(reinterpret_cast<const char*>(password.Data()), password.DataLength());
+    data = QByteArray(reinterpret_cast<const char*>(password.Data()));
 
     switch ( result ) {
     case B_OK:
