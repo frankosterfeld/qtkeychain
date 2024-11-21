@@ -142,7 +142,7 @@ DeletePasswordJobPrivate::DeletePasswordJobPrivate(const QString &service_, Dele
 }
 
 JobExecutor::JobExecutor()
-    : QObject( 0 )
+    : QObject( nullptr )
     , m_jobRunning( false ) {
 }
 
@@ -181,7 +181,7 @@ void JobExecutor::jobFinished( Job* job ) {
     startNextIfNoneRunning();
 }
 
-JobExecutor* JobExecutor::s_instance = 0;
+JobExecutor* JobExecutor::s_instance = nullptr;
 
 JobExecutor* JobExecutor::instance() {
     if ( !s_instance )
