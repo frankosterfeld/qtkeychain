@@ -23,7 +23,7 @@ inline QString typeKey(const QString &key) { return key + QLatin1String("/type")
 
 
 PlainTextStore::PlainTextStore(const QString &service, QSettings *settings)
-    : m_localSettings(settings ? 0 : new QSettings(service))
+    : m_localSettings(settings ? nullptr : new QSettings(service))
     , m_actualSettings(settings ? settings : m_localSettings.data())
     , m_error(NoError)
 {
