@@ -26,14 +26,14 @@ GnomeKeyring::gpointer GnomeKeyring::store_network_password(
         GDestroyNotify destroy_data )
 {
     if ( !isAvailable() )
-        return 0;
+        return nullptr;
     return instance().store_password( instance().NETWORK_PASSWORD,
                                       keyring, display_name, password, callback,
                                       data, destroy_data,
                                       "user", user,
                                       "server", server,
                                       "type", type,
-                                      static_cast<char*>(0) );
+                                      static_cast<char*>(nullptr) );
 }
 
 GnomeKeyring::gpointer GnomeKeyring::find_network_password(
@@ -41,7 +41,7 @@ GnomeKeyring::gpointer GnomeKeyring::find_network_password(
         OperationGetStringCallback callback, gpointer data, GDestroyNotify destroy_data )
 {
     if ( !isAvailable() )
-        return 0;
+        return nullptr;
 
     return instance().find_password( instance().NETWORK_PASSWORD,
                                      callback, data, destroy_data,
@@ -56,7 +56,7 @@ GnomeKeyring::gpointer GnomeKeyring::delete_network_password( const gchar* user,
                                                        GDestroyNotify destroy_data )
 {
     if ( !isAvailable() )
-        return 0;
+        return nullptr;
     return instance().delete_password( instance().NETWORK_PASSWORD,
                                        callback, data, destroy_data,
                                        "user", user, "server", server, static_cast<char*>(0) );
@@ -70,7 +70,7 @@ GnomeKeyring::GnomeKeyring()
         {{ "user",   ATTRIBUTE_TYPE_STRING },
          { "server", ATTRIBUTE_TYPE_STRING },
          { "type", ATTRIBUTE_TYPE_STRING },
-         { 0,     static_cast<AttributeType>( 0 ) }}
+         { nullptr,     static_cast<AttributeType>( 0 ) }}
     };
 
     NETWORK_PASSWORD = &schema;
