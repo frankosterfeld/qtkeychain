@@ -1,6 +1,15 @@
 ChangeLog
 =========
 
+version 0.15.0 (release 2025-01-16)
+
+ - Windows: Increase size of possible payloads (Hannah von Reth <vonreth@kde.org>)
+ - KWallet: Increase timeout when opening wallet (David Faure <david.faure@kdab.com>)
+ - Haiku: Fix reading passwords (Joshua Goins <josh@redstrate.com>)
+ - Add unit tests (Hannah von Reth <vonreth@kde.org>)
+ - Windows build fixes (Nerixyz <nerixdev@outlook.de>)
+ - Fix translation creation (Christophe Marin <christophe@krop.fr>)
+
 version 0.14.3 (release 2024-05-03)
 
  - Fix Android build for Qt 6.7 (Volker Krause <vkrause@kde.org>)
