@@ -14,6 +14,7 @@
 #include <wincred.h>
 #include <wincrypt.h>
 
+#include <cmath>
 #include <memory>
 
 using namespace QKeychain;
