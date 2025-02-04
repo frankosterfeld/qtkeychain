@@ -54,7 +54,7 @@ void ReadPasswordJobPrivate::scheduledStart()
     }
 
     const QByteArray &encryptedData = plainTextStore.readData(q->key());
-    const KeyStore keyStore = KeyStore::getInstance(QStringLiteral("AndroidKeyStore"));
+    const auto keyStore = KeyStore::getInstance(QStringLiteral("AndroidKeyStore"));
 
     if (!keyStore || !keyStore.load()) {
         q->emitFinishedWithError(Error::AccessDenied, tr("Could not open keystore"));
@@ -70,7 +70,7 @@ void ReadPasswordJobPrivate::scheduledStart()
         return;
     }
 
-    const Cipher cipher = Cipher::getInstance(QStringLiteral("RSA/ECB/PKCS1Padding"));
+    const auto cipher = Cipher::getInstance(QStringLiteral("RSA/ECB/PKCS1Padding"));
 
     if (!cipher || !cipher.init(Cipher::DECRYPT_MODE, entry.getPrivateKey())) {
         q->emitFinishedWithError(Error::OtherError, tr("Could not create decryption cipher"));
@@ -99,8 +99,8 @@ void WritePasswordJobPrivate::scheduledStart()
 
     const auto &alias = makeAlias(q->service(), q->key());
     if (!keyStore.containsAlias(alias)) {
-        const Calendar start = Calendar::getInstance();
-        const Calendar end = Calendar::getInstance();
+        const auto start = Calendar::getInstance();
+        const auto end = Calendar::getInstance();
         end.add(Calendar::YEAR, 99);
 
         const KeyPairGeneratorSpec spec =
@@ -128,8 +128,8 @@ void WritePasswordJobPrivate::scheduledStart()
                         .setEndDate(end.getTime())
                         .build();
 
-        const KeyPairGenerator generator = KeyPairGenerator::getInstance(
-                QStringLiteral("RSA"), QStringLiteral("AndroidKeyStore"));
+        const auto generator = KeyPairGenerator::getInstance(QStringLiteral("RSA"),
+                                                             QStringLiteral("AndroidKeyStore"));
 
         if (!generator) {
             q->emitFinishedWithError(Error::OtherError,
@@ -154,7 +154,7 @@ void WritePasswordJobPrivate::scheduledStart()
     }
 
     const RSAPublicKey publicKey = entry.getCertificate().getPublicKey();
-    const Cipher cipher = Cipher::getInstance(QStringLiteral("RSA/ECB/PKCS1Padding"));
+    const auto cipher = Cipher::getInstance(QStringLiteral("RSA/ECB/PKCS1Padding"));
 
     if (!cipher || !cipher.init(Cipher::ENCRYPT_MODE, publicKey)) {
         q->emitFinishedWithError(Error::OtherError, tr("Could not create encryption cipher"));
@@ -180,7 +180,7 @@ void WritePasswordJobPrivate::scheduledStart()
 
 void DeletePasswordJobPrivate::scheduledStart()
 {
-    const KeyStore keyStore = KeyStore::getInstance(QStringLiteral("AndroidKeyStore"));
+    const auto keyStore = KeyStore::getInstance(QStringLiteral("AndroidKeyStore"));
 
     if (!keyStore || !keyStore.load()) {
         q->emitFinishedWithError(Error::AccessDenied, tr("Could not open keystore"));

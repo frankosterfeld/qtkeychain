@@ -197,7 +197,7 @@ static void kwalletReadPasswordScheduledStartImpl(const char *service, const cha
         priv->iface = new org::kde::KWallet(QLatin1String(service), QLatin1String(path),
                                             QDBusConnection::sessionBus(), priv);
         const QDBusPendingReply<QString> reply = priv->iface->networkWallet();
-        QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(reply, priv);
+        auto watcher = new QDBusPendingCallWatcher(reply, priv);
         priv->connect(watcher, &QDBusPendingCallWatcher::finished, priv,
                       &ReadPasswordJobPrivate::kwalletWalletFound);
     } else {
@@ -246,7 +246,7 @@ void JobPrivate::kwalletWalletFound(QDBusPendingCallWatcher *watcher)
     iface->setTimeout(0x7FFFFFFF);
 
     const QDBusPendingReply<int> pendingReply = iface->open(reply.value(), 0, q->service());
-    QDBusPendingCallWatcher *pendingWatcher = new QDBusPendingCallWatcher(pendingReply, this);
+    auto pendingWatcher = new QDBusPendingCallWatcher(pendingReply, this);
     connect(pendingWatcher, &QDBusPendingCallWatcher::finished, this,
             &JobPrivate::kwalletOpenFinished);
 }
@@ -350,7 +350,7 @@ void ReadPasswordJobPrivate::kwalletOpenFinished(QDBusPendingCallWatcher *watche
 
         q->emitFinished();
 
-        WritePasswordJob *j = new WritePasswordJob(q->service(), nullptr);
+        auto j = new WritePasswordJob(q->service(), nullptr);
         j->setSettings(q->settings());
         j->setKey(key);
         j->setAutoDelete(true);
@@ -375,7 +375,7 @@ void ReadPasswordJobPrivate::kwalletOpenFinished(QDBusPendingCallWatcher *watche
 
     const QDBusPendingReply<int> nextReply =
             iface->entryType(walletHandle, q->service(), key, q->service());
-    QDBusPendingCallWatcher *nextWatcher = new QDBusPendingCallWatcher(nextReply, this);
+    auto nextWatcher = new QDBusPendingCallWatcher(nextReply, this);
     connect(nextWatcher, &QDBusPendingCallWatcher::finished, this,
             &ReadPasswordJobPrivate::kwalletEntryTypeFinished);
 }
@@ -387,7 +387,7 @@ void ReadPasswordJobPrivate::kwalletEntryTypeFinished(QDBusPendingCallWatcher *w
 {
     watcher->deleteLater();
     if (watcher->isError()) {
-        const QDBusError err = watcher->error();
+        const auto err = watcher->error();
         q->emitFinishedWithError(OtherError,
                                  tr("Could not determine data type: %1; %2")
                                          .arg(QDBusError::errorString(err.type()), err.message()));
@@ -415,10 +415,10 @@ void ReadPasswordJobPrivate::kwalletEntryTypeFinished(QDBusPendingCallWatcher *w
         return;
     }
 
-    const QDBusPendingCall nextReply = (mode == Text)
+    const auto nextReply = (mode == Text)
             ? QDBusPendingCall(iface->readPassword(walletHandle, q->service(), key, q->service()))
             : QDBusPendingCall(iface->readEntry(walletHandle, q->service(), key, q->service()));
-    QDBusPendingCallWatcher *nextWatcher = new QDBusPendingCallWatcher(nextReply, this);
+    auto nextWatcher = new QDBusPendingCallWatcher(nextReply, this);
     connect(nextWatcher, &QDBusPendingCallWatcher::finished, this,
             &ReadPasswordJobPrivate::kwalletFinished);
 }
@@ -449,7 +449,7 @@ static void kwalletWritePasswordScheduledStart(const char *service, const char *
         priv->iface = new org::kde::KWallet(QLatin1String(service), QLatin1String(path),
                                             QDBusConnection::sessionBus(), priv);
         const QDBusPendingReply<QString> reply = priv->iface->networkWallet();
-        QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(reply, priv);
+        auto watcher = new QDBusPendingCallWatcher(reply, priv);
         priv->connect(watcher, &QDBusPendingCallWatcher::finished, priv,
                       &JobPrivate::kwalletWalletFound);
     } else {
@@ -571,7 +571,7 @@ void JobPrivate::kwalletOpenFinished(QDBusPendingCallWatcher *watcher)
         nextReply = iface->removeEntry(handle, q->service(), key, q->service());
     }
 
-    QDBusPendingCallWatcher *nextWatcher = new QDBusPendingCallWatcher(nextReply, this);
+    auto nextWatcher = new QDBusPendingCallWatcher(nextReply, this);
     connect(nextWatcher, &QDBusPendingCallWatcher::finished, this, &JobPrivate::kwalletFinished);
 }
 
