@@ -10,9 +10,9 @@
 #define KEYCHAIN_H
 
 #if !defined(QTKEYCHAIN_NO_EXPORT)
-#include "qkeychain_export.h"
+#  include "qkeychain_export.h"
 #else
-#define QKEYCHAIN_EXPORT
+#  define QKEYCHAIN_EXPORT
 #endif
 
 #include <QtCore/QObject>
@@ -28,7 +28,7 @@ namespace QKeychain {
  * Error codes
  */
 enum Error {
-    NoError=0, /**< No error occurred, operation was successful */
+    NoError = 0, /**< No error occurred, operation was successful */
     EntryNotFound, /**< For the given key no data was found */
     CouldNotDeleteEntry, /**< Could not delete existing secret data */
     AccessDeniedByUser, /**< User denied access to keychain */
@@ -44,7 +44,8 @@ class JobPrivate;
 /**
  * @brief Abstract base class for all QKeychain jobs.
  */
-class QKEYCHAIN_EXPORT Job : public QObject {
+class QKEYCHAIN_EXPORT Job : public QObject
+{
     Q_OBJECT
 public:
     ~Job() override;
@@ -54,14 +55,15 @@ public:
      * @see setSettings()
      * @see insecureFallback()
      */
-    QSettings* settings() const;
+    QSettings *settings() const;
 
     /**
-     * @return Set the QSettings instance that will be used as plaintext storage if insecureFallback() is true.
+     * @return Set the QSettings instance that will be used as plaintext storage if
+     * insecureFallback() is true.
      * @see settings()
      * @see insecureFallback()
      */
-    void setSettings( QSettings* settings );
+    void setSettings(QSettings *settings);
 
     /**
      * Call this method to start the job.
@@ -102,7 +104,8 @@ public:
     QString errorString() const;
 
     /**
-     * @return Whether this job autodeletes itself once finished() has been emitted. Default is true.
+     * @return Whether this job autodeletes itself once finished() has been emitted. Default is
+     * true.
      * @see setAutoDelete()
      */
     bool autoDelete() const;
@@ -111,10 +114,11 @@ public:
      * Set whether this job should autodelete itself once finished() has been emitted.
      * @see autoDelete()
      */
-    void setAutoDelete( bool autoDelete );
+    void setAutoDelete(bool autoDelete);
 
     /**
-     * @return Whether this job will use plaintext storage on unsupported platforms. Default is false.
+     * @return Whether this job will use plaintext storage on unsupported platforms. Default is
+     * false.
      * @see setInsecureFallback()
      */
     bool insecureFallback() const;
@@ -123,7 +127,7 @@ public:
      * Set whether this job should use plaintext storage on unsupported platforms.
      * @see insecureFallback()
      */
-    void setInsecureFallback( bool insecureFallback );
+    void setInsecureFallback(bool insecureFallback);
 
     /**
      * @return The string used as key by this job.
@@ -136,10 +140,10 @@ public:
      * The key can be an empty string.
      * @see key()
      */
-    void setKey( const QString& key );
+    void setKey(const QString &key);
 
     void emitFinished();
-    void emitFinishedWithError(Error, const QString& errorString);
+    void emitFinishedWithError(Error, const QString &errorString);
 
 Q_SIGNALS:
     /**
@@ -147,26 +151,26 @@ Q_SIGNALS:
      * You can connect to this signal to be notified about the job's completion.
      * @see start()
      */
-    void finished( QKeychain::Job* );
+    void finished(QKeychain::Job *);
 
 protected:
-    explicit Job( JobPrivate *q, QObject* parent=nullptr );
+    explicit Job(JobPrivate *q, QObject *parent = nullptr);
     Q_INVOKABLE void doStart();
 
 private:
-    void setError( Error error );
-    void setErrorString( const QString& errorString );
+    void setError(Error error);
+    void setErrorString(const QString &errorString);
 
     void scheduledStart();
 
 protected:
-    JobPrivate* const d;
+    JobPrivate *const d;
 
-friend class JobExecutor;
-friend class JobPrivate;
-friend class ReadPasswordJobPrivate;
-friend class WritePasswordJobPrivate;
-friend class DeletePasswordJobPrivate;
+    friend class JobExecutor;
+    friend class JobPrivate;
+    friend class ReadPasswordJobPrivate;
+    friend class WritePasswordJobPrivate;
+    friend class DeletePasswordJobPrivate;
 };
 
 class ReadPasswordJobPrivate;
@@ -177,7 +181,8 @@ class ReadPasswordJobPrivate;
  * This job requires a "service" string, which is basically a namespace of keys within the keychain.
  * This means that you can read all the pairs <key, secret> stored in the same service string.
  */
-class QKEYCHAIN_EXPORT ReadPasswordJob : public Job {
+class QKEYCHAIN_EXPORT ReadPasswordJob : public Job
+{
     Q_OBJECT
 public:
     /**
@@ -185,7 +190,7 @@ public:
      * @param service The service string used by this job (can be empty).
      * @param parent The parent of this job.
      */
-    explicit ReadPasswordJob( const QString& service, QObject* parent=nullptr );
+    explicit ReadPasswordJob(const QString &service, QObject *parent = nullptr);
     ~ReadPasswordJob() override;
 
     /**
@@ -214,7 +219,8 @@ class WritePasswordJobPrivate;
  * This job requires a "service" string, which is basically a namespace of keys within the keychain.
  * This means that you can store different pairs <key, secret> under the same service string.
  */
-class QKEYCHAIN_EXPORT WritePasswordJob : public Job {
+class QKEYCHAIN_EXPORT WritePasswordJob : public Job
+{
     Q_OBJECT
 public:
     /**
@@ -222,24 +228,23 @@ public:
      * @param service The service string used by this job (can be empty).
      * @param parent The parent of this job.
      */
-    explicit WritePasswordJob( const QString& service, QObject* parent=nullptr );
+    explicit WritePasswordJob(const QString &service, QObject *parent = nullptr);
     ~WritePasswordJob() override;
 
     /**
      * Set the @p data that the job will store in the keychain as binary data.
      * @warning setBinaryData() and setTextData() are mutually exclusive.
      */
-    void setBinaryData( const QByteArray& data );
+    void setBinaryData(const QByteArray &data);
 
     /**
      * Set the @p data that the job will store in the keychain as string.
      * Typically @p data is a password.
      * @warning setBinaryData() and setTextData() are mutually exclusive.
      */
-    void setTextData( const QString& data );
+    void setTextData(const QString &data);
 
 private:
-
     friend class QKeychain::WritePasswordJobPrivate;
 };
 
@@ -251,7 +256,8 @@ class DeletePasswordJobPrivate;
  * This job requires a "service" string, which is basically a namespace of keys within the keychain.
  * This means that you can delete all the pairs <key, secret> stored in the same service string.
  */
-class QKEYCHAIN_EXPORT DeletePasswordJob : public Job {
+class QKEYCHAIN_EXPORT DeletePasswordJob : public Job
+{
     Q_OBJECT
 public:
     /**
@@ -259,7 +265,7 @@ public:
      * @param service The service string used by this job (can be empty).
      * @param parent The parent of this job.
      */
-    explicit DeletePasswordJob( const QString& service, QObject* parent=nullptr );
+    explicit DeletePasswordJob(const QString &service, QObject *parent = nullptr);
     ~DeletePasswordJob() override;
 
 private:
@@ -277,6 +283,6 @@ private:
  */
 QKEYCHAIN_EXPORT bool isAvailable();
 
-} // namespace QtKeychain
+} // namespace QKeychain
 
 #endif

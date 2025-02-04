@@ -3,7 +3,8 @@
 
 #include <QLibrary>
 
-class GnomeKeyring : private QLibrary {
+class GnomeKeyring : private QLibrary
+{
     Q_OBJECT
 
 public:
@@ -29,66 +30,66 @@ public:
         ITEM_PK_STORAGE = 0x100
     };
 
-    enum AttributeType {
-        ATTRIBUTE_TYPE_STRING,
-        ATTRIBUTE_TYPE_UINT32
-    };
+    enum AttributeType { ATTRIBUTE_TYPE_STRING, ATTRIBUTE_TYPE_UINT32 };
 
     typedef char gchar;
-    typedef void* gpointer;
+    typedef void *gpointer;
     typedef bool gboolean;
-    typedef struct {
+    typedef struct
+    {
         ItemType item_type;
-        struct {
-            const gchar* name;
+        struct
+        {
+            const gchar *name;
             AttributeType type;
         } attributes[32];
     } PasswordSchema;
 
-    typedef void ( *OperationGetStringCallback )( Result result, bool binary,
-                                                  const char* string, gpointer data );
-    typedef void ( *OperationDoneCallback )( Result result, gpointer data );
-    typedef void ( *GDestroyNotify )( gpointer data );
+    typedef void (*OperationGetStringCallback)(Result result, bool binary, const char *string,
+                                               gpointer data);
+    typedef void (*OperationDoneCallback)(Result result, gpointer data);
+    typedef void (*GDestroyNotify)(gpointer data);
 
-    static const char* GNOME_KEYRING_DEFAULT;
+    static const char *GNOME_KEYRING_DEFAULT;
 
     static bool isAvailable();
 
-    static gpointer store_network_password( const gchar* keyring, const gchar* display_name,
-                                            const gchar* user, const gchar* server,
-                                            const gchar* type, const gchar* password,
-                                            OperationDoneCallback callback, gpointer data, GDestroyNotify destroy_data );
+    static gpointer store_network_password(const gchar *keyring, const gchar *display_name,
+                                           const gchar *user, const gchar *server,
+                                           const gchar *type, const gchar *password,
+                                           OperationDoneCallback callback, gpointer data,
+                                           GDestroyNotify destroy_data);
 
-    static gpointer find_network_password( const gchar* user, const gchar* server,
-                                           const gchar* type,
-                                           OperationGetStringCallback callback,
-                                           gpointer data, GDestroyNotify destroy_data );
+    static gpointer find_network_password(const gchar *user, const gchar *server, const gchar *type,
+                                          OperationGetStringCallback callback, gpointer data,
+                                          GDestroyNotify destroy_data);
 
-    static gpointer delete_network_password( const gchar* user, const gchar* server,
-                                             OperationDoneCallback callback, gpointer data, GDestroyNotify destroy_data );
+    static gpointer delete_network_password(const gchar *user, const gchar *server,
+                                            OperationDoneCallback callback, gpointer data,
+                                            GDestroyNotify destroy_data);
+
 private:
     GnomeKeyring();
 
-    static GnomeKeyring& instance();
+    static GnomeKeyring &instance();
 
-    const PasswordSchema* NETWORK_PASSWORD;
-    typedef gboolean ( is_available_fn )( void );
-    typedef gpointer ( store_password_fn )( const PasswordSchema* schema, const gchar* keyring,
-                                            const gchar* display_name, const gchar* password,
-                                            OperationDoneCallback callback, gpointer data, GDestroyNotify destroy_data,
-                                            ... );
-    typedef gpointer ( find_password_fn )( const PasswordSchema* schema,
-                                           OperationGetStringCallback callback, gpointer data, GDestroyNotify destroy_data,
-                                           ... );
-    typedef gpointer ( delete_password_fn )( const PasswordSchema* schema,
-                                             OperationDoneCallback callback, gpointer data, GDestroyNotify destroy_data,
-                                             ... );
+    const PasswordSchema *NETWORK_PASSWORD;
+    typedef gboolean(is_available_fn)(void);
+    typedef gpointer(store_password_fn)(const PasswordSchema *schema, const gchar *keyring,
+                                        const gchar *display_name, const gchar *password,
+                                        OperationDoneCallback callback, gpointer data,
+                                        GDestroyNotify destroy_data, ...);
+    typedef gpointer(find_password_fn)(const PasswordSchema *schema,
+                                       OperationGetStringCallback callback, gpointer data,
+                                       GDestroyNotify destroy_data, ...);
+    typedef gpointer(delete_password_fn)(const PasswordSchema *schema,
+                                         OperationDoneCallback callback, gpointer data,
+                                         GDestroyNotify destroy_data, ...);
 
-    is_available_fn* is_available;
-    find_password_fn* find_password;
-    store_password_fn* store_password;
-    delete_password_fn* delete_password;
+    is_available_fn *is_available;
+    find_password_fn *find_password;
+    store_password_fn *store_password;
+    delete_password_fn *delete_password;
 };
-
 
 #endif

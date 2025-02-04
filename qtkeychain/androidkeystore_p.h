@@ -13,10 +13,10 @@
 #include <QtGlobal>
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#include <QAndroidJniObject>
+#  include <QAndroidJniObject>
 #else
-#include <QJniObject>
-#include <QJniEnvironment>
+#  include <QJniObject>
+#  include <QJniEnvironment>
 
 typedef QJniObject QAndroidJniObject;
 typedef QJniEnvironment QAndroidJniEnvironment;
@@ -28,11 +28,17 @@ namespace QKeychain {
 namespace javax {
 namespace security {
 
-namespace auth { namespace x500 { class X500Principal; } }
-namespace cert { class Certificate; }
+namespace auth {
+namespace x500 {
+class X500Principal;
+}
+} // namespace auth
+namespace cert {
+class Certificate;
+}
 
-}
-}
+} // namespace security
+} // namespace javax
 
 namespace java {
 namespace lang {
@@ -40,8 +46,8 @@ namespace lang {
 class Object : protected QAndroidJniObject
 {
 public:
-    inline Object(jobject object) : QAndroidJniObject(object) {}
-    inline Object(const QAndroidJniObject &object) : QAndroidJniObject(object) {}
+    inline Object(jobject object) : QAndroidJniObject(object) { }
+    inline Object(const QAndroidJniObject &object) : QAndroidJniObject(object) { }
     inline operator bool() const { return isValid(); }
 
     using QAndroidJniObject::object;
@@ -50,11 +56,11 @@ public:
 protected:
     static bool handleExceptions();
 
-    template<typename T>
+    template <typename T>
     static T handleExceptions(const T &result, const T &resultOnError = T());
 };
 
-template<typename T>
+template <typename T>
 inline T Object::handleExceptions(const T &result, const T &resultOnError)
 {
     if (!handleExceptions())
@@ -182,7 +188,7 @@ class PrivateKey : public Key
 public:
     using Key::Key;
 
-    PrivateKey(const Key &init): Key(init) {}
+    PrivateKey(const Key &init) : Key(init) { }
 };
 
 class PublicKey : public Key
@@ -190,7 +196,7 @@ class PublicKey : public Key
 public:
     using Key::Key;
 
-    PublicKey(const Key &init): Key(init) {}
+    PublicKey(const Key &init) : Key(init) { }
 };
 
 class KeyPair : public java::lang::Object
@@ -207,7 +213,6 @@ public:
     static KeyPairGenerator getInstance(const QString &algorithm, const QString &provider);
     KeyPair generateKeyPair() const;
     bool initialize(const spec::AlgorithmParameterSpec &spec) const;
-
 };
 
 class KeyStore : public java::lang::Object
@@ -224,7 +229,7 @@ public:
     public:
         using Entry::Entry;
 
-        inline PrivateKeyEntry(const Entry &init): Entry(init) {}
+        inline PrivateKeyEntry(const Entry &init) : Entry(init) { }
 
         javax::security::cert::Certificate getCertificate() const;
         java::security::PrivateKey getPrivateKey() const;
@@ -258,7 +263,7 @@ class RSAPrivateKey : public PrivateKey
 public:
     using PrivateKey::PrivateKey;
 
-    RSAPrivateKey(const PrivateKey &init): PrivateKey(init) {}
+    RSAPrivateKey(const PrivateKey &init) : PrivateKey(init) { }
 };
 
 class RSAPublicKey : public PublicKey
@@ -266,7 +271,7 @@ class RSAPublicKey : public PublicKey
 public:
     using PublicKey::PublicKey;
 
-    RSAPublicKey(const PublicKey &init): PublicKey(init) {}
+    RSAPublicKey(const PublicKey &init) : PublicKey(init) { }
 };
 
 } // namespace interfaces
@@ -303,7 +308,6 @@ public:
         Builder setStartDate(const java::util::Date &date) const;
         Builder setEndDate(const java::util::Date &date) const;
         KeyPairGeneratorSpec build() const;
-
     };
 
     using AlgorithmParameterSpec::AlgorithmParameterSpec;
@@ -343,7 +347,7 @@ public:
     explicit CipherOutputStream(const OutputStream &stream, const Cipher &cipher);
 };
 
-}
+} // namespace crypto
 
 namespace security {
 namespace auth {

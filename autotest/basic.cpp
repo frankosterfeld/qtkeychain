@@ -2,16 +2,18 @@
 
 #include "qtkeychain/keychain.h"
 
-namespace
+namespace {
+QByteArray generateRandomString(qsizetype size)
 {
-    QByteArray generateRandomString(qsizetype size)
-    {
-        std::vector<quint32> buffer(size, 0);
-        QRandomGenerator::global()->fillRange(buffer.data(), size);
-        return QByteArray(reinterpret_cast<char *>(buffer.data()), static_cast<int>(size * sizeof(quint32))).toBase64(QByteArray::Base64UrlEncoding).mid(0, size);
-    }
-
+    std::vector<quint32> buffer(size, 0);
+    QRandomGenerator::global()->fillRange(buffer.data(), size);
+    return QByteArray(reinterpret_cast<char *>(buffer.data()),
+                      static_cast<int>(size * sizeof(quint32)))
+            .toBase64(QByteArray::Base64UrlEncoding)
+            .mid(0, size);
 }
+
+} // namespace
 class BasicTest : public QObject
 {
     Q_OBJECT
@@ -26,7 +28,6 @@ private Q_SLOTS:
         QTest::newRow("3000") << generateRandomString(3000);
         QTest::newRow("10000") << generateRandomString(10000);
         QTest::newRow("18944") << generateRandomString(18944);
-
     }
 
     void test()
