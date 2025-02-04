@@ -60,7 +60,7 @@ int main(int argc, char **argv)
         job.setKey(acc);
         job.setTextData(pass);
         QEventLoop loop;
-        job.connect(&job, SIGNAL(finished(QKeychain::Job *)), &loop, SLOT(quit()));
+        job.connect(&job, &Job::finished, &loop, &QEventLoop::quit);
         job.start();
         loop.exec();
         if (job.error()) {
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
         job.setKey(acc);
         job.setBinaryData(pass.toUtf8());
         QEventLoop loop;
-        job.connect(&job, SIGNAL(finished(QKeychain::Job *)), &loop, SLOT(quit()));
+        job.connect(&job, &Job::finished, &loop, &QEventLoop::quit);
         job.start();
         loop.exec();
         if (job.error()) {
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
         job.setAutoDelete(false);
         job.setKey(acc);
         QEventLoop loop;
-        job.connect(&job, SIGNAL(finished(QKeychain::Job *)), &loop, SLOT(quit()));
+        job.connect(&job, &Job::finished, &loop, &QEventLoop::quit);
         job.start();
         loop.exec();
 
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
         job.setAutoDelete(false);
         job.setKey(acc);
         QEventLoop loop;
-        job.connect(&job, SIGNAL(finished(QKeychain::Job *)), &loop, SLOT(quit()));
+        job.connect(&job, &Job::finished, &loop, &QEventLoop::quit);
         job.start();
         loop.exec();
 

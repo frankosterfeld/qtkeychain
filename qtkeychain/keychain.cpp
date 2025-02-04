@@ -177,9 +177,8 @@ void JobExecutor::startNextIfNoneRunning()
         next = m_queue.dequeue();
     }
     if (next) {
-        connect(next, SIGNAL(finished(QKeychain::Job *)), this,
-                SLOT(jobFinished(QKeychain::Job *)));
-        connect(next, SIGNAL(destroyed(QObject *)), this, SLOT(jobDestroyed(QObject *)));
+        connect(next, &Job::finished, this, &JobExecutor::jobFinished);
+        connect(next, &Job::destroyed, this, &JobExecutor::jobDestroyed);
         m_jobRunning = true;
         next->scheduledStart();
     }

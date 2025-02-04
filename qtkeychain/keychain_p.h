@@ -56,7 +56,7 @@ public:
 
     virtual void fallbackOnError(const QDBusError &err) = 0;
 
-protected Q_SLOTS:
+public Q_SLOTS:
     void kwalletWalletFound(QDBusPendingCallWatcher *watcher);
     virtual void kwalletFinished(QDBusPendingCallWatcher *watcher);
     virtual void kwalletOpenFinished(QDBusPendingCallWatcher *watcher);

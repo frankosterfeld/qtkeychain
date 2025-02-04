@@ -198,8 +198,8 @@ static void kwalletReadPasswordScheduledStartImpl(const char *service, const cha
                                             QDBusConnection::sessionBus(), priv);
         const QDBusPendingReply<QString> reply = priv->iface->networkWallet();
         QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(reply, priv);
-        priv->connect(watcher, SIGNAL(finished(QDBusPendingCallWatcher *)), priv,
-                      SLOT(kwalletWalletFound(QDBusPendingCallWatcher *)));
+        priv->connect(watcher, &QDBusPendingCallWatcher::finished, priv,
+                      &ReadPasswordJobPrivate::kwalletWalletFound);
     } else {
         // D-Bus is not reachable so none can tell us something about KWalletd
         QDBusError err(QDBusError::NoServer, ReadPasswordJobPrivate::tr("D-Bus is not running"));
@@ -247,8 +247,8 @@ void JobPrivate::kwalletWalletFound(QDBusPendingCallWatcher *watcher)
 
     const QDBusPendingReply<int> pendingReply = iface->open(reply.value(), 0, q->service());
     QDBusPendingCallWatcher *pendingWatcher = new QDBusPendingCallWatcher(pendingReply, this);
-    connect(pendingWatcher, SIGNAL(finished(QDBusPendingCallWatcher *)), this,
-            SLOT(kwalletOpenFinished(QDBusPendingCallWatcher *)));
+    connect(pendingWatcher, &QDBusPendingCallWatcher::finished, this,
+            &JobPrivate::kwalletOpenFinished);
 }
 
 static QPair<Error, QString> mapGnomeKeyringError(int result)
@@ -376,8 +376,8 @@ void ReadPasswordJobPrivate::kwalletOpenFinished(QDBusPendingCallWatcher *watche
     const QDBusPendingReply<int> nextReply =
             iface->entryType(walletHandle, q->service(), key, q->service());
     QDBusPendingCallWatcher *nextWatcher = new QDBusPendingCallWatcher(nextReply, this);
-    connect(nextWatcher, SIGNAL(finished(QDBusPendingCallWatcher *)), this,
-            SLOT(kwalletEntryTypeFinished(QDBusPendingCallWatcher *)));
+    connect(nextWatcher, &QDBusPendingCallWatcher::finished, this,
+            &ReadPasswordJobPrivate::kwalletEntryTypeFinished);
 }
 
 // Must be in sync with KWallet::EntryType (kwallet.h)
@@ -419,8 +419,8 @@ void ReadPasswordJobPrivate::kwalletEntryTypeFinished(QDBusPendingCallWatcher *w
             ? QDBusPendingCall(iface->readPassword(walletHandle, q->service(), key, q->service()))
             : QDBusPendingCall(iface->readEntry(walletHandle, q->service(), key, q->service()));
     QDBusPendingCallWatcher *nextWatcher = new QDBusPendingCallWatcher(nextReply, this);
-    connect(nextWatcher, SIGNAL(finished(QDBusPendingCallWatcher *)), this,
-            SLOT(kwalletFinished(QDBusPendingCallWatcher *)));
+    connect(nextWatcher, &QDBusPendingCallWatcher::finished, this,
+            &ReadPasswordJobPrivate::kwalletFinished);
 }
 
 void ReadPasswordJobPrivate::kwalletFinished(QDBusPendingCallWatcher *watcher)
@@ -450,8 +450,8 @@ static void kwalletWritePasswordScheduledStart(const char *service, const char *
                                             QDBusConnection::sessionBus(), priv);
         const QDBusPendingReply<QString> reply = priv->iface->networkWallet();
         QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(reply, priv);
-        priv->connect(watcher, SIGNAL(finished(QDBusPendingCallWatcher *)), priv,
-                      SLOT(kwalletWalletFound(QDBusPendingCallWatcher *)));
+        priv->connect(watcher, &QDBusPendingCallWatcher::finished, priv,
+                      &JobPrivate::kwalletWalletFound);
     } else {
         // D-Bus is not reachable so none can tell us something about KWalletd
         QDBusError err(QDBusError::NoServer, WritePasswordJobPrivate::tr("D-Bus is not running"));
@@ -572,8 +572,7 @@ void JobPrivate::kwalletOpenFinished(QDBusPendingCallWatcher *watcher)
     }
 
     QDBusPendingCallWatcher *nextWatcher = new QDBusPendingCallWatcher(nextReply, this);
-    connect(nextWatcher, SIGNAL(finished(QDBusPendingCallWatcher *)), this,
-            SLOT(kwalletFinished(QDBusPendingCallWatcher *)));
+    connect(nextWatcher, &QDBusPendingCallWatcher::finished, this, &JobPrivate::kwalletFinished);
 }
 
 void JobPrivate::kwalletFinished(QDBusPendingCallWatcher *watcher)
