@@ -639,8 +639,6 @@ void DeletePasswordJobPrivate::fallbackOnError(const QDBusError &err)
     actual->sync();
 
     q->emitFinished();
-
-    q->emitFinished();
 }
 
 bool QKeychain::isAvailable()
