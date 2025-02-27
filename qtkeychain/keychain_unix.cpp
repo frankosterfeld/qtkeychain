@@ -124,6 +124,20 @@ static KeyringBackend detectKeyringBackend()
      * available.
      */
 
+    // Check if user wants to override detection logic
+    QByteArray backendOverride = qgetenv("QTKEYCHAIN_BACKEND");
+    if (backendOverride == "libsecret") {
+        return Backend_LibSecretKeyring;
+    } else if (backendOverride == "gnome") {
+        return Backend_GnomeKeyring;
+    } else if (backendOverride == "kwallet4") {
+        return Backend_Kwallet4;
+    } else if (backendOverride == "kwallet5") {
+        return Backend_Kwallet5;
+    } else if (backendOverride == "kwallet6") {
+        return Backend_Kwallet6;
+    }
+
     switch (detectDesktopEnvironment()) {
     case DesktopEnv_Kde4:
         return Backend_Kwallet4;
