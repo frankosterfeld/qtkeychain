@@ -1,0 +1,71 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        compiler: [msvc2019, gcc, clang]
+        qt_version: [5.15.2]
+      exclude:
+        - os: ubuntu-latest
+          compiler: msvc2019
+        - os: macos-latest
+          compiler: msvc2019
+        - os: windows-latest
+          compiler: clang
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ matrix.qt_version }}
+          # Set the correct architecture based on OS and compiler
+          arch: |
+            ${{ matrix.os == 'windows-latest' && matrix.compiler == 'msvc2019' && 'win64_msvc2019_64' ||
+               matrix.os == 'windows-latest' && matrix.compiler == 'gcc' && 'win64_mingw81' ||
+               matrix.os == 'ubuntu-latest' && matrix.compiler == 'gcc' && 'linux64' ||
+               matrix.os == 'macos-latest' && matrix.compiler == 'clang' && 'macos' }}
+          dir: ${{ matrix.os == 'windows-latest' && 'C:\\Qt' || '/opt/qt' }}
+          cache: true
+
+      - name: Setup CMake and Ninja
+        uses: lukka/get-cmake@v2
+        with:
+          cmake-version: '3.21.2'
+
+      - name: Setup Build Directory
+        run: |
+          mkdir -p ${{ github.workspace }}/work/build/${{ github.event.repository.name }}
+
+      - name: Run CMake
+        run: |
+          cd ${{ github.workspace }}/work/build/${{ github.event.repository.name }}
+          cmake -G"Ninja" ${{ github.workspace }} \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install" \
+            -DCMAKE_PREFIX_PATH="${{ matrix.os == 'windows-latest' && 'C:\\Qt' || '/opt/qt' }}/5.15.2/gcc_64/lib/cmake/Qt5"
+
+      - name: Build and Install
+        run: |
+          cd ${{ github.workspace }}/work/build/${{ github.event.repository.name }}
+          cmake --install . --prefix "${{ github.workspace }}/install"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-artifacts
+          path: ${{ github.workspace }}/work/build/${{ github.event.repository.name }}
+
