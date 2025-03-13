@@ -1,0 +1,131 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        compiler: [msvc, gcc, clang]
+        qt_version: [qt5, qt6]
+        exclude:
+          - os: ubuntu-latest
+            compiler: msvc
+          - os: macos-latest
+            compiler: gcc
+          - os: macos-latest
+            compiler: msvc
+          - os: windows-latest
+            compiler: clang
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup CMake and Ninja
+        uses: lukka/get-cmake@latest
+
+      - if: matrix.compiler == 'msvc'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Dependencies (Windows only)
+        if: runner.os == 'Windows'
+        uses: crazy-max/ghaction-chocolatey@v3
+        with:
+          args: install pkgconfiglite
+
+      - name: Install Qt (Mac/Linux only)
+        if: runner.os != 'Windows'
+        run: |
+          if [ '${{ runner.os }}' == 'macOS' ]; then
+            if [ '${{ matrix.qt_version }}' == 'qt6' ]; then
+              brew install qt6 pkg-config
+              brew link qt6 --force
+              echo "$(brew --prefix qt6)/bin" >> $GITHUB_PATH
+            else
+              brew install qt5 pkg-config
+              brew link qt5 --force
+              echo "$(brew --prefix qt5)/bin" >> $GITHUB_PATH
+            fi
+          elif [ '${{ runner.os }}' == 'Linux' ]; then
+            sudo apt-get update
+            if [ '${{ matrix.qt_version }}' == 'qt6' ]; then
+              sudo apt-get install -y qt6-base-dev qtchooser qmake6 qt6-base-dev-tools qt6-tools-dev pkg-config libsecret-1-dev
+            else
+              sudo apt-get install -y qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools qttools5-dev pkg-config libsecret-1-dev
+            fi
+          fi
+
+      - name: Set AQT Version and Arch (Windows only)
+        if: runner.os == 'Windows'
+        id: set_qt_arch
+        shell: pwsh
+        run: |
+          $qtVer = "${{ matrix.qt_version == 'qt5' && '5.15.2' || '6.5.0' }}"
+          $qtArch = "${{ matrix.compiler == 'msvc' && 'msvc2019_64' ||
+               matrix.qt_version == 'qt5' && matrix.compiler == 'gcc' && 'mingw81' ||
+               matrix.qt_version == 'qt6' && matrix.compiler == 'gcc' && 'mingw' }}"
+          echo "::set-output name=QT_VER::$qtVer"
+          echo "::set-output name=QT_ARCH::$qtArch"
+
+      - name: Install Qt (Windows only)
+        if: runner.os == 'Windows'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ steps.set_qt_arch.outputs.QT_VER }}
+          arch: win64_${{ steps.set_qt_arch.outputs.QT_ARCH }}
+          dir: C:\
+          cache: true
+
+      - name: Setup Build Directory
+        run: |
+          mkdir -p ${{ github.workspace }}/work/build/${{ github.event.repository.name }}
+
+      - name: Run CMake (Windows only)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $qtPath = "C:\\Qt\\${{ steps.set_qt_arch.outputs.QT_VER }}\\win64_${{ steps.set_qt_arch.outputs.QT_ARCH }}"
+          if ( '${{ matrix.compiler }}' -eq 'msvc' ) {
+            $generator = "NMake Makefiles"
+          } else {
+            $generator = "MinGW Makefiles"
+          }
+          echo "C:\\Qt\\Tools\\${{ steps.set_qt_arch.outputs.QT_ARCH }}\\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          cd "${{ github.workspace }}/work/build/${{ github.event.repository.name }}"
+          cmake -G $generator "${{ github.workspace }}" `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install" `
+            -DCMAKE_PREFIX_PATH=$qtPath `
+            ${{ matrix.qt_version == 'qt6' && '-DBUILD_WITH_QT6=true' || '' }}
+
+      - name: Run CMake (Mac/Linux Only)
+        if: runner.os != 'Windows'
+        run: |
+          cd ${{ github.workspace }}/work/build/${{ github.event.repository.name }}
+          cmake -G Ninja ${{ github.workspace }} \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install" \
+            ${{ matrix.qt_version == 'qt6' && '-DBUILD_WITH_QT6=true' || '' }}
+
+      - name: Build and Install
+        run: |
+          cd ${{ github.workspace }}/work/build/${{ github.event.repository.name }}
+          cmake --build .
+          cmake --install . --prefix "${{ github.workspace }}/install"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact ${{ matrix.os }} ${{ matrix.compiler }} ${{ matrix.qt_version }}
+          path: ${{ github.workspace }}/work/build/${{ github.event.repository.name }}
+
