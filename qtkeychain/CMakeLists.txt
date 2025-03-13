@@ -31,7 +31,12 @@ if(WIN32)
     endif()
 
     set(CMAKE_CXX_STANDARD 17)
-    add_definitions( /utf-8 -DUNICODE )
+    add_definitions(-DUNICODE)
+    if (MSVC)
+        add_definitions(/utf-8)
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        add_definitions(-finput-charset=UTF-8 -fexec-charset=UTF-8)
+    endif()
 endif()
 
 if(APPLE)
