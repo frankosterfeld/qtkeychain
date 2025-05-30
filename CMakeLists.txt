@@ -139,6 +139,7 @@ set(qtkeychain_TR_FILES
       translations/qtkeychain_fr.ts
       translations/qtkeychain_ro.ts
       translations/qtkeychain_ru.ts
+      translations/qtkeychain_sv.ts
       translations/qtkeychain_zh.ts
 )
 
