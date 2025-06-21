@@ -20,7 +20,7 @@ const SecretSchema *qtkeychainSchema(void)
 
 typedef struct
 {
-    QKeychain::JobPrivate *self;
+    QPointer<QKeychain::JobPrivate> self;
     QString user;
     QString server;
 } callbackArg;
@@ -74,7 +74,7 @@ static void on_password_lookup(GObject *source, GAsyncResult *result, gpointer i
 
     Q_UNUSED(source);
 
-    if (arg) {
+    if (arg && arg->self) {
         if (error) {
             QKeychain::Error code = gerrorToCode(error);
 
