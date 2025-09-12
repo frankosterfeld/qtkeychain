@@ -122,11 +122,10 @@ struct ErrorDescription
 
 - (void)keychainReadTaskFinished:(NSData *)retrievedData
 {
-    _privateJob->data.clear();
-    _privateJob->mode = JobPrivate::Binary;
-
-    if (retrievedData != nil) {
-        if (_privateJob) {
+    if (_privateJob) {
+        _privateJob->data.clear();
+        _privateJob->mode = JobPrivate::Binary;
+        if (retrievedData != nil) {
             _privateJob->data = QByteArray::fromNSData(retrievedData);
         }
     }
