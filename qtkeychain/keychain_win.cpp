@@ -86,12 +86,17 @@ std::pair<QByteArray, QString> protectData(const QByteArray &data)
  * protected data requires more space than the original payload, the effective max payload is
  * smaller than that. As we continue to use PCREDENTIALW as storage medium, the credentials are
  * still roaming.
+ * 
+ * "service" map to "TargetName", and "key" map to "UserName".
+ * The TargetName and Type members uniquely identify the credential.
+ * so that a "service" can only have one <key, sec> pair.
+ * See: https://learn.microsoft.com/en-us/windows/win32/api/wincred/ns-wincred-credentiala
  */
 void ReadPasswordJobPrivate::scheduledStart()
 {
     PCREDENTIALW cred = {};
 
-    if (!CredReadW(reinterpret_cast<const wchar_t *>(key.utf16()), CRED_TYPE_GENERIC, 0, &cred)) {
+    if (!CredReadW(reinterpret_cast<const wchar_t *>(service.utf16()), CRED_TYPE_GENERIC, 0, &cred)) {
         Error err;
         QString msg;
         switch (GetLastError()) {
@@ -108,6 +113,8 @@ void ReadPasswordJobPrivate::scheduledStart()
         q->emitFinishedWithError(err, msg);
         return;
     }
+
+    key = reinterpret_cast<char *>(cred->UserName);
 
     if (cred->AttributeCount == 0) {
         data = QByteArray(reinterpret_cast<char *>(cred->CredentialBlob), cred->CredentialBlobSize);
@@ -139,7 +146,8 @@ void WritePasswordJobPrivate::scheduledStart()
     CREDENTIALW cred = {};
     cred.Comment = const_cast<wchar_t *>(PRODUCT_NAME.data());
     cred.Type = CRED_TYPE_GENERIC;
-    cred.TargetName = const_cast<wchar_t *>(reinterpret_cast<const wchar_t *>(key.utf16()));
+    cred.TargetName = const_cast<wchar_t *>(reinterpret_cast<const wchar_t *>(service.utf16()));
+    cred.UserName = const_cast<wchar_t *>(reinterpret_cast<const wchar_t *>(key.utf16()));
     cred.Persist = CRED_PERSIST_ENTERPRISE;
 
     QByteArray buffer;
@@ -214,7 +222,7 @@ void WritePasswordJobPrivate::scheduledStart()
 
 void DeletePasswordJobPrivate::scheduledStart()
 {
-    if (!CredDeleteW(reinterpret_cast<const wchar_t *>(key.utf16()), CRED_TYPE_GENERIC, 0)) {
+    if (!CredDeleteW(reinterpret_cast<const wchar_t *>(service.utf16()), CRED_TYPE_GENERIC, 0)) {
         Error err;
         QString msg;
         switch (GetLastError()) {

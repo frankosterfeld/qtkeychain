@@ -180,6 +180,10 @@ class ReadPasswordJobPrivate;
  * You can use a ReadPasswordJob to read passwords or binary data from the keychain.
  * This job requires a "service" string, which is basically a namespace of keys within the keychain.
  * This means that you can read all the pairs <key, secret> stored in the same service string.
+ * @note 
+ * - When used for network services, it is recommended that the "service" use the URL scheme.
+ * - On Windows, when use credential store, a "service" can only have one <key, sec> pair.
+ *   See: keychain_win.cpp
  */
 class QKEYCHAIN_EXPORT ReadPasswordJob : public Job
 {
@@ -218,6 +222,10 @@ class WritePasswordJobPrivate;
  * You can use a WritePasswordJob to store passwords or binary data in the keychain.
  * This job requires a "service" string, which is basically a namespace of keys within the keychain.
  * This means that you can store different pairs <key, secret> under the same service string.
+ * @note 
+ * - When used for network services, it is recommended that the "service" use the URL scheme.
+ * - On Windows, when use credential store, a "service" can only have one <key, sec> pair.
+ *   See: keychain_win.cpp
  */
 class QKEYCHAIN_EXPORT WritePasswordJob : public Job
 {
@@ -255,6 +263,10 @@ class DeletePasswordJobPrivate;
  * You can use a DeletePasswordJob to delete passwords or binary data from the keychain.
  * This job requires a "service" string, which is basically a namespace of keys within the keychain.
  * This means that you can delete all the pairs <key, secret> stored in the same service string.
+ * @note 
+ * - When used for network services, it is recommended that the "service" use the URL scheme.
+ * - On Windows, when use credential store, a "service" can only have one <key, sec> pair.
+ *   See: keychain_win.cpp
  */
 class QKEYCHAIN_EXPORT DeletePasswordJob : public Job
 {
