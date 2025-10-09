@@ -5,7 +5,8 @@ QtKeychain is a Qt API to store passwords and other secret data securely. How th
 
  * **macOS:** Passwords are stored in the macOS Keychain.
 
- * **Linux/Unix:** If running, GNOME Keyring is used, otherwise QtKeychain tries to use KWallet (via D-Bus), if available. Libsecret (common API for desktop-specific solutions)
+ * **Linux/Unix:** If running, GNOME Keyring is used(libgnome-keyring has been deprecated and replaced by libsecret from 2021 year),
+   otherwise QtKeychain tries to use KWallet (via D-Bus), if available. Libsecret (common API for desktop-specific solutions)
    is also supported.
 
  * **Windows:** By default, the Windows Credential Store is used (requires Windows 7 or newer).
