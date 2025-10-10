@@ -79,6 +79,10 @@ void Job::emitFinishedWithError(Error error, const QString &errorString)
 
 void Job::scheduledStart()
 {
+    if (d->service.isEmpty() && d->key.isEmpty()) {
+        emitFinishedWithError(EntryNotFound, tr("Both service name and key are empty"));
+        return;
+    }
     d->scheduledStart();
 }
 
