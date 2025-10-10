@@ -50,6 +50,11 @@ if (WIN32)
     if (USE_CREDENTIAL_STORE)
         add_definitions(-DUSE_CREDENTIAL_STORE=1)
     endif()
+
+    option(USE_COMPAT_NAMING_SCHEME "store entries without the service name" OFF)
+    if (USE_COMPAT_NAMING_SCHEME)
+        add_definitions(-DUSE_COMPAT_NAMING_SCHEME=1)
+    endif()
 endif()
 
 if( NOT BUILD_WITH_QT6 )

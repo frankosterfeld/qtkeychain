@@ -29,6 +29,19 @@ constexpr quint64 MAX_ATTRIBUTE_COUNT = 64;
 constexpr qsizetype MAX_BLOB_SIZE =
         CRED_MAX_CREDENTIAL_BLOB_SIZE + MAX_ATTRIBUTE_SIZE * MAX_ATTRIBUTE_COUNT;
 
+static QString targetName(const QString& service, const QString& key) {
+#if defined(USE_COMPAT_NAMING_SCHEME)
+    Q_UNUSED(service)
+    return key;
+#else
+    if (key.isEmpty())
+        return service;
+    if (service.isEmpty())
+        return key;
+    return key + '@' + service;
+#endif
+}
+
 QString formatWinError(ulong errorCode)
 {
     return QStringLiteral("WindowsError: %1: %2")
@@ -91,7 +104,8 @@ void ReadPasswordJobPrivate::scheduledStart()
 {
     PCREDENTIALW cred = {};
 
-    if (!CredReadW(reinterpret_cast<const wchar_t *>(key.utf16()), CRED_TYPE_GENERIC, 0, &cred)) {
+    const auto& target = targetName(service, key);
+    if (!CredReadW(reinterpret_cast<const wchar_t *>(target.utf16()), CRED_TYPE_GENERIC, 0, &cred)) {
         Error err;
         QString msg;
         switch (GetLastError()) {
@@ -136,10 +150,11 @@ void ReadPasswordJobPrivate::scheduledStart()
 
 void WritePasswordJobPrivate::scheduledStart()
 {
+    const auto& target = targetName(service, key);
     CREDENTIALW cred = {};
     cred.Comment = const_cast<wchar_t *>(PRODUCT_NAME.data());
     cred.Type = CRED_TYPE_GENERIC;
-    cred.TargetName = const_cast<wchar_t *>(reinterpret_cast<const wchar_t *>(key.utf16()));
+    cred.TargetName = const_cast<wchar_t *>(reinterpret_cast<const wchar_t *>(target.utf16()));
     cred.Persist = CRED_PERSIST_ENTERPRISE;
 
     QByteArray buffer;
@@ -201,7 +216,8 @@ void WritePasswordJobPrivate::scheduledStart()
     // Found empirically on Win10 1803 build 17134.523.
     if (err == RPC_S_INVALID_BOUND) {
         const QString::size_type maxTargetName = CRED_MAX_GENERIC_TARGET_NAME_LENGTH;
-        if (key.size() > maxTargetName) {
+        const auto& target = targetName(service, key);
+        if (target.size() > maxTargetName) {
             q->emitFinishedWithError(
                     OtherError, tr("Credential key exceeds maximum size of %1").arg(maxTargetName));
             return;
@@ -214,7 +230,8 @@ void WritePasswordJobPrivate::scheduledStart()
 
 void DeletePasswordJobPrivate::scheduledStart()
 {
-    if (!CredDeleteW(reinterpret_cast<const wchar_t *>(key.utf16()), CRED_TYPE_GENERIC, 0)) {
+    const auto& target = targetName(service, key);
+    if (!CredDeleteW(reinterpret_cast<const wchar_t *>(target.utf16()), CRED_TYPE_GENERIC, 0)) {
         Error err;
         QString msg;
         switch (GetLastError()) {
@@ -237,7 +254,7 @@ void DeletePasswordJobPrivate::scheduledStart()
 void ReadPasswordJobPrivate::scheduledStart()
 {
     PlainTextStore plainTextStore(q->service(), q->settings());
-    QByteArray encrypted = plainTextStore.readData(key);
+    QByteArray encrypted = plainTextStore.readData(targetName(service, key));
     if (plainTextStore.error() != NoError) {
         q->emitFinishedWithError(plainTextStore.error(), plainTextStore.errorString());
         return;
@@ -261,7 +278,7 @@ void WritePasswordJobPrivate::scheduledStart()
     }
 
     PlainTextStore plainTextStore(q->service(), q->settings());
-    plainTextStore.write(key, result.first, Binary);
+    plainTextStore.write(targetName(service, key), result.first, Binary);
     if (plainTextStore.error() != NoError) {
         q->emitFinishedWithError(plainTextStore.error(), plainTextStore.errorString());
         return;
@@ -273,7 +290,7 @@ void WritePasswordJobPrivate::scheduledStart()
 void DeletePasswordJobPrivate::scheduledStart()
 {
     PlainTextStore plainTextStore(q->service(), q->settings());
-    plainTextStore.remove(key);
+    plainTextStore.remove(targetName(service, key));
     if (plainTextStore.error() != NoError) {
         q->emitFinishedWithError(plainTextStore.error(), plainTextStore.errorString());
     } else {
