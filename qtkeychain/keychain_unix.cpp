@@ -475,9 +475,16 @@ static void kwalletWritePasswordScheduledStart(const char *service, const char *
 
 void WritePasswordJobPrivate::scheduledStart()
 {
+    auto descr = service;
+    if (service.isEmpty()) {
+        descr = key;
+    } else if (!key.isEmpty()) {
+        descr = key + "@" + service;
+    }
+
     switch (getKeyringBackend()) {
     case Backend_LibSecretKeyring: {
-        if (!LibSecretKeyring::writePassword(service, key, service, mode, data, this)) {
+        if (!LibSecretKeyring::writePassword(descr, key, service, mode, data, this)) {
             q->emitFinishedWithError(OtherError, tr("Unknown error"));
         }
     } break;
@@ -498,7 +505,7 @@ void WritePasswordJobPrivate::scheduledStart()
 
         QByteArray service = q->service().toUtf8();
         if (!GnomeKeyring::store_network_password(
-                    GnomeKeyring::GNOME_KEYRING_DEFAULT, service.constData(),
+                    GnomeKeyring::GNOME_KEYRING_DEFAULT, descr.toUtf8().constData(),
                     key.toUtf8().constData(), service.constData(), type.toUtf8().constData(),
                     password.constData(),
                     reinterpret_cast<GnomeKeyring::OperationDoneCallback>(
