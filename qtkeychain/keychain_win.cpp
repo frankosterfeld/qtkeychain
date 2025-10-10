@@ -29,6 +29,31 @@ constexpr quint64 MAX_ATTRIBUTE_COUNT = 64;
 constexpr qsizetype MAX_BLOB_SIZE =
         CRED_MAX_CREDENTIAL_BLOB_SIZE + MAX_ATTRIBUTE_SIZE * MAX_ATTRIBUTE_COUNT;
 
+static bool tryCompatNamingScheme() {
+#if defined(USE_COMPAT_NAMING_SCHEME)
+	return false;
+#else
+    /* QSettings by default are instanciated with calling process
+     * QCoreApplication::organizationName and
+     * QCoreApplication::applicationName namespace applied
+     * so, the following is a per application setting (user and system wide)
+     * with preference to the user setting
+     */
+    const QString key = "qtkeychainFallbackToCompatNamingScheme";
+    {
+        QSettings settings;
+        if (settings.value(key, false).toBool())
+            return true;
+    }
+    {
+        QSettings settings(QSettings::Scope::SystemScope);
+        if (settings.value(key, false).toBool())
+            return true;
+    }
+    return false;
+#endif
+}
+
 static bool useCompatNamingScheme() {
 #if defined(USE_COMPAT_NAMING_SCHEME)
 	return true;
@@ -113,6 +138,19 @@ std::pair<QByteArray, QString> protectData(const QByteArray &data)
 
 #if defined(USE_CREDENTIAL_STORE)
 
+static Error credRead(const QString& target, PCREDENTIALW &cred) {
+    if (!CredReadW(reinterpret_cast<const wchar_t *>(target.utf16()), CRED_TYPE_GENERIC, 0, &cred)) {
+        Error err;
+        switch (GetLastError()) {
+        case ERROR_NOT_FOUND:
+            return EntryNotFound;
+        default:
+            return OtherError;
+        }
+    }
+    return NoError;
+}
+
 /***
  * The credentials store has a limit of CRED_MAX_CREDENTIAL_BLOB_SIZE (5* 512)
  * As this might not be enough in some scenarios, for bigger payloads we use CryptProtectData which
@@ -128,7 +166,11 @@ void ReadPasswordJobPrivate::scheduledStart()
     PCREDENTIALW cred = {};
 
     const auto& target = targetName(service, key);
-    if (!CredReadW(reinterpret_cast<const wchar_t *>(target.utf16()), CRED_TYPE_GENERIC, 0, &cred)) {
+    auto err = credRead(target, cred);
+    if ((err == EntryNotFound) && !useCompatNamingScheme() && tryCompatNamingScheme()) {
+        err = credRead(key, cred);
+    }
+    if (err != NoError) {
         Error err;
         QString msg;
         switch (GetLastError()) {
