@@ -29,17 +29,40 @@ constexpr quint64 MAX_ATTRIBUTE_COUNT = 64;
 constexpr qsizetype MAX_BLOB_SIZE =
         CRED_MAX_CREDENTIAL_BLOB_SIZE + MAX_ATTRIBUTE_SIZE * MAX_ATTRIBUTE_COUNT;
 
-static QString targetName(const QString& service, const QString& key) {
+static bool useCompatNamingScheme() {
 #if defined(USE_COMPAT_NAMING_SCHEME)
-    Q_UNUSED(service)
-    return key;
+	return true;
 #else
+    /* QSettings by default are instanciated with calling process
+     * QCoreApplication::organizationName and
+     * QCoreApplication::applicationName namespace applied
+     * so, the following is a per application setting (user and system wide)
+     * with preference to the user setting
+     */
+    const QString key = "qtkeychainCompatNamingScheme";
+    {
+        QSettings settings;
+        if (settings.value(key, false).toBool())
+            return true;
+    }
+    {
+        QSettings settings(QSettings::Scope::SystemScope);
+        if (settings.value(key, false).toBool())
+            return true;
+    }
+    return false;
+#endif
+}
+
+static QString targetName(const QString& service, const QString& key) {
+    if (useCompatNamingScheme())
+        return key;
+
     if (key.isEmpty())
         return service;
     if (service.isEmpty())
         return key;
     return key + '@' + service;
-#endif
 }
 
 QString formatWinError(ulong errorCode)
