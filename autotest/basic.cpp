@@ -37,44 +37,60 @@ private Q_SLOTS:
 #ifdef Q_OS_MACOS
         QSKIP("This test case has no access to the keychain");
 #endif
-        const QString serviceKey = QStringLiteral("QtKeychainTest-%1").arg(QTest::currentDataTag());
+        const QStringList serviceKeys ={"", QStringLiteral("QtKeychainTest-%1").arg(QTest::currentDataTag())};
         QFETCH(QByteArray, password);
         QFETCH(QStringList, usernames);
 
-        for (const auto& username : usernames)
+        for (const auto& serviceKey: serviceKeys)
         {
-            QKeychain::WritePasswordJob writeJob(serviceKey);
-            writeJob.setKey(username);
-            writeJob.setBinaryData(password);
-            QSignalSpy writeSpy(&writeJob, &QKeychain::WritePasswordJob::finished);
-            writeJob.start();
-            writeSpy.wait();
+            for (const auto& username : usernames)
+            {
+                QKeychain::WritePasswordJob writeJob(serviceKey);
+                writeJob.setKey(username);
+                writeJob.setBinaryData(username.toUtf8()+password);
+                QSignalSpy writeSpy(&writeJob, &QKeychain::WritePasswordJob::finished);
+                writeJob.start();
+                writeSpy.wait();
 #ifdef Q_OS_WIN
-            QEXPECT_FAIL("18944", "Maximum for Windows is exceeded", Abort);
+                QEXPECT_FAIL("18944", "Maximum for Windows is exceeded", Abort);
 #endif
-            qDebug() << writeJob.errorString();
-            QCOMPARE(writeJob.error(), QKeychain::NoError);
+                qDebug() << "[write]" << writeJob.error() << ": " << writeJob.errorString();
+                const auto expected = (serviceKey.isEmpty() && username.isEmpty()) ? QKeychain::EntryNotFound : QKeychain::NoError;
+                QCOMPARE(writeJob.error(), expected);
+            }
         }
 
-        for (const auto& username : usernames)
+        for (const auto& serviceKey: serviceKeys)
         {
-            QKeychain::ReadPasswordJob readJob(serviceKey);
-            readJob.setKey(username);
-            QSignalSpy readSpy(&readJob, &QKeychain::ReadPasswordJob::finished);
-            readJob.start();
-            readSpy.wait();
-            QCOMPARE(readJob.error(), QKeychain::NoError);
-            QCOMPARE(readJob.binaryData(), password);
+            for (const auto& username : usernames)
+            {
+                QKeychain::ReadPasswordJob readJob(serviceKey);
+                readJob.setKey(username);
+                QSignalSpy readSpy(&readJob, &QKeychain::ReadPasswordJob::finished);
+                readJob.start();
+                readSpy.wait();
+                qDebug() << "[read]" << readJob.error() << ": " << readJob.errorString();
+                const auto expected = (serviceKey.isEmpty() && username.isEmpty()) ? QKeychain::EntryNotFound : QKeychain::NoError;
+                QCOMPARE(readJob.error(), expected);
+                if (expected == QKeychain::NoError) {
+                    QCOMPARE(readJob.binaryData(), username.toUtf8()+password);
+                }
+            }
         }
 
-        for (const auto& username : usernames)
+        for (const auto& serviceKey: serviceKeys)
         {
-            QKeychain::DeletePasswordJob deleteJob(serviceKey);
-            deleteJob.setKey(username);
-            QSignalSpy deleteSpy(&deleteJob, &QKeychain::DeletePasswordJob::finished);
-            deleteJob.start();
-            deleteSpy.wait();
-            QCOMPARE(deleteJob.error(), QKeychain::NoError);
+            for (const auto& username : usernames)
+            {
+                QKeychain::DeletePasswordJob deleteJob(serviceKey);
+                deleteJob.setKey(username);
+                QSignalSpy deleteSpy(&deleteJob, &QKeychain::DeletePasswordJob::finished);
+                deleteJob.start();
+                deleteSpy.wait();
+                qDebug() << "[delete]" << deleteJob.error() << ": " << deleteJob.errorString();
+                const auto expected = (serviceKey.isEmpty() && username.isEmpty()) ? QKeychain::EntryNotFound : QKeychain::NoError;
+                QCOMPARE(deleteJob.error(), expected);
+            }
         }
     }
 };
