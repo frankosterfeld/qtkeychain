@@ -103,7 +103,6 @@ static bool isKwalletAvailable(const char *dbusIface, const char *dbusPath)
     // interface is activatable by making a call. Hence we check whether
     // a wallet can be opened.
 
-    iface.setTimeout(500);
     QDBusMessage reply = iface.call(QLatin1String("networkWallet"));
     return reply.type() == QDBusMessage::ReplyMessage;
 }
