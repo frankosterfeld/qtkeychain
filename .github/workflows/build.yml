@@ -70,12 +70,12 @@ jobs:
         id: set_qt_arch
         shell: pwsh
         run: |
-          $qtVer = "${{ matrix.qt_version == 'qt5' && '5.15.2' || '6.5.0' }}"
+          $qtVer = "${{ matrix.qt_version == 'qt5' && '5.15.2' || '6.5.3' }}"
           $qtArch = "${{ matrix.compiler == 'msvc' && 'msvc2019_64' ||
                matrix.qt_version == 'qt5' && matrix.compiler == 'gcc' && 'mingw81' ||
                matrix.qt_version == 'qt6' && matrix.compiler == 'gcc' && 'mingw' }}"
-          echo "::set-output name=QT_VER::$qtVer"
-          echo "::set-output name=QT_ARCH::$qtArch"
+          echo "QT_VER=$qtVer" >> $env:GITHUB_OUTPUT
+          echo "QT_ARCH=$qtArch" >> $env:GITHUB_OUTPUT
 
       - name: Install Qt (Windows only)
         if: runner.os == 'Windows'
@@ -83,8 +83,9 @@ jobs:
         with:
           version: ${{ steps.set_qt_arch.outputs.QT_VER }}
           arch: win64_${{ steps.set_qt_arch.outputs.QT_ARCH }}
-          dir: C:\
+          dir: 'C:\'
           cache: true
+          tools: 'tools_mingw1310'
 
       - name: Setup Build Directory
         run: |
@@ -94,18 +95,20 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $qtPath = "C:\\Qt\\${{ steps.set_qt_arch.outputs.QT_VER }}\\win64_${{ steps.set_qt_arch.outputs.QT_ARCH }}"
           if ( '${{ matrix.compiler }}' -eq 'msvc' ) {
             $generator = "NMake Makefiles"
           } else {
             $generator = "MinGW Makefiles"
           }
-          echo "C:\\Qt\\Tools\\${{ steps.set_qt_arch.outputs.QT_ARCH }}\\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          if ( '${{ matrix.compiler }}' -eq 'gcc' ) {
+            echo "C:/Qt/Tools/mingw1310_64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            $env:PATH = "C:\Qt\Tools\mingw1310_64\bin;$env:PATH"
+          }
           cd "${{ github.workspace }}/work/build/${{ github.event.repository.name }}"
           cmake -G $generator "${{ github.workspace }}" `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install" `
-            -DCMAKE_PREFIX_PATH=$qtPath `
+            -DCMAKE_PREFIX_PATH=$env:QT_ROOT_DIR `
             ${{ matrix.qt_version == 'qt6' && '-DBUILD_WITH_QT6=true' || '' }}
 
       - name: Run CMake (Mac/Linux Only)
