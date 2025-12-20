@@ -73,9 +73,19 @@ if(ANDROID)
     list(APPEND qtkeychain_LIBRARIES_PRIVATE ${QTANDROIDEXTRAS_LIBRARIES} )
 endif()
 
+if(EMSCRIPTEN)
+    list(APPEND qtkeychain_SOURCES keychain_wasm.cpp)
+endif()
+
 QT_WRAP_CPP(qtkeychain_MOC_OUTFILES keychain.h keychain_p.h gnomekeyring_p.h)
 
 add_library(${QTKEYCHAIN_TARGET_NAME} ${qtkeychain_SOURCES} ${qtkeychain_MOC_OUTFILES} ${qtkeychain_QM_FILES})
+
+if(EMSCRIPTEN)
+    # Qt's Wasm support uses Embind for C++/JS interaction.
+    target_link_options(${QTKEYCHAIN_TARGET_NAME} INTERFACE "--bind")
+endif()
+
 if(WIN32)
     set_target_properties( ${QTKEYCHAIN_TARGET_NAME} PROPERTIES DEBUG_POSTFIX "d" )
 endif()
