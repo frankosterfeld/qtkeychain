@@ -51,7 +51,7 @@ if(HAIKU)
     list(APPEND qtkeychain_LIBRARIES ${BE_LIBRARY})
 endif()
 
-if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT HAIKU)
+if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT HAIKU AND NOT EMSCRIPTEN)
     option(LIBSECRET_SUPPORT "Build with libsecret support" ON)
 
     if(LIBSECRET_SUPPORT)
@@ -66,6 +66,10 @@ if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT HAIKU)
     list(APPEND qtkeychain_SOURCES keychain_unix.cpp gnomekeyring.cpp libsecret.cpp plaintextstore.cpp)
     qt_add_dbus_interface(qtkeychain_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/org.kde.KWallet.xml kwallet_interface KWalletInterface)
     list(APPEND qtkeychain_LIBRARIES ${QTDBUS_LIBRARIES} )
+endif()
+
+if (EMSCRIPTEN)
+    list(APPEND qtkeychain_SOURCES plaintextstore.cpp)
 endif()
 
 if(ANDROID)
