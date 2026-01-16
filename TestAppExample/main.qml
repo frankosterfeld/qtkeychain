@@ -17,6 +17,20 @@ Window {
         spacing: 20
 
         Label {
+            text: 'Service:'
+            font.pixelSize: 20
+        }
+
+        TextField {
+            id: serviceNameTextField
+
+            width: parent.width
+            height: 50
+
+            text: 'keychain.example.project.app'
+        }
+
+        Label {
             text: 'Key name:'
             font.pixelSize: 20
         }
@@ -103,6 +117,7 @@ Window {
                 text: 'Store'
 
                 onClicked: {
+                    KeyChain.setService(serviceNameTextField.text.trim());
                     KeyChain.writeKey(keyNameTextField.text.trim(), keyValueTextField.text.trim())
                 }
             }
@@ -113,6 +128,7 @@ Window {
                 text: 'Restore'
 
                 onClicked: {
+                    KeyChain.setService(serviceNameTextField.text.trim());
                     KeyChain.readKey(keyNameTextField.text.trim())
                 }
             }
@@ -122,6 +138,7 @@ Window {
                 height: parent.height
                 text: 'Delete'
                 onClicked: {
+                    KeyChain.setService(serviceNameTextField.text.trim());
                     KeyChain.deleteKey(keyNameTextField.text.trim())
                 }
             }
