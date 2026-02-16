@@ -137,6 +137,7 @@ add_subdirectory(qtkeychain)
 set(qtkeychain_TR_FILES
       translations/qtkeychain_de.ts
       translations/qtkeychain_fr.ts
+      translations/qtkeychain_ka.ts
       translations/qtkeychain_ro.ts
       translations/qtkeychain_ru.ts
       translations/qtkeychain_sv.ts
