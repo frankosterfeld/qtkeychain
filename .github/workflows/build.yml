@@ -132,3 +132,91 @@ jobs:
           name: build-artifact ${{ matrix.os }} ${{ matrix.compiler }} ${{ matrix.qt_version }}
           path: ${{ github.workspace }}/work/build/${{ github.event.repository.name }}
 
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup CMake and Ninja
+        uses: lukka/get-cmake@latest
+
+      - name: Install Qt for Android (arm64-v8a)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          target: android
+          arch: android_arm64_v8a
+          cache: true
+          extra: --autodesktop
+
+      - name: Build and install qtkeychain (Android)
+        run: |
+          cmake -S ${{ github.workspace }} -B build/qtkeychain \
+            -DCMAKE_TOOLCHAIN_FILE=$QT_ROOT_DIR/lib/cmake/Qt6/qt.toolchain.cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_WITH_QT6=ON \
+            -DBUILD_TRANSLATIONS=OFF \
+            -DBUILD_TESTING=OFF
+          cmake --build build/qtkeychain
+          cmake --install build/qtkeychain --prefix ${{ github.workspace }}/install
+
+      - name: Build TestAppExample (Android)
+        run: |
+          cmake -S ${{ github.workspace }}/TestAppExample -B build/testapp \
+            -DCMAKE_TOOLCHAIN_FILE=$QT_ROOT_DIR/lib/cmake/Qt6/qt.toolchain.cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DQt6Keychain_DIR=${{ github.workspace }}/install/lib/cmake/Qt6Keychain \
+            -DBUILD_WITH_QT6=ON
+          cmake --build build/testapp
+
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup CMake and Ninja
+        uses: lukka/get-cmake@latest
+
+      - name: Install Qt for iOS
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          target: ios
+          cache: true
+          extra: --autodesktop
+
+      - name: Build and install qtkeychain (iOS)
+        run: |
+          cmake -S ${{ github.workspace }} -B build/qtkeychain \
+            -G Xcode \
+            -DCMAKE_TOOLCHAIN_FILE=$QT_ROOT_DIR/lib/cmake/Qt6/qt.toolchain.cmake \
+            -DBUILD_WITH_QT6=ON \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DBUILD_TRANSLATIONS=OFF \
+            -DBUILD_TESTING=OFF \
+            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
+            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
+          cmake --build build/qtkeychain --config Release
+          cmake --install build/qtkeychain --prefix ${{ github.workspace }}/install --config Release
+
+      - name: Build TestAppExample (iOS)
+        run: |
+          cmake -S ${{ github.workspace }}/TestAppExample -B build/testapp \
+            -G Xcode \
+            -DCMAKE_TOOLCHAIN_FILE=$QT_ROOT_DIR/lib/cmake/Qt6/qt.toolchain.cmake \
+            -DQt6Keychain_DIR=${{ github.workspace }}/install/lib/cmake/Qt6Keychain \
+            -DBUILD_WITH_QT6=ON \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
+            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
+          cmake --build build/testapp --config Release
