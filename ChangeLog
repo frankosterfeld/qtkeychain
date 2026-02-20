@@ -1,6 +1,16 @@
 ChangeLog
 =========
 
+version 0.16.0 (release 2026-02-20)
+
+ - Add support for selecting backend via environment variable (Balló György)
+ - Use default DBus timeout for KWallet check (Nicolas Fella)
+ - Fix the crash caused by timeout when reading or writing keychain on macOS (yaoxp)
+ - Fix restore-after-deletion issue by creating QKeychain jobs dynamically (Saif Khalifa)
+ - Added Swedish translation (Daniel Nylander)
+ - Added Georgian translation (Ekaterine Papava)
+ - Fixes for various build/build system issues
+
 version 0.15.0 (release 2025-01-16)
 
  - Windows: Increase size of possible payloads (Hannah von Reth <vonreth@kde.org>)
