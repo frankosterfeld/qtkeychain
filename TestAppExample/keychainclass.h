@@ -22,9 +22,6 @@ Q_SIGNALS:
     void error(const QString &errorText);
 
 private:
-    QKeychain::ReadPasswordJob m_readCredentialJob;
-    QKeychain::WritePasswordJob m_writeCredentialJob;
-    QKeychain::DeletePasswordJob m_deleteCredentialJob;
 };
 
 #endif // KEYCHAINCLASS_H
