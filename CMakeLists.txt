@@ -25,8 +25,17 @@ include(ECMSetupVersion)
 include(ECMGeneratePriFile)
 include(CMakeDependentOption)
 
+if(CMAKE_SYSTEM_NAME STREQUAL Android)
+    set(ANDROID 1)
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL Haiku)
+    set(HAIKU 1)
+endif()
+
 option(BUILD_WITH_QT6 "Build qtkeychain with Qt 6" OFF)
-option(BUILD_TEST_APPLICATION "Build test application" OFF)
+option(BUILD_TEST_APPLICATION "Build test application (CLI)" OFF)
+option(BUILD_QTQUICK_DEMO "Build QtQuick demo application" OFF)
 option(BUILD_TRANSLATIONS "Build translations" ON)
 option(BUILD_SHARED_LIBS "Build dynamic library" ON)
 if(QTKEYCHAIN_STATIC)
@@ -35,14 +44,6 @@ if(QTKEYCHAIN_STATIC)
 endif()
 CMAKE_DEPENDENT_OPTION(BUILD_TRANSLATIONS_AS_RESOURCES "Bundle translations with the library" OFF
                        "BUILD_TRANSLATIONS" OFF)
-
-if(CMAKE_SYSTEM_NAME STREQUAL Android)
-    set(ANDROID 1)
-endif()
-
-if(CMAKE_SYSTEM_NAME STREQUAL Haiku)
-    set(HAIKU 1)
-endif()
 
 if (WIN32)
     option(USE_CREDENTIAL_STORE "Build with windows CredentialStore support" ON)
@@ -179,7 +180,7 @@ endif( BUILD_TRANSLATIONS )
 
 
 ###
-### Test application ("testclient")
+### Test applications
 ###
 
 if(BUILD_TEST_APPLICATION)
@@ -201,8 +202,12 @@ if(BUILD_TEST_APPLICATION)
     target_link_libraries( testclient ${testclient_LIBRARIES})
 endif()
 
+if(BUILD_QTQUICK_DEMO)
+    add_subdirectory(TestAppExample)
+endif()
+
 include(CTest)
-if(BUILD_TESTING)
+if(BUILD_TESTING AND NOT ANDROID AND NOT IOS)
     add_subdirectory(autotest)
 endif()
 
