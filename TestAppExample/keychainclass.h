@@ -3,7 +3,7 @@
 
 #include <QObject>
 
-#include <keychain.h>
+#include <qtkeychain/keychain.h>
 
 class KeyChainClass : public QObject
 {
