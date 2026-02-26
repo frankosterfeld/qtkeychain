@@ -9,10 +9,10 @@
 #include "keychain_p.h"
 #include "plaintextstore_p.h"
 
-#include <comdef.h>
 #include <windows.h>
 #include <wincred.h>
 #include <wincrypt.h>
+#include <comdef.h>
 
 #include <cmath>
 #include <memory>
