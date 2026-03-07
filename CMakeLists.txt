@@ -5,8 +5,11 @@ set(QTKEYCHAIN_SOVERSION 1)
 
 project(qtkeychain VERSION ${QTKEYCHAIN_VERSION} LANGUAGES CXX)
 
-# Enable C++11
-SET(CMAKE_CXX_STANDARD 11)
+if(BUILD_WITH_QT6)
+    set(CMAKE_CXX_STANDARD 17) # qt6 requires a c++17 compiler
+else()
+    set(CMAKE_CXX_STANDARD 11)
+endif()
 
 include(FindPkgConfig)
 
@@ -102,8 +105,7 @@ else()
 
   if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT HAIKU AND NOT EMSCRIPTEN)
     find_package(Qt6 COMPONENTS DBus REQUIRED)
-    include_directories(${Qt6DBus_INCLUDE_DIRS})
-    set(QTDBUS_LIBRARIES ${Qt6DBus_LIBRARIES})
+    set(QTDBUS_LIBRARIES Qt6::DBus)
     macro(qt_add_dbus_interface)
       qt6_add_dbus_interface(${ARGN})
     endmacro()
@@ -123,7 +125,7 @@ else()
     qt6_wrap_cpp(${ARGN})
   endmacro()
 
-  set(QTCORE_LIBRARIES ${Qt6Core_LIBRARIES})
+  set(QTCORE_LIBRARIES Qt6::Core)
 endif()
 
 set(QTKEYCHAIN_TARGET_NAME qt${QTKEYCHAIN_VERSION_INFIX}keychain)
