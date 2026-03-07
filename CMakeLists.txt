@@ -5,8 +5,11 @@ set(QTKEYCHAIN_SOVERSION 1)
 
 project(qtkeychain VERSION ${QTKEYCHAIN_VERSION} LANGUAGES CXX)
 
-# Enable C++11
-SET(CMAKE_CXX_STANDARD 11)
+if(BUILD_WITH_QT6)
+    set(CMAKE_CXX_STANDARD 17) # qt6 requires a c++17 compiler
+else()
+    set(CMAKE_CXX_STANDARD 11)
+endif()
 
 include(FindPkgConfig)
 
