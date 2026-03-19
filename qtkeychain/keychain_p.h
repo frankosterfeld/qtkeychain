@@ -36,7 +36,7 @@ class JobPrivate : public QObject
 {
     Q_OBJECT
 public:
-    enum Mode { Text, Binary };
+    enum Mode { Text, Binary, Map };
 
     virtual void scheduledStart() = 0;
 

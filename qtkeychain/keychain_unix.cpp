@@ -420,9 +420,10 @@ void ReadPasswordJobPrivate::kwalletEntryTypeFinished(QDBusPendingCallWatcher *w
     case Stream:
         mode = Binary;
         break;
-    case Map:
-        q->emitFinishedWithError(EntryNotFound, tr("Unsupported entry type 'Map'"));
-        return;
+    case KWalletEntryType::Map: {
+        mode = JobPrivate::Map;
+        break;
+    }
     default:
         q->emitFinishedWithError(OtherError, tr("Unknown kwallet entry type '%1'").arg(value));
         return;
@@ -430,6 +431,8 @@ void ReadPasswordJobPrivate::kwalletEntryTypeFinished(QDBusPendingCallWatcher *w
 
     const auto nextReply = (mode == Text)
             ? QDBusPendingCall(iface->readPassword(walletHandle, q->service(), key, q->service()))
+            : (mode == JobPrivate::Map)
+            ? QDBusPendingCall(iface->readMap(walletHandle, q->service(), key, q->service()))
             : QDBusPendingCall(iface->readEntry(walletHandle, q->service(), key, q->service()));
     auto nextWatcher = new QDBusPendingCallWatcher(nextReply, this);
     connect(nextWatcher, &QDBusPendingCallWatcher::finished, this,
@@ -443,6 +446,20 @@ void ReadPasswordJobPrivate::kwalletFinished(QDBusPendingCallWatcher *watcher)
             QDBusPendingReply<QByteArray> reply = *watcher;
             if (reply.isValid()) {
                 data = reply.value();
+            }
+        } else if (mode == Map) {
+            QDBusPendingReply<QByteArray> reply = *watcher;
+            if (reply.isValid()) {
+                QByteArray v = reply.value();
+                QMap<QString, QString> map;
+                QDataStream ds(&v, QIODevice::ReadOnly);
+                ds >> map;
+                QJsonObject json;
+                for (auto it = map.constBegin(); it != map.constEnd(); ++it) {
+                    json.insert(it.key(), it.value());
+                }
+                QJsonDocument doc(json);
+                data = doc.toJson(QJsonDocument::Compact);
             }
         } else {
             QDBusPendingReply<QString> reply = *watcher;
