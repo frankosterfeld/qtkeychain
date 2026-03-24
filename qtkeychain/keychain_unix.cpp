@@ -453,6 +453,7 @@ void ReadPasswordJobPrivate::kwalletFinished(QDBusPendingCallWatcher *watcher)
                 QByteArray v = reply.value();
                 QMap<QString, QString> map;
                 QDataStream ds(&v, QIODevice::ReadOnly);
+                ds.setVersion(QDataStream::Qt_5_15);
                 ds >> map;
                 QJsonObject json;
                 for (auto it = map.constBegin(); it != map.constEnd(); ++it) {
