@@ -19,24 +19,20 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 void qtkeychain_read_password_success(JobPrivate *job, const char *data, int length)
 {
-    if (job) {
-        job->data = QByteArray(data, length);
-        job->q->emitFinished();
-    }
+    job->data = QByteArray(data, length);
+    job->q->emitFinished();
 }
 
 EMSCRIPTEN_KEEPALIVE
 void qtkeychain_write_password_success(JobPrivate *job)
 {
-    if (job)
-        job->q->emitFinished();
+    job->q->emitFinished();
 }
 
 EMSCRIPTEN_KEEPALIVE
 void qtkeychain_error(JobPrivate *job, int error, const char *errorString)
 {
-    if (job)
-        job->q->emitFinishedWithError(static_cast<Error>(error), QString::fromUtf8(errorString));
+    job->q->emitFinishedWithError(static_cast<Error>(error), QString::fromUtf8(errorString));
 }
 }
 
@@ -196,6 +192,8 @@ EM_JS(void, show_bridge_form,
               finishWithError(accessDeniedByUser, "User cancelled");
           };
 
+          const isJobAlive = () => !!(window.qtk_active_jobs && window.qtk_active_jobs.has(job));
+
           if (!isWrite && hasCredAPI("get")) {
               const btn = createBtn(extraDiv, {
                   className: "qtk-success", textContent: "Use a saved password..."
@@ -208,7 +206,7 @@ EM_JS(void, show_bridge_form,
                   console.log("QtKeychain: Requesting credentials...");
                   navigator.credentials.get({ password: true })
                       .then(cred => {
-                          if (cred) {
+                          if (cred && isJobAlive()) {
                               userInput.value = cred.id || "";
                               passInput.value = cred.password || "";
                               form.dispatchEvent(new Event("submit"));
@@ -228,6 +226,8 @@ EM_JS(void, show_bridge_form,
               if (isWrite) {
                   const done = () => {
                       console.log("QtKeychain: Save complete");
+                      if (!isJobAlive())
+                          return;
                       cleanup();
                       _qtkeychain_write_password_success(job);
                   };
