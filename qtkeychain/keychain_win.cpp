@@ -77,6 +77,18 @@ std::pair<QByteArray, QString> protectData(const QByteArray &data)
 
 #if defined(USE_CREDENTIAL_STORE)
 
+struct CredentialDeleter
+{
+    explicit CredentialDeleter(PCREDENTIALW cred) : m_cred(cred) { }
+    ~CredentialDeleter() {
+        if (m_cred) {
+            CredFree(m_cred);
+        }
+    }
+
+    PCREDENTIALW m_cred;
+};
+
 /***
  * The credentials store has a limit of CRED_MAX_CREDENTIAL_BLOB_SIZE (5* 512)
  * As this might not be enough in some scenarios, for bigger payloads we use CryptProtectData which
@@ -90,6 +102,7 @@ std::pair<QByteArray, QString> protectData(const QByteArray &data)
 void ReadPasswordJobPrivate::scheduledStart()
 {
     PCREDENTIALW cred = {};
+    CredentialDeleter deleter(cred);
 
     if (!CredReadW(reinterpret_cast<const wchar_t *>(key.utf16()), CRED_TYPE_GENERIC, 0, &cred)) {
         Error err;
@@ -128,8 +141,6 @@ void ReadPasswordJobPrivate::scheduledStart()
         }
         data = result.first;
     }
-
-    CredFree(cred);
 
     q->emitFinished();
 }
