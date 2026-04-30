@@ -79,6 +79,7 @@ public:
     using Object::Object;
 
     int read() const;
+    bool readAll(QByteArray &out, QString *errorString = nullptr) const;
 };
 
 class ByteArrayInputStream : public InputStream
