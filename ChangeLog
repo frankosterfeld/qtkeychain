@@ -7,6 +7,7 @@ version 0.16.0 (release 2026-04-29)
  - Use default DBus timeout for KWallet check (Nicolas Fella)
  - Fix the crash caused by timeout when reading or writing keychain on macOS (yaoxp)
  - Fix restore-after-deletion issue by creating QKeychain jobs dynamically (Saif Khalifa)
+ - Add legacy support for KWallet maps (Marco Martin)
  - Added Swedish translation (Daniel Nylander)
  - Added Georgian translation (Ekaterine Papava)
  - Fixes for various build/build system issues
