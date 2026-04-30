@@ -200,6 +200,13 @@ public:
     PublicKey(const Key &init) : Key(init) { }
 };
 
+class SecureRandom : public java::lang::Object
+{
+public:
+    SecureRandom();
+    bool nextBytes(QByteArray &bytes) const;
+};
+
 class KeyPair : public java::lang::Object
 {
 public:
@@ -320,6 +327,22 @@ public:
 namespace javax {
 namespace crypto {
 
+class SecretKeySpec : public java::security::Key
+{
+public:
+    using Key::Key;
+
+    explicit SecretKeySpec(const QByteArray &key, const QString &algorithm);
+};
+
+class GCMParameterSpec : public java::security::spec::AlgorithmParameterSpec
+{
+public:
+    using AlgorithmParameterSpec::AlgorithmParameterSpec;
+
+    explicit GCMParameterSpec(int tLen, const QByteArray &iv);
+};
+
 class Cipher : public java::lang::Object
 {
 public:
@@ -330,6 +353,10 @@ public:
 
     static Cipher getInstance(const QString &transformation);
     bool init(int opMode, const java::security::Key &key) const;
+    bool init(int opMode, const java::security::Key &key,
+              const java::security::spec::AlgorithmParameterSpec &params) const;
+    bool doFinal(const QByteArray &input, QByteArray &output,
+                 QString *errorString = nullptr) const;
 };
 
 class CipherInputStream : public java::io::FilterInputStream

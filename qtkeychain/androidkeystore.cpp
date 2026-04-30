@@ -271,13 +271,7 @@ bool InputStream::readAll(QByteArray &out, QString *errorString) const
     const jclass cls = env->GetObjectClass(obj);
     const jmethodID readMethod = env->GetMethodID(cls, "read", "()I");
     env->DeleteLocalRef(cls);
-    if (!readMethod) {
-        if (env->ExceptionCheck())
-            env->ExceptionClear();
-        if (errorString)
-            *errorString = QStringLiteral("Could not find InputStream.read() method");
-        return false;
-    }
+    Q_ASSERT(readMethod);
 
     out.clear();
     while (true) {
@@ -310,11 +304,7 @@ bool OutputStream::close() const
     const jclass cls = env->GetObjectClass(object());
     const jmethodID closeMethod = env->GetMethodID(cls, "close", "()V");
     env->DeleteLocalRef(cls);
-    if (!closeMethod) {
-        if (env->ExceptionCheck())
-            env->ExceptionClear();
-        return false;
-    }
+    Q_ASSERT(closeMethod);
     env->CallVoidMethod(object(), closeMethod);
     if (env->ExceptionCheck()) {
         env->ExceptionClear();
@@ -340,6 +330,88 @@ bool Cipher::init(int opMode, const Key &key) const
 {
     callMethod<void>("init", "(ILjava/security/Key;)V", opMode, key.object());
     return handleExceptions();
+}
+
+bool Cipher::init(int opMode, const Key &key,
+                  const java::security::spec::AlgorithmParameterSpec &params) const
+{
+    callMethod<void>("init",
+                     "(ILjava/security/Key;Ljava/security/spec/AlgorithmParameterSpec;)V",
+                     opMode, key.object(), params.object());
+    return handleExceptions();
+}
+
+bool Cipher::doFinal(const QByteArray &input, QByteArray &output, QString *errorString) const
+{
+    QAndroidJniEnvironment env;
+    const jobject obj = object();
+    const jclass cls = env->GetObjectClass(obj);
+    const jmethodID method = env->GetMethodID(cls, "doFinal", "([B)[B");
+    env->DeleteLocalRef(cls);
+    Q_ASSERT(method);
+    const jobject resultObj =
+            env->CallObjectMethod(obj, method, toArray(input).object());
+    if (env->ExceptionCheck()) {
+        const jthrowable exception = env->ExceptionOccurred();
+        env->ExceptionClear();
+        if (errorString && exception) {
+            *errorString = QAndroidJniObject(exception)
+                                   .callObjectMethod<jstring>("toString")
+                                   .toString();
+            env->DeleteLocalRef(exception);
+        }
+        if (resultObj)
+            env->DeleteLocalRef(resultObj);
+        return false;
+    }
+    output = fromArray(static_cast<jbyteArray>(resultObj));
+    env->DeleteLocalRef(resultObj);
+    return true;
+}
+
+SecureRandom::SecureRandom()
+    : Object(QAndroidJniObject("java/security/SecureRandom"))
+{
+    handleExceptions();
+}
+
+bool SecureRandom::nextBytes(QByteArray &bytes) const
+{
+    QAndroidJniEnvironment env;
+    const jsize size = static_cast<jsize>(bytes.size());
+    const jbyteArray array = env->NewByteArray(size);
+    if (!array)
+        return false;
+    const jobject obj = object();
+    const jclass cls = env->GetObjectClass(obj);
+    const jmethodID method = env->GetMethodID(cls, "nextBytes", "([B)V");
+    env->DeleteLocalRef(cls);
+    Q_ASSERT(method);
+    env->CallVoidMethod(obj, method, array);
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        env->DeleteLocalRef(array);
+        return false;
+    }
+    bytes = fromArray(array);
+    env->DeleteLocalRef(array);
+    return true;
+}
+
+SecretKeySpec::SecretKeySpec(const QByteArray &key, const QString &algorithm)
+    : Key(QAndroidJniObject("javax/crypto/spec/SecretKeySpec",
+                            "([BLjava/lang/String;)V",
+                            toArray(key).object(), fromString(algorithm).object()))
+{
+    handleExceptions();
+}
+
+GCMParameterSpec::GCMParameterSpec(int tLen, const QByteArray &iv)
+    : AlgorithmParameterSpec(QAndroidJniObject("javax/crypto/spec/GCMParameterSpec",
+                                               "(I[B)V",
+                                               static_cast<jint>(tLen), toArray(iv).object()))
+{
+    handleExceptions();
 }
 
 CipherOutputStream::CipherOutputStream(const OutputStream &stream, const Cipher &cipher)
