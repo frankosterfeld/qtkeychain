@@ -12,29 +12,21 @@
 #include "androidkeystore_p.h"
 #include "plaintextstore_p.h"
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#  include <QtAndroid>
-#endif
-
 using namespace QKeychain;
 
-using android::content::Context;
-using android::security::KeyPairGeneratorSpec;
+using android::security::keystore::KeyGenParameterSpec;
 
 using java::io::ByteArrayInputStream;
 using java::security::SecureRandom;
 using java::security::KeyPair;
 using java::security::KeyPairGenerator;
 using java::security::KeyStore;
-using java::security::interfaces::RSAPrivateKey;
 using java::security::interfaces::RSAPublicKey;
-using java::util::Calendar;
 
 using javax::crypto::Cipher;
 using javax::crypto::CipherInputStream;
 using javax::crypto::GCMParameterSpec;
 using javax::crypto::SecretKeySpec;
-using javax::security::auth::x500::X500Principal;
 
 namespace {
 
@@ -165,33 +157,13 @@ void WritePasswordJobPrivate::scheduledStart()
 
     const auto &alias = makeAlias(q->service(), q->key());
     if (!keyStore.containsAlias(alias)) {
-        const auto start = Calendar::getInstance();
-        const auto end = Calendar::getInstance();
-        end.add(Calendar::YEAR, 99);
-
-        const KeyPairGeneratorSpec spec =
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-                KeyPairGeneratorSpec::Builder(Context(QtAndroid::androidActivity()))
-                        .
-#elif QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
-                KeyPairGeneratorSpec::Builder(
-                        Context(QNativeInterface::QAndroidApplication::context()))
-                        .
-#elif QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
-                KeyPairGeneratorSpec::Builder(
-                        Context((jobject)QNativeInterface::QAndroidApplication::context()))
-                        .
-#else
-                KeyPairGeneratorSpec::Builder(
-                        Context(QNativeInterface::QAndroidApplication::context().object<jobject>()))
-                        .
-#endif
-                setAlias(alias)
-                        .setSubject(
-                                X500Principal(QStringLiteral("CN=QtKeychain, O=Android Authority")))
-                        .setSerialNumber(java::math::BigInteger::ONE)
-                        .setStartDate(start.getTime())
-                        .setEndDate(end.getTime())
+        const KeyGenParameterSpec spec =
+                KeyGenParameterSpec::Builder(
+                        alias,
+                        android::security::keystore::KeyProperties::PURPOSE_ENCRYPT
+                                | android::security::keystore::KeyProperties::PURPOSE_DECRYPT)
+                        .setEncryptionPadding(QStringLiteral("PKCS1Padding"))
+                        .setKeySize(2048)
                         .build();
 
         const auto generator = KeyPairGenerator::getInstance(QStringLiteral("RSA"),

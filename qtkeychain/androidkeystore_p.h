@@ -27,16 +27,9 @@ namespace QKeychain {
 
 namespace javax {
 namespace security {
-
-namespace auth {
-namespace x500 {
-class X500Principal;
-}
-} // namespace auth
 namespace cert {
 class Certificate;
 }
-
 } // namespace security
 } // namespace javax
 
@@ -123,49 +116,6 @@ public:
 };
 
 } // namespace io
-
-namespace math {
-
-class BigInteger : public java::lang::Object
-{
-public:
-    using Object::Object;
-
-    static const BigInteger ZERO;
-    static const BigInteger ONE;
-    static const BigInteger TEN;
-};
-
-} // namespace math
-
-namespace util {
-
-class Date : public java::lang::Object
-{
-public:
-    using Object::Object;
-};
-
-class Calendar : public java::lang::Object
-{
-public:
-    using Object::Object;
-
-    static const int YEAR;
-    static const int MONTH;
-    static const int DAY;
-    static const int HOUR;
-    static const int MINUTE;
-    static const int SECOND;
-    static const int MILLISECOND;
-
-    static Calendar getInstance();
-
-    bool add(int field, int amount) const;
-    Date getTime() const;
-};
-
-} // namespace util
 
 namespace security {
 namespace spec {
@@ -288,19 +238,15 @@ public:
 } // namespace java
 
 namespace android {
-namespace content {
-
-class Context : public java::lang::Object
-{
-public:
-    using Object::Object;
-};
-
-} // namespace content
-
 namespace security {
+namespace keystore {
 
-class KeyPairGeneratorSpec : public java::security::spec::AlgorithmParameterSpec
+namespace KeyProperties {
+static const int PURPOSE_ENCRYPT = 1;
+static const int PURPOSE_DECRYPT = 2;
+} // namespace KeyProperties
+
+class KeyGenParameterSpec : public java::security::spec::AlgorithmParameterSpec
 {
 public:
     class Builder : public java::lang::Object
@@ -308,19 +254,17 @@ public:
     public:
         using Object::Object;
 
-        explicit Builder(const android::content::Context &context);
+        explicit Builder(const QString &keystoreAlias, int purposes);
 
-        Builder setAlias(const QString &alias) const;
-        Builder setSubject(const javax::security::auth::x500::X500Principal &subject) const;
-        Builder setSerialNumber(const java::math::BigInteger &serial) const;
-        Builder setStartDate(const java::util::Date &date) const;
-        Builder setEndDate(const java::util::Date &date) const;
-        KeyPairGeneratorSpec build() const;
+        Builder setEncryptionPadding(const QString &padding) const;
+        Builder setKeySize(int keySize) const;
+        KeyGenParameterSpec build() const;
     };
 
     using AlgorithmParameterSpec::AlgorithmParameterSpec;
 };
 
+} // namespace keystore
 } // namespace security
 } // namespace android
 
@@ -378,22 +322,6 @@ public:
 } // namespace crypto
 
 namespace security {
-namespace auth {
-namespace x500 {
-
-class X500Principal;
-
-class X500Principal : public java::lang::Object
-{
-public:
-    using Object::Object;
-
-    explicit X500Principal(const QString &name);
-};
-
-} // namespace x500
-} // namespace auth
-
 namespace cert {
 
 class Certificate : public java::lang::Object
