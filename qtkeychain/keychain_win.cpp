@@ -224,7 +224,7 @@ void DeletePasswordJobPrivate::scheduledStart()
             break;
         default:
             err = OtherError;
-            msg = tr("Could not decrypt data");
+            msg = tr("Could not delete password");
             break;
         }
 
