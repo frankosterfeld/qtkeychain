@@ -10,24 +10,15 @@
 
 using namespace QKeychain;
 
-using namespace android::content;
-using namespace android::security;
-
 using namespace java::io;
 using namespace java::lang;
-using namespace java::math;
-using namespace java::util;
 using namespace java::security;
 using namespace java::security::spec;
 
 using namespace javax::crypto;
-using namespace javax::security::auth::x500;
 using namespace javax::security::cert;
 
-const BigInteger BigInteger::ONE =
-        BigInteger::getStaticObjectField("java/math/BigInteger", "ONE", "Ljava/math/BigInteger;");
-
-const int Calendar::YEAR = Calendar::getStaticField<jint>("java/util/Calendar", "YEAR");
+using namespace android::security::keystore;
 
 const int Cipher::DECRYPT_MODE =
         Cipher::getStaticField<jint>("javax/crypto/Cipher", "DECRYPT_MODE");
@@ -146,79 +137,44 @@ bool KeyStore::load(const KeyStore::LoadStoreParameter &param) const
     return handleExceptions();
 }
 
-Calendar Calendar::getInstance()
+KeyGenParameterSpec::Builder::Builder(const QString &keystoreAlias, int purposes)
+    : Object(QAndroidJniObject("android/security/keystore/KeyGenParameterSpec$Builder",
+                               "(Ljava/lang/String;I)V",
+                               fromString(keystoreAlias).object(),
+                               static_cast<jint>(purposes)))
+{
+    handleExceptions();
+}
+
+KeyGenParameterSpec::Builder
+KeyGenParameterSpec::Builder::setEncryptionPadding(const QString &padding) const
+{
+    QAndroidJniEnvironment env;
+    const jclass stringClass = env->FindClass("java/lang/String");
+    const jobjectArray arr = env->NewObjectArray(1, stringClass, nullptr);
+    env->DeleteLocalRef(stringClass);
+    const QAndroidJniObject str = fromString(padding);
+    env->SetObjectArrayElement(arr, 0, str.object());
+    const KeyGenParameterSpec::Builder result = handleExceptions(callObjectMethod(
+            "setEncryptionPaddings",
+            "([Ljava/lang/String;)Landroid/security/keystore/KeyGenParameterSpec$Builder;",
+            arr));
+    env->DeleteLocalRef(arr);
+    return result;
+}
+
+KeyGenParameterSpec::Builder KeyGenParameterSpec::Builder::setKeySize(int keySize) const
+{
+    return handleExceptions(callObjectMethod(
+            "setKeySize",
+            "(I)Landroid/security/keystore/KeyGenParameterSpec$Builder;",
+            static_cast<jint>(keySize)));
+}
+
+KeyGenParameterSpec KeyGenParameterSpec::Builder::build() const
 {
     return handleExceptions(
-            callStaticObjectMethod("java/util/Calendar", "getInstance", "()Ljava/util/Calendar;"));
-}
-
-bool Calendar::add(int field, int amount) const
-{
-    callMethod<void>("add", "(II)V", field, amount);
-    return handleExceptions();
-}
-
-Date Calendar::getTime() const
-{
-    return handleExceptions(callObjectMethod("getTime", "()Ljava/util/Date;"));
-}
-
-KeyPairGeneratorSpec::Builder::Builder(const Context &context)
-    : Object(QAndroidJniObject("android/security/KeyPairGeneratorSpec$Builder",
-                               "(Landroid/content/Context;)V", context.object()))
-{
-    handleExceptions();
-}
-
-KeyPairGeneratorSpec::Builder KeyPairGeneratorSpec::Builder::setAlias(const QString &alias) const
-{
-    return handleExceptions(callObjectMethod(
-            "setAlias", "(Ljava/lang/String;)Landroid/security/KeyPairGeneratorSpec$Builder;",
-            fromString(alias).object()));
-}
-
-KeyPairGeneratorSpec::Builder
-KeyPairGeneratorSpec::Builder::setSubject(const X500Principal &subject) const
-{
-    return handleExceptions(callObjectMethod("setSubject",
-                                             "(Ljavax/security/auth/x500/X500Principal;)Landroid/"
-                                             "security/KeyPairGeneratorSpec$Builder;",
-                                             subject.object()));
-}
-
-KeyPairGeneratorSpec::Builder
-KeyPairGeneratorSpec::Builder::setSerialNumber(const BigInteger &serial) const
-{
-    return handleExceptions(callObjectMethod(
-            "setSerialNumber",
-            "(Ljava/math/BigInteger;)Landroid/security/KeyPairGeneratorSpec$Builder;",
-            serial.object()));
-}
-
-KeyPairGeneratorSpec::Builder KeyPairGeneratorSpec::Builder::setStartDate(const Date &date) const
-{
-    return handleExceptions(callObjectMethod(
-            "setStartDate", "(Ljava/util/Date;)Landroid/security/KeyPairGeneratorSpec$Builder;",
-            date.object()));
-}
-
-KeyPairGeneratorSpec::Builder KeyPairGeneratorSpec::Builder::setEndDate(const Date &date) const
-{
-    return handleExceptions(callObjectMethod(
-            "setEndDate", "(Ljava/util/Date;)Landroid/security/KeyPairGeneratorSpec$Builder;",
-            date.object()));
-}
-
-KeyPairGeneratorSpec KeyPairGeneratorSpec::Builder::build() const
-{
-    return handleExceptions(callObjectMethod("build", "()Landroid/security/KeyPairGeneratorSpec;"));
-}
-
-X500Principal::X500Principal(const QString &name)
-    : Object(QAndroidJniObject("javax/security/auth/x500/X500Principal", "(Ljava/lang/String;)V",
-                               fromString(name).object()))
-{
-    handleExceptions();
+            callObjectMethod("build", "()Landroid/security/keystore/KeyGenParameterSpec;"));
 }
 
 Certificate KeyStore::PrivateKeyEntry::getCertificate() const
@@ -264,6 +220,34 @@ int InputStream::read() const
     return handleExceptions(callMethod<int>("read"), -1);
 }
 
+bool InputStream::readAll(QByteArray &out, QString *errorString) const
+{
+    QAndroidJniEnvironment env;
+    const jobject obj = object();
+    const jclass cls = env->GetObjectClass(obj);
+    const jmethodID readMethod = env->GetMethodID(cls, "read", "()I");
+    env->DeleteLocalRef(cls);
+    Q_ASSERT(readMethod);
+
+    out.clear();
+    while (true) {
+        const jint nextByte = env->CallIntMethod(obj, readMethod);
+        if (env->ExceptionCheck()) {
+            const jthrowable exception = env->ExceptionOccurred();
+            env->ExceptionClear();
+            if (errorString && exception) {
+                *errorString = QAndroidJniObject(exception).callObjectMethod<jstring>("toString").toString();
+                env->DeleteLocalRef(exception);
+            }
+            return false;
+        }
+        if (nextByte == -1)
+            break;
+        out.append(static_cast<char>(nextByte));
+    }
+    return true;
+}
+
 bool OutputStream::write(const QByteArray &bytes) const
 {
     callMethod<void>("write", "([B)V", toArray(bytes).object());
@@ -272,8 +256,17 @@ bool OutputStream::write(const QByteArray &bytes) const
 
 bool OutputStream::close() const
 {
-    callMethod<void>("close");
-    return handleExceptions();
+    QAndroidJniEnvironment env;
+    const jclass cls = env->GetObjectClass(object());
+    const jmethodID closeMethod = env->GetMethodID(cls, "close", "()V");
+    env->DeleteLocalRef(cls);
+    Q_ASSERT(closeMethod);
+    env->CallVoidMethod(object(), closeMethod);
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return false;
+    }
+    return true;
 }
 
 bool OutputStream::flush() const
@@ -293,6 +286,88 @@ bool Cipher::init(int opMode, const Key &key) const
 {
     callMethod<void>("init", "(ILjava/security/Key;)V", opMode, key.object());
     return handleExceptions();
+}
+
+bool Cipher::init(int opMode, const Key &key,
+                  const java::security::spec::AlgorithmParameterSpec &params) const
+{
+    callMethod<void>("init",
+                     "(ILjava/security/Key;Ljava/security/spec/AlgorithmParameterSpec;)V",
+                     opMode, key.object(), params.object());
+    return handleExceptions();
+}
+
+bool Cipher::doFinal(const QByteArray &input, QByteArray &output, QString *errorString) const
+{
+    QAndroidJniEnvironment env;
+    const jobject obj = object();
+    const jclass cls = env->GetObjectClass(obj);
+    const jmethodID method = env->GetMethodID(cls, "doFinal", "([B)[B");
+    env->DeleteLocalRef(cls);
+    Q_ASSERT(method);
+    const jobject resultObj =
+            env->CallObjectMethod(obj, method, toArray(input).object());
+    if (env->ExceptionCheck()) {
+        const jthrowable exception = env->ExceptionOccurred();
+        env->ExceptionClear();
+        if (errorString && exception) {
+            *errorString = QAndroidJniObject(exception)
+                                   .callObjectMethod<jstring>("toString")
+                                   .toString();
+            env->DeleteLocalRef(exception);
+        }
+        if (resultObj)
+            env->DeleteLocalRef(resultObj);
+        return false;
+    }
+    output = fromArray(static_cast<jbyteArray>(resultObj));
+    env->DeleteLocalRef(resultObj);
+    return true;
+}
+
+SecureRandom::SecureRandom()
+    : Object(QAndroidJniObject("java/security/SecureRandom"))
+{
+    handleExceptions();
+}
+
+bool SecureRandom::nextBytes(QByteArray &bytes) const
+{
+    QAndroidJniEnvironment env;
+    const jsize size = static_cast<jsize>(bytes.size());
+    const jbyteArray array = env->NewByteArray(size);
+    if (!array)
+        return false;
+    const jobject obj = object();
+    const jclass cls = env->GetObjectClass(obj);
+    const jmethodID method = env->GetMethodID(cls, "nextBytes", "([B)V");
+    env->DeleteLocalRef(cls);
+    Q_ASSERT(method);
+    env->CallVoidMethod(obj, method, array);
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        env->DeleteLocalRef(array);
+        return false;
+    }
+    bytes = fromArray(array);
+    env->DeleteLocalRef(array);
+    return true;
+}
+
+SecretKeySpec::SecretKeySpec(const QByteArray &key, const QString &algorithm)
+    : Key(QAndroidJniObject("javax/crypto/spec/SecretKeySpec",
+                            "([BLjava/lang/String;)V",
+                            toArray(key).object(), fromString(algorithm).object()))
+{
+    handleExceptions();
+}
+
+GCMParameterSpec::GCMParameterSpec(int tLen, const QByteArray &iv)
+    : AlgorithmParameterSpec(QAndroidJniObject("javax/crypto/spec/GCMParameterSpec",
+                                               "(I[B)V",
+                                               static_cast<jint>(tLen), toArray(iv).object()))
+{
+    handleExceptions();
 }
 
 CipherOutputStream::CipherOutputStream(const OutputStream &stream, const Cipher &cipher)
