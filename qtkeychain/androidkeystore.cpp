@@ -264,6 +264,40 @@ int InputStream::read() const
     return handleExceptions(callMethod<int>("read"), -1);
 }
 
+bool InputStream::readAll(QByteArray &out, QString *errorString) const
+{
+    QAndroidJniEnvironment env;
+    const jobject obj = object();
+    const jclass cls = env->GetObjectClass(obj);
+    const jmethodID readMethod = env->GetMethodID(cls, "read", "()I");
+    env->DeleteLocalRef(cls);
+    if (!readMethod) {
+        if (env->ExceptionCheck())
+            env->ExceptionClear();
+        if (errorString)
+            *errorString = QStringLiteral("Could not find InputStream.read() method");
+        return false;
+    }
+
+    out.clear();
+    while (true) {
+        const jint nextByte = env->CallIntMethod(obj, readMethod);
+        if (env->ExceptionCheck()) {
+            const jthrowable exception = env->ExceptionOccurred();
+            env->ExceptionClear();
+            if (errorString && exception) {
+                *errorString = QAndroidJniObject(exception).callObjectMethod<jstring>("toString").toString();
+                env->DeleteLocalRef(exception);
+            }
+            return false;
+        }
+        if (nextByte == -1)
+            break;
+        out.append(static_cast<char>(nextByte));
+    }
+    return true;
+}
+
 bool OutputStream::write(const QByteArray &bytes) const
 {
     callMethod<void>("write", "([B)V", toArray(bytes).object());
@@ -272,8 +306,21 @@ bool OutputStream::write(const QByteArray &bytes) const
 
 bool OutputStream::close() const
 {
-    callMethod<void>("close");
-    return handleExceptions();
+    QAndroidJniEnvironment env;
+    const jclass cls = env->GetObjectClass(object());
+    const jmethodID closeMethod = env->GetMethodID(cls, "close", "()V");
+    env->DeleteLocalRef(cls);
+    if (!closeMethod) {
+        if (env->ExceptionCheck())
+            env->ExceptionClear();
+        return false;
+    }
+    env->CallVoidMethod(object(), closeMethod);
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return false;
+    }
+    return true;
 }
 
 bool OutputStream::flush() const

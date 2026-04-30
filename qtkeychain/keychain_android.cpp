@@ -80,8 +80,11 @@ void ReadPasswordJobPrivate::scheduledStart()
     QByteArray plainData;
     const CipherInputStream inputStream(ByteArrayInputStream(encryptedData), cipher);
 
-    for (int nextByte; (nextByte = inputStream.read()) != -1;)
-        plainData.append(nextByte);
+    QString readError;
+    if (!inputStream.readAll(plainData, &readError)) {
+        q->emitFinishedWithError(Error::OtherError, tr("Could not decrypt data: %1").arg(readError));
+        return;
+    }
 
     mode = plainTextStore.readMode(q->key());
     data = plainData;
