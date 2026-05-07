@@ -109,8 +109,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install" `
             -DCMAKE_PREFIX_PATH=$env:QT_ROOT_DIR `
-            ${{ matrix.qt_version == 'qt6' && '-DBUILD_WITH_QT6=true' || '' }}
-
+            ${{ matrix.qt_version == 'qt5' && '-DBUILD_WITH_QT5=ON' || '' }}
       - name: Run CMake (Mac/Linux Only)
         if: runner.os != 'Windows'
         run: |
@@ -118,7 +117,7 @@ jobs:
           cmake -G Ninja ${{ github.workspace }} \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install" \
-            ${{ matrix.qt_version == 'qt6' && '-DBUILD_WITH_QT6=true' || '' }}
+            ${{ matrix.qt_version == 'qt5' && '-DBUILD_WITH_QT5=ON' || '' }}
 
       - name: Build and Install
         run: |
@@ -162,7 +161,6 @@ jobs:
           cmake -S ${{ github.workspace }} -B build/qtkeychain \
             -DCMAKE_TOOLCHAIN_FILE=$QT_ROOT_DIR/lib/cmake/Qt6/qt.toolchain.cmake \
             -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_WITH_QT6=ON \
             -DBUILD_TRANSLATIONS=OFF
           cmake --build build/qtkeychain
           cmake --install build/qtkeychain --prefix ${{ github.workspace }}/install
@@ -172,8 +170,7 @@ jobs:
           cmake -S ${{ github.workspace }}/TestAppExample -B build/testapp \
             -DCMAKE_TOOLCHAIN_FILE=$QT_ROOT_DIR/lib/cmake/Qt6/qt.toolchain.cmake \
             -DCMAKE_BUILD_TYPE=Release \
-            -DQt6Keychain_DIR=${{ github.workspace }}/install/lib/cmake/Qt6Keychain \
-            -DBUILD_WITH_QT6=ON
+            -DQt6Keychain_DIR=${{ github.workspace }}/install/lib/cmake/Qt6Keychain
           cmake --build build/testapp
 
   build-ios:
@@ -199,7 +196,6 @@ jobs:
           cmake -S ${{ github.workspace }} -B build/qtkeychain \
             -G Xcode \
             -DCMAKE_TOOLCHAIN_FILE=$QT_ROOT_DIR/lib/cmake/Qt6/qt.toolchain.cmake \
-            -DBUILD_WITH_QT6=ON \
             -DBUILD_TRANSLATIONS=OFF \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
@@ -212,7 +208,6 @@ jobs:
             -G Xcode \
             -DCMAKE_TOOLCHAIN_FILE=$QT_ROOT_DIR/lib/cmake/Qt6/qt.toolchain.cmake \
             -DQt6Keychain_DIR=${{ github.workspace }}/install/lib/cmake/Qt6Keychain \
-            -DBUILD_WITH_QT6=ON \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
           cmake --build build/testapp --config Release

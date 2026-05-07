@@ -14,11 +14,11 @@ set(CMAKE_AUTOUIC ON)
 
 set(BUNDLE_IDENTIFIER "org.qtkeychain.TestAppExample")
 
-option(BUILD_WITH_QT6 "Build qtkeychain with Qt 6" OFF)
-if (BUILD_WITH_QT6)
-	set(QTx Qt6)
-else()
+option(BUILD_WITH_QT5 "Build qtkeychain with Qt 5 (default is Qt 6)" OFF)
+if (BUILD_WITH_QT5)
 	set(QTx Qt5)
+else()
+	set(QTx Qt6)
 endif()
 
 if(DEFINED QTKEYCHAIN_TARGET_NAME)
@@ -30,10 +30,10 @@ else()
 	if(EXISTS "${_qtkeychain_source_dir}/qtkeychain/keychain.h")
 		add_subdirectory("${_qtkeychain_source_dir}" "${CMAKE_CURRENT_BINARY_DIR}/qtkeychain_build")
 		# QTKEYCHAIN_TARGET_NAME is set inside the subdirectory scope, derive it here
-		if(BUILD_WITH_QT6)
-			set(KEYCHAIN_TARGET qt6keychain)
-		else()
+		if(BUILD_WITH_QT5)
 			set(KEYCHAIN_TARGET qt5keychain)
+		else()
+			set(KEYCHAIN_TARGET qt6keychain)
 		endif()
 	else()
 		# Fallback: find an already-installed QtKeychain
@@ -46,7 +46,7 @@ find_package(${QTx} COMPONENTS Core Network Quick Qml REQUIRED)
 
 qt_add_resources(QT_RESOURCES qml.qrc)
 
-if(BUILD_WITH_QT6)
+if(NOT BUILD_WITH_QT5)
 	qt_add_executable(TestAppExample
 		MANUAL_FINALIZATION
 		keychainclass.h
@@ -72,7 +72,7 @@ set_target_properties(TestAppExample PROPERTIES
 
 target_link_libraries(TestAppExample PRIVATE ${QTx}::Core ${QTx}::Network ${QTx}::Quick ${QTx}::Qml ${KEYCHAIN_TARGET})
 
-if(BUILD_WITH_QT6)
+if(NOT BUILD_WITH_QT5)
 	qt_import_qml_plugins(TestAppExample)
 	qt_finalize_target(TestAppExample)
 endif()
