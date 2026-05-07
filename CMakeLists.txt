@@ -5,12 +5,6 @@ set(QTKEYCHAIN_SOVERSION 1)
 
 project(qtkeychain VERSION ${QTKEYCHAIN_VERSION} LANGUAGES CXX)
 
-if(BUILD_WITH_QT6)
-    set(CMAKE_CXX_STANDARD 17) # qt6 requires a c++17 compiler
-else()
-    set(CMAKE_CXX_STANDARD 11)
-endif()
-
 include(FindPkgConfig)
 
 ###
@@ -36,7 +30,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Haiku)
     set(HAIKU 1)
 endif()
 
-option(BUILD_WITH_QT6 "Build qtkeychain with Qt 6" OFF)
+option(BUILD_WITH_QT5 "Build qtkeychain with Qt 5 (default is Qt 6)" OFF)
 option(BUILD_TEST_APPLICATION "Build test application (CLI)" OFF)
 option(BUILD_QTQUICK_DEMO "Build QtQuick demo application" OFF)
 option(BUILD_TRANSLATIONS "Build translations" ON)
@@ -56,13 +50,18 @@ if (WIN32)
     endif()
 endif()
 
-if( NOT BUILD_WITH_QT6 )
-    find_package(Qt5 COMPONENTS Core REQUIRED)
+if(BUILD_WITH_QT5)
+    set(QT_MAJOR_VERSION 5)
+    set(CMAKE_CXX_STANDARD 11)
+else()
+    set(QT_MAJOR_VERSION 6)
+    set(CMAKE_CXX_STANDARD 17)
 endif()
 
-if (Qt5Core_FOUND AND NOT BUILD_WITH_QT6)
-  set(QTKEYCHAIN_VERSION_INFIX 5)
+find_package(Qt${QT_MAJOR_VERSION} COMPONENTS Core REQUIRED)
+set(QTKEYCHAIN_VERSION_INFIX ${QT_MAJOR_VERSION})
 
+if (QT_MAJOR_VERSION EQUAL 5)
   if(ANDROID)
     if(Qt5Core_VERSION VERSION_LESS 5.7)
         find_package(Qt5 COMPONENTS Core REQUIRED Private)
@@ -100,10 +99,6 @@ if (Qt5Core_FOUND AND NOT BUILD_WITH_QT6)
   set(QTCORE_LIBRARIES ${Qt5Core_LIBRARIES})
   include_directories(${Qt5Core_INCLUDE_DIRS})
 else()
-  find_package(Qt6 COMPONENTS Core REQUIRED)
-  set(QTKEYCHAIN_VERSION_INFIX 6)
-
-
   if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT HAIKU AND NOT EMSCRIPTEN)
     find_package(Qt6 COMPONENTS DBus REQUIRED)
     set(QTDBUS_LIBRARIES Qt6::DBus)
@@ -191,13 +186,8 @@ if(BUILD_TEST_APPLICATION)
     if(APPLE)
         list(APPEND testclient_LIBRARIES "-framework Cocoa")
 
-        if (BUILD_WITH_QT6)
-            find_package(Qt6 COMPONENTS Gui REQUIRED)
-            list(APPEND testclient_LIBRARIES Qt6::Gui)
-        else()
-            find_package(Qt5 COMPONENTS Gui REQUIRED)
-            list(APPEND testclient_LIBRARIES Qt5::Gui)
-        endif()
+        find_package(Qt${QT_MAJOR_VERSION} COMPONENTS Gui REQUIRED)
+        list(APPEND testclient_LIBRARIES Qt${QT_MAJOR_VERSION}::Gui)
 
     endif()
     add_executable( testclient testclient.cpp )
