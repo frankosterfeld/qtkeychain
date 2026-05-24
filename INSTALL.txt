@@ -1,0 +1,18 @@
+!INSTALL INSTRUCTION
+
+launch this commands:
+
+ git clone git://github.com/frankosterfeld/qtkeychain
+ cd qtkeychain/
+ mkdir build
+ cd build
+
+now you have to decide which Qt version to use, for example:
+
+ cmake -D CMAKE_PREFIX_PATH=/opt/Qt/5.10.1/gcc_64/lib/cmake  ..
+
+the launch:
+ 
+ make
+ 
+Now you can install it for all users as root with "make install" or "sudo make install"on Ubuntu like distributions.
