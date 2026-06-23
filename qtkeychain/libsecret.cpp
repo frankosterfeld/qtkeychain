@@ -99,6 +99,13 @@ static void on_password_lookup(GObject *source, GAsyncResult *result, gpointer i
                                           arg->server.toUtf8().constData(), "type", "base64",
                                           nullptr);
                 return;
+            } else if (arg->self->mode == QKeychain::JobPrivate::Binary) {
+                arg->self->mode = QKeychain::JobPrivate::Text;
+                secret_password_lookup_fn(qtkeychainSchema(), nullptr, on_password_lookup, arg,
+                                          "user", arg->user.toUtf8().constData(), "server",
+                                          arg->server.toUtf8().constData(), "type", "map",
+                                          nullptr);
+                return;
             } else {
                 arg->self->q->emitFinishedWithError(QKeychain::EntryNotFound,
                                                     QObject::tr("Entry not found"));
