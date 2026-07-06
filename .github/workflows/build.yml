@@ -70,8 +70,9 @@ jobs:
         id: set_qt_arch
         shell: pwsh
         run: |
-          $qtVer = "${{ matrix.qt_version == 'qt5' && '5.15.2' || '6.5.3' }}"
-          $qtArch = "${{ matrix.compiler == 'msvc' && 'msvc2019_64' ||
+          $qtVer = "${{ matrix.qt_version == 'qt5' && '5.15.2' || '6.8.3' }}"
+          $qtArch = "${{ matrix.compiler == 'msvc' && matrix.qt_version == 'qt5' && 'msvc2019_64' ||
+               matrix.compiler == 'msvc' && matrix.qt_version == 'qt6' && 'msvc2022_64' ||
                matrix.qt_version == 'qt5' && matrix.compiler == 'gcc' && 'mingw81' ||
                matrix.qt_version == 'qt6' && matrix.compiler == 'gcc' && 'mingw' }}"
           echo "QT_VER=$qtVer" >> $env:GITHUB_OUTPUT
