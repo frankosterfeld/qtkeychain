@@ -103,8 +103,15 @@ static bool isKwalletAvailable(const char *dbusIface, const char *dbusPath)
     // interface is activatable by making a call. Hence we check whether
     // a wallet can be opened.
 
+    // kwalletd holds replies while its unlock dialog is up, stalling the
+    // GUI thread. Cap the wait, and treat a timeout as "available" - the
+    // service exists, it is just busy.
+    iface.setTimeout(5000);
     QDBusMessage reply = iface.call(QLatin1String("networkWallet"));
-    return reply.type() == QDBusMessage::ReplyMessage;
+    if (reply.type() == QDBusMessage::ReplyMessage)
+        return true;
+    const QDBusError::ErrorType err = QDBusError(reply).type();
+    return err == QDBusError::NoReply || err == QDBusError::Timeout;
 }
 
 static KeyringBackend detectKeyringBackend()
