@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(QTKEYCHAIN_VERSION 0.16.99)
+set(QTKEYCHAIN_VERSION 0.17.99)
 set(QTKEYCHAIN_SOVERSION 1)
 
 project(qtkeychain VERSION ${QTKEYCHAIN_VERSION} LANGUAGES CXX)
@@ -47,6 +47,11 @@ if (WIN32)
 
     if (USE_CREDENTIAL_STORE)
         add_definitions(-DUSE_CREDENTIAL_STORE=1)
+    endif()
+
+    option(USE_COMPAT_NAMING_SCHEME "store entries without the service name" OFF)
+    if (USE_COMPAT_NAMING_SCHEME)
+        add_definitions(-DUSE_COMPAT_NAMING_SCHEME=1)
     endif()
 endif()
 

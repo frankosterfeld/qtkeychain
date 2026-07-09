@@ -70,8 +70,9 @@ jobs:
         id: set_qt_arch
         shell: pwsh
         run: |
-          $qtVer = "${{ matrix.qt_version == 'qt5' && '5.15.2' || '6.5.3' }}"
-          $qtArch = "${{ matrix.compiler == 'msvc' && 'msvc2019_64' ||
+          $qtVer = "${{ matrix.qt_version == 'qt5' && '5.15.2' || '6.8.3' }}"
+          $qtArch = "${{ matrix.compiler == 'msvc' && matrix.qt_version == 'qt5' && 'msvc2019_64' ||
+               matrix.compiler == 'msvc' && matrix.qt_version == 'qt6' && 'msvc2022_64' ||
                matrix.qt_version == 'qt5' && matrix.compiler == 'gcc' && 'mingw81' ||
                matrix.qt_version == 'qt6' && matrix.compiler == 'gcc' && 'mingw' }}"
           echo "QT_VER=$qtVer" >> $env:GITHUB_OUTPUT
@@ -211,3 +212,45 @@ jobs:
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
           cmake --build build/testapp --config Release
+
+  build-wasm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.5.3'
+          host: 'linux'
+          arch: 'wasm_multithread'
+          modules: 'qtwebsockets'
+
+      - name: Setup emsdk
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '3.1.25'
+
+      - name: Configure and Build
+        shell: bash
+        run: |
+          source $EMSDK/emsdk_env.sh
+          $QT_ROOT_DIR/bin/qt-cmake -S . -B build \
+            -DBUILD_WITH_QT6=ON \
+            -DBUILD_TESTING=ON \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DQT_HOST_PATH=$QT_HOST_PATH
+          cmake --build build --parallel
+
+      - name: Run tests
+        shell: bash
+        run: |
+          source $EMSDK/emsdk_env.sh
+          cd build
+          ctest -V --no-compress-output

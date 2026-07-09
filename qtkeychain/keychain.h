@@ -43,6 +43,18 @@ class JobPrivate;
 
 /**
  * @brief Abstract base class for all QKeychain jobs.
+ *
+ * @bug on windows up to 0.15.0 the credentials were erroneously stored without the @p service
+ *      name attached and could have overwritten credentials of other applications if they used
+ *      the same @p key argument.
+ *      While this has been fixed, existing applications need to take this into account and the
+ *      following migration strategies exist:
+ *        - The CMake compile time option -DUSE_COMPAT_NAMING_SCHEME=ON will compile in the old
+ *          behavior
+ *        - The application specific setting 'qtkeychainCompatNamingScheme' will enable old
+ *          behavior if set (system or user settings of the application)
+ *        - The application specific setting 'qtkeychainFallbackToCompatNamingScheme' will
+ *          add a fallback on credential read if no new entry exists (@p EntryNotFound returned)
  */
 class QKEYCHAIN_EXPORT Job : public QObject
 {
