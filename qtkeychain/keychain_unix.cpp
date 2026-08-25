@@ -258,6 +258,11 @@ void JobPrivate::kwalletWalletFound(QDBusPendingCallWatcher *watcher)
     // This allows to wait for user to unlock wallet, e.g. at Plasma startup
     iface->setTimeout(0x7FFFFFFF);
 
+    if (!reply.isValid()) {
+        q->emitFinishedWithError(OtherError, reply.error().message());
+        return;
+    }
+
     const QDBusPendingReply<int> pendingReply = iface->open(reply.value(), 0, q->service());
     auto pendingWatcher = new QDBusPendingCallWatcher(pendingReply, this);
     connect(pendingWatcher, &QDBusPendingCallWatcher::finished, this,
