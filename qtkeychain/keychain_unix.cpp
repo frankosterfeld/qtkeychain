@@ -103,8 +103,15 @@ static bool isKwalletAvailable(const char *dbusIface, const char *dbusPath)
     // interface is activatable by making a call. Hence we check whether
     // a wallet can be opened.
 
+    // kwalletd holds replies while its unlock dialog is up, stalling the
+    // GUI thread. Cap the wait, and treat a timeout as "available" - the
+    // service exists, it is just busy.
+    iface.setTimeout(5000);
     QDBusMessage reply = iface.call(QLatin1String("networkWallet"));
-    return reply.type() == QDBusMessage::ReplyMessage;
+    if (reply.type() == QDBusMessage::ReplyMessage)
+        return true;
+    const QDBusError::ErrorType err = QDBusError(reply).type();
+    return err == QDBusError::NoReply || err == QDBusError::Timeout;
 }
 
 static KeyringBackend detectKeyringBackend()
@@ -209,6 +216,10 @@ static void kwalletReadPasswordScheduledStartImpl(const char *service, const cha
     if (QDBusConnection::sessionBus().isConnected()) {
         priv->iface = new org::kde::KWallet(QLatin1String(service), QLatin1String(path),
                                             QDBusConnection::sessionBus(), priv);
+        // Set the long timeout before networkWallet too: kwalletd holds
+        // replies while busy (e.g. unlock dialog), and a timed-out reply
+        // here would hand an empty wallet name to open().
+        priv->iface->setTimeout(0x7FFFFFFF);
         const QDBusPendingReply<QString> reply = priv->iface->networkWallet();
         auto watcher = new QDBusPendingCallWatcher(reply, priv);
         priv->connect(watcher, &QDBusPendingCallWatcher::finished, priv,
@@ -254,6 +265,15 @@ void JobPrivate::kwalletWalletFound(QDBusPendingCallWatcher *watcher)
 {
     watcher->deleteLater();
     const QDBusPendingReply<QString> reply = *watcher;
+    // Never pass an empty wallet name to open(): kwalletd would treat it as
+    // a wallet that does not exist and show the new-wallet creation wizard.
+    if (reply.isError() || reply.value().isEmpty()) {
+        fallbackOnError(reply.isError()
+            ? reply.error()
+            : QDBusError(QDBusError::InternalError,
+                         QStringLiteral("KWallet returned no wallet name")));
+        return;
+    }
     // Don't timeout after 25s, but 24 days
     // This allows to wait for user to unlock wallet, e.g. at Plasma startup
     iface->setTimeout(0x7FFFFFFF);
@@ -484,6 +504,10 @@ static void kwalletWritePasswordScheduledStart(const char *service, const char *
     if (QDBusConnection::sessionBus().isConnected()) {
         priv->iface = new org::kde::KWallet(QLatin1String(service), QLatin1String(path),
                                             QDBusConnection::sessionBus(), priv);
+        // Set the long timeout before networkWallet too: kwalletd holds
+        // replies while busy (e.g. unlock dialog), and a timed-out reply
+        // here would hand an empty wallet name to open().
+        priv->iface->setTimeout(0x7FFFFFFF);
         const QDBusPendingReply<QString> reply = priv->iface->networkWallet();
         auto watcher = new QDBusPendingCallWatcher(reply, priv);
         priv->connect(watcher, &QDBusPendingCallWatcher::finished, priv,
