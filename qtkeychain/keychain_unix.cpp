@@ -492,11 +492,13 @@ static void kwalletWritePasswordScheduledStart(const char *service, const char *
 
 void WritePasswordJobPrivate::scheduledStart()
 {
-    auto descr = service;
+    QString descr;
     if (service.isEmpty()) {
         descr = key;
-    } else if (!key.isEmpty()) {
-        descr = key + "@" + service;
+    } else if (key.isEmpty()) {
+        descr = service;
+    } else {
+        descr = QLatin1StringView("%1@%2").arg(key, service);
     }
 
     switch (getKeyringBackend()) {
