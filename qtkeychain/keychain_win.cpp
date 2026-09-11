@@ -152,7 +152,6 @@ struct CredentialDeleter
 
 static Error credRead(const QString& target, PCREDENTIALW &cred) {
     if (!CredReadW(reinterpret_cast<const wchar_t *>(target.utf16()), CRED_TYPE_GENERIC, 0, &cred)) {
-        Error err;
         switch (GetLastError()) {
         case ERROR_NOT_FOUND:
             return EntryNotFound;
@@ -184,7 +183,6 @@ void ReadPasswordJobPrivate::scheduledStart()
         err = credRead(key, cred);
     }
     if (err != NoError) {
-        Error err;
         QString msg;
         switch (GetLastError()) {
         case ERROR_NOT_FOUND:
@@ -292,7 +290,6 @@ void WritePasswordJobPrivate::scheduledStart()
     // Found empirically on Win10 1803 build 17134.523.
     if (err == RPC_S_INVALID_BOUND) {
         const QString::size_type maxTargetName = CRED_MAX_GENERIC_TARGET_NAME_LENGTH;
-        const auto& target = targetName(service, key);
         if (target.size() > maxTargetName) {
             q->emitFinishedWithError(
                     OtherError, tr("Credential key exceeds maximum size of %1").arg(maxTargetName));
