@@ -96,14 +96,25 @@ static bool isKwalletAvailable(const char *dbusIface, const char *dbusPath)
     if (!QDBusConnection::sessionBus().isConnected())
         return false;
 
-    org::kde::KWallet iface(QLatin1String(dbusIface), QLatin1String(dbusPath),
-                            QDBusConnection::sessionBus());
-
-    // At this point iface.isValid() can return false even though the
-    // interface is activatable by making a call. Hence we check whether
-    // a wallet can be opened.
-
-    QDBusMessage reply = iface.call(QLatin1String("networkWallet"));
+    // At this point a QDBusInterface for the service can report isValid() ==
+    // false even though the service is activatable, so we have to make a call
+    // to find out. org.freedesktop.DBus.Peer.Ping is answered by the QtDBus
+    // layer inside kwalletd before its application code sees it, and it still
+    // triggers D-Bus activation, so it tells us the service exists without
+    // waiting on anything kwalletd is busy with.
+    //
+    // Calling an application-level method here instead - networkWallet() - is
+    // what caused the freeze: while kwalletd has an unlock dialog on screen for
+    // any client, it stops answering application-level calls, so the reply is
+    // deferred for the full D-Bus timeout. Since this function runs a blocking
+    // call, usually on the GUI thread, that froze the whole application for 25
+    // seconds. Measured on Kubuntu 26.10, kwalletd 4:26.08.0-0ubuntu1:
+    // networkWallet took 25301 ms to fail with NoReply on the default timeout,
+    // while Peer.Ping answered in under a millisecond.
+    const QDBusMessage ping = QDBusMessage::createMethodCall(
+            QLatin1String(dbusIface), QLatin1String(dbusPath),
+            QStringLiteral("org.freedesktop.DBus.Peer"), QStringLiteral("Ping"));
+    const QDBusMessage reply = QDBusConnection::sessionBus().call(ping);
     return reply.type() == QDBusMessage::ReplyMessage;
 }
 
