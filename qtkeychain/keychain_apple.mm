@@ -9,6 +9,8 @@
 
 #include "keychain_p.h"
 
+#include <memory>
+
 #import <Foundation/Foundation.h>
 #import <Security/Security.h>
 
@@ -152,6 +154,37 @@ struct ErrorDescription
 
 @end
 
+class Completion {
+public:
+    Completion(AppleKeychainInterface *const interface, void (^callback)())
+        : interface([interface retain]), callback([callback copy])
+    {
+    }
+
+    ~Completion()
+    {
+        [interface release];
+        [callback release];
+    }
+
+    void operator()()
+    {
+        callback();
+    }
+
+private:
+    AppleKeychainInterface *const interface;
+    void (^callback)();
+};
+
+static void dispatchOnQtMainThread(AppleKeychainInterface *const interface, void (^callback)())
+{
+    auto completion = std::make_shared<Completion>(interface, callback);
+    QMetaObject::invokeMethod(qApp, [completion]() {
+        (*completion)();
+    }, Qt::QueuedConnection);
+}
+
 static void StartReadPassword(const QString &service, const QString &key,
                               AppleKeychainInterface *const interface)
 {
@@ -169,14 +202,14 @@ static void StartReadPassword(const QString &service, const QString &key,
         if (status == errSecSuccess) {
             const CFDataRef castedDataRef = (CFDataRef)dataRef;
             NSData *const data = (__bridge NSData *)castedDataRef;
-            dispatch_async(dispatch_get_main_queue(), ^{
+            dispatchOnQtMainThread(interface, ^{
                 [interface keychainReadTaskFinished:data];
                 [interface release];
             });
         } else {
             NSString *const descriptiveErrorString =
                     @"Could not retrieve private key from keystore";
-            dispatch_async(dispatch_get_main_queue(), ^{
+            dispatchOnQtMainThread(interface, ^{
                 [interface keychainTaskFinishedWithError:status
                                       descriptiveMessage:descriptiveErrorString];
                 [interface release];
@@ -220,14 +253,14 @@ static void StartWritePassword(const QString &service, const QString &key, const
         }
 
         if (status == errSecSuccess) {
-            dispatch_async(dispatch_get_main_queue(), ^{
+            dispatchOnQtMainThread(interface, ^{
                 [interface keychainTaskFinished];
                 [interface release];
             });
         } else {
             NSString *const descriptiveErrorString = @"Could not store data in settings";
 
-            dispatch_async(dispatch_get_main_queue(), ^{
+            dispatchOnQtMainThread(interface, ^{
                 [interface keychainTaskFinishedWithError:status
                                       descriptiveMessage:descriptiveErrorString];
                 [interface release];
@@ -249,13 +282,13 @@ static void StartDeletePassword(const QString &service, const QString &key,
         const OSStatus status = SecItemDelete((__bridge CFDictionaryRef)query);
 
         if (status == errSecSuccess) {
-            dispatch_async(dispatch_get_main_queue(), ^{
+            dispatchOnQtMainThread(interface, ^{
                 [interface keychainTaskFinished];
                 [interface release];
             });
         } else {
             NSString *const descriptiveErrorString = @"Could not remove private key from keystore";
-            dispatch_async(dispatch_get_main_queue(), ^{
+            dispatchOnQtMainThread(interface, ^{
                 [interface keychainTaskFinishedWithError:status
                                       descriptiveMessage:descriptiveErrorString];
                 [interface release];
