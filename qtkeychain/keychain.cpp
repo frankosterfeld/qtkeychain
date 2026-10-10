@@ -35,6 +35,11 @@ void Job::setSettings(QSettings *settings)
 
 void Job::start()
 {
+    if (d->started) {
+        qCritical() << "Starting the same twice. This is not supported, aborting.";
+        return;
+    }
+    d->started = true;
     QMetaObject::invokeMethod(this, "doStart", Qt::QueuedConnection);
 }
 
