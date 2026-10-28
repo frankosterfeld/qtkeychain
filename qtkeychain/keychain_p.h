@@ -77,6 +77,7 @@ protected:
     bool insecureFallback;
     QPointer<QSettings> settings;
     QString key;
+    bool started = false;
 
     friend class Job;
     friend class JobExecutor;
