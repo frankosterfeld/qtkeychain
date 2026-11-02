@@ -90,6 +90,14 @@ private Q_SLOTS:
                 qDebug() << "[delete]" << deleteJob.error() << ": " << deleteJob.errorString();
                 const auto expected = (serviceKey.isEmpty() && username.isEmpty()) ? QKeychain::EntryNotFound : QKeychain::NoError;
                 QCOMPARE(deleteJob.error(), expected);
+                if (expected == QKeychain::NoError) {
+                    QKeychain::ReadPasswordJob verifyJob(serviceKey);
+                    verifyJob.setKey(username);
+                    QSignalSpy verifySpy(&verifyJob, &QKeychain::ReadPasswordJob::finished);
+                    verifyJob.start();
+                    verifySpy.wait();
+                    QCOMPARE(verifyJob.error(), QKeychain::EntryNotFound);
+                }
             }
         }
     }
