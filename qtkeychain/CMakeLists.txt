@@ -55,7 +55,7 @@ if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT HAIKU AND NOT EMSCRIPTEN)
     option(LIBSECRET_SUPPORT "Build with libsecret support" ON)
 
     if(LIBSECRET_SUPPORT)
-        pkg_check_modules(LIBSECRET REQUIRED libsecret-1)
+        pkg_check_modules(LIBSECRET REQUIRED libsecret-1>=0.18.0)
         add_definitions(-DHAVE_LIBSECRET=1)
         INCLUDE_DIRECTORIES(${LIBSECRET_INCLUDE_DIRS})
         LINK_DIRECTORIES(${LIBSECRET_LIBRARY_DIRS})
