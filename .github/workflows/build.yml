@@ -132,6 +132,32 @@ jobs:
           name: build-artifact ${{ matrix.os }} ${{ matrix.compiler }} ${{ matrix.qt_version }}
           path: ${{ github.workspace }}/work/build/${{ github.event.repository.name }}
 
+  build-rhel8:
+    # Minimum: RHEL 8 (comes with libsecret 0.18)
+    runs-on: ubuntu-latest
+    container: almalinux:8
+
+    steps:
+      - name: Install dependencies
+        run: |
+          dnf -y install gcc-c++ make cmake pkgconf-pkg-config git \
+            qt5-qtbase-devel qt5-qttools-devel libsecret-devel
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_WITH_QT5=ON \
+            -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install"
+
+      - name: Build and Install
+        run: |
+          cmake --build build --parallel
+          cmake --install build
+
   build-android:
     runs-on: ubuntu-latest
 
