@@ -219,10 +219,6 @@ bool LibSecretKeyring::isAvailable()
         return false;
     if (secret_password_clear_finish_fn == nullptr)
         return false;
-    if (secret_password_search_fn == nullptr)
-        return false;
-    if (secret_password_search_finish_fn == nullptr)
-        return false;
     if (secret_password_free_fn == nullptr)
         return false;
     if (secret_error_get_quark_fn == nullptr)
@@ -305,15 +301,24 @@ bool LibSecretKeyring::deletePassword(const QString &key, const QString &service
         return false;
     }
 
-    callbackArg *arg = new callbackArg;
-    arg->self = self;
-    arg->user = key;
-    arg->server = service;
-    secret_password_search_fn(qtkeychainSchema(),
-                              static_cast<SecretSearchFlags>(SECRET_SEARCH_ALL | SECRET_SEARCH_UNLOCK),
-                              nullptr, on_password_delete_search, arg, "user",
-                              key.toUtf8().constData(), "server", service.toUtf8().constData(),
-                              nullptr);
+    if (secret_password_search_fn != nullptr && secret_password_search_finish_fn != nullptr) {
+        callbackArg *arg = new callbackArg;
+        arg->self = self;
+        arg->user = key;
+        arg->server = service;
+        secret_password_search_fn(qtkeychainSchema(),
+                                  static_cast<SecretSearchFlags>(SECRET_SEARCH_ALL
+                                                                 | SECRET_SEARCH_UNLOCK),
+                                  nullptr, on_password_delete_search, arg, "user",
+                                  key.toUtf8().constData(), "server",
+                                  service.toUtf8().constData(), nullptr);
+    } else {
+        // libsecret < 0.19 has no secret_password_search(). Clear directly; locked
+        // entries are then reported as CouldNotDeleteEntry by on_password_cleared().
+        secret_password_clear_fn(qtkeychainSchema(), nullptr, on_password_cleared, self, "user",
+                                 key.toUtf8().constData(), "server",
+                                 service.toUtf8().constData(), nullptr);
+    }
     return true;
 #else
     Q_UNUSED(key)
