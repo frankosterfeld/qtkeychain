@@ -83,6 +83,9 @@ private Q_SLOTS:
             for (const auto& username : usernames)
             {
                 QKeychain::DeletePasswordJob deleteJob(serviceKey);
+                // Stack-allocated: do not let the job schedule its own deletion.
+                // The read below runs a nested event loop and would deliver it.
+                deleteJob.setAutoDelete(false);
                 deleteJob.setKey(username);
                 QSignalSpy deleteSpy(&deleteJob, &QKeychain::DeletePasswordJob::finished);
                 deleteJob.start();
@@ -92,6 +95,7 @@ private Q_SLOTS:
                 QCOMPARE(deleteJob.error(), expected);
                 if (expected == QKeychain::NoError) {
                     QKeychain::ReadPasswordJob verifyJob(serviceKey);
+                    verifyJob.setAutoDelete(false);
                     verifyJob.setKey(username);
                     QSignalSpy verifySpy(&verifyJob, &QKeychain::ReadPasswordJob::finished);
                     verifyJob.start();
