@@ -9,6 +9,9 @@
 
 #include "keychain_p.h"
 
+#include <QDebug>
+
+#include <atomic>
 #include <memory>
 
 #import <Foundation/Foundation.h>
@@ -51,6 +54,9 @@ struct ErrorDescription
         case errSecVerifyFailed:
             return ErrorDescription(QKeychain::AccessDenied,
                                     Job::tr("A cryptographic verification failure has occurred"));
+        case errSecMissingEntitlement:
+            return ErrorDescription(QKeychain::AccessDenied,
+                                    Job::tr("A required entitlement is not present"));
         case errSecUnimplemented:
             return ErrorDescription(QKeychain::NotImplemented,
                                     Job::tr("Function or operation not implemented"));
@@ -85,7 +91,7 @@ struct ErrorDescription
 
 - (instancetype)initWithJob:(Job *)job andPrivateJob:(JobPrivate *)privateJob;
 - (void)keychainTaskFinished;
-- (void)keychainReadTaskFinished:(NSData *)retrievedData;
+- (void)keychainReadTaskFinished:(const QByteArray &)retrievedData;
 - (void)keychainTaskFinishedWithError:(OSStatus)status
                    descriptiveMessage:(NSString *)descriptiveMessage;
 
@@ -122,14 +128,11 @@ struct ErrorDescription
     }
 }
 
-- (void)keychainReadTaskFinished:(NSData *)retrievedData
+- (void)keychainReadTaskFinished:(const QByteArray &)retrievedData
 {
     if (_privateJob) {
-        _privateJob->data.clear();
+        _privateJob->data = retrievedData;
         _privateJob->mode = JobPrivate::Binary;
-        if (retrievedData != nil) {
-            _privateJob->data = QByteArray::fromNSData(retrievedData);
-        }
     }
 
     if (_job) {
@@ -185,114 +188,313 @@ static void dispatchOnQtMainThread(AppleKeychainInterface *const interface, void
     }, Qt::QueuedConnection);
 }
 
+namespace {
+
+// On macOS, there are two keychain implementations: the legacy, file-based keychain and the
+// data protection keychain (macOS >= 10.15). On iOS and other Apple platforms, there is only the
+// data protection keychain, which is what queries use if kSecUseDataProtectionKeychain isn't set;
+// so there we always use KeychainKind::Default.
+enum class KeychainKind {
+    Default, // the file-based keychain on macOS, the (only) data protection keychain elsewhere
+    DataProtection, // the data protection keychain on macOS
+};
+
+// Set once the data protection keychain returned errSecMissingEntitlement, which happens for
+// apps without an application identifier (unsigned/ad-hoc signed development builds, Developer
+// ID builds without provisioning profile). (Entitlements never change at runtime)
+std::atomic<bool> s_dataProtectionKeychainMissingEntitlement(false);
+
+bool isDataProtectionKeychainAvailable()
+{
+#if defined(Q_OS_MACOS)
+    if (s_dataProtectionKeychainMissingEntitlement.load()) {
+        return false;
+    }
+    if (@available(macOS 10.15, *)) {
+        return true;
+    }
+#endif
+    return false;
+}
+
+// Returns true (and remembers it) if @p status indicates that the data protection keychain
+// cannot be used by this process.
+bool handleMissingEntitlement(OSStatus status)
+{
+    if (status != errSecMissingEntitlement) {
+        return false;
+    }
+    if (!s_dataProtectionKeychainMissingEntitlement.exchange(true)) {
+        qDebug("QtKeychain: The data protection keychain is not available (missing entitlement, "
+               "e.g. the application is not signed with an application identifier). "
+               "Falling back to the file-based keychain.");
+    }
+    return true;
+}
+
+bool isRealError(OSStatus status)
+{
+    return status != errSecSuccess && status != errSecItemNotFound;
+}
+
+// Returns an autoreleased dictionary.
+NSMutableDictionary *createQuery(const QString &service, const QString &key, KeychainKind kind)
+{
+    NSMutableDictionary *const query = [NSMutableDictionary dictionaryWithDictionary:@{
+        (__bridge NSString *)kSecClass : (__bridge NSString *)kSecClassGenericPassword,
+        (__bridge NSString *)kSecAttrService : service.toNSString(),
+        (__bridge NSString *)kSecAttrAccount : key.toNSString(),
+    }];
+
+#if defined(Q_OS_MACOS)
+    if (@available(macOS 10.15, *)) {
+        // Be explicit for the legacy keychain as well (@NO is the documented default)
+        query[(__bridge NSString *)kSecUseDataProtectionKeychain] =
+                kind == KeychainKind::DataProtection ? @YES : @NO;
+    }
+#else
+    Q_UNUSED(kind)
+#endif
+
+    return query;
+}
+
+OSStatus readItem(const QString &service, const QString &key, KeychainKind kind,
+                  QByteArray *data)
+{
+    NSMutableDictionary *const query = createQuery(service, key, kind);
+    query[(__bridge NSString *)kSecReturnData] = @YES;
+
+    CFTypeRef dataRef = nullptr;
+    const OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, &dataRef);
+
+    data->clear();
+    if (status == errSecSuccess && dataRef) {
+        *data = QByteArray::fromNSData((__bridge NSData *)dataRef);
+    }
+    if (dataRef) {
+        CFRelease(dataRef);
+    }
+    return status;
+}
+
+OSStatus writeItem(const QString &service, const QString &key, KeychainKind kind,
+                   const QByteArray &data)
+{
+    NSMutableDictionary *const query = createQuery(service, key, kind);
+    NSDictionary *const update = @{
+        (__bridge NSString *)kSecValueData : data.toNSData(),
+    };
+
+    OSStatus status =
+            SecItemUpdate((__bridge CFDictionaryRef)query, (__bridge CFDictionaryRef)update);
+
+    if (status == errSecItemNotFound) {
+        query[(__bridge NSString *)kSecValueData] = data.toNSData();
+        status = SecItemAdd((__bridge CFDictionaryRef)query, nullptr);
+    }
+
+    return status;
+}
+
+OSStatus deleteItem(const QString &service, const QString &key, KeychainKind kind)
+{
+    NSMutableDictionary *const query = createQuery(service, key, kind);
+    return SecItemDelete((__bridge CFDictionaryRef)query);
+}
+
+// Removes a legacy entry after it was successfully written to the data protection keychain.
+// Failure is not fatal for the job, as the data protection keychain entry takes precedence.
+void deleteLegacyItem(const QString &service, const QString &key)
+{
+    const OSStatus status = deleteItem(service, key, KeychainKind::Default);
+    if (isRealError(status)) {
+        qWarning("QtKeychain: Could not remove entry from the file-based keychain (OSStatus %d)",
+                 static_cast<int>(status));
+    }
+}
+
+// Copies an entry found in the legacy keychain into the data protection keychain and
+// removes the legacy entry. Failure is not fatal for the read job.
+void migrateToDataProtectionKeychain(const QString &service, const QString &key,
+                                     const QByteArray &data)
+{
+    const OSStatus status = writeItem(service, key, KeychainKind::DataProtection, data);
+    if (status == errSecSuccess) {
+        deleteLegacyItem(service, key);
+    } else if (!handleMissingEntitlement(status)) {
+        qWarning("QtKeychain: Could not migrate entry to the data protection keychain "
+                 "(OSStatus %d)",
+                 static_cast<int>(status));
+    }
+}
+
+bool useDataProtectionKeychain(MacOSKeychainPreference preference)
+{
+    return preference != MacOSKeychainPreference::LegacyKeychain
+            && isDataProtectionKeychainAvailable();
+}
+
+bool useLegacyFallback(MacOSKeychainPreference preference)
+{
+    return preference == MacOSKeychainPreference::DataProtectionKeychainWithLegacyFallback;
+}
+
+OSStatus readPassword(const QString &service, const QString &key,
+                      MacOSKeychainPreference preference, QByteArray *data)
+{
+    if (!useDataProtectionKeychain(preference)) {
+        return readItem(service, key, KeychainKind::Default, data);
+    }
+
+    const OSStatus status = readItem(service, key, KeychainKind::DataProtection, data);
+
+    if (handleMissingEntitlement(status)) {
+        return readItem(service, key, KeychainKind::Default, data);
+    }
+
+    if (status == errSecItemNotFound && useLegacyFallback(preference)) {
+        const OSStatus legacyStatus = readItem(service, key, KeychainKind::Default, data);
+        if (legacyStatus == errSecSuccess) {
+            migrateToDataProtectionKeychain(service, key, *data);
+        }
+        return legacyStatus;
+    }
+
+    return status;
+}
+
+OSStatus writePassword(const QString &service, const QString &key,
+                       MacOSKeychainPreference preference, const QByteArray &data)
+{
+    if (!useDataProtectionKeychain(preference)) {
+        return writeItem(service, key, KeychainKind::Default, data);
+    }
+
+    const OSStatus status = writeItem(service, key, KeychainKind::DataProtection, data);
+
+    if (handleMissingEntitlement(status)) {
+        return writeItem(service, key, KeychainKind::Default, data);
+    }
+
+    if (status == errSecSuccess && useLegacyFallback(preference)) {
+        // Otherwise a stale legacy entry would be returned again after deletion
+        deleteLegacyItem(service, key);
+    }
+
+    return status;
+}
+
+OSStatus deletePassword(const QString &service, const QString &key,
+                        MacOSKeychainPreference preference)
+{
+    if (!useDataProtectionKeychain(preference)) {
+        return deleteItem(service, key, KeychainKind::Default);
+    }
+
+    const OSStatus status = deleteItem(service, key, KeychainKind::DataProtection);
+
+    if (handleMissingEntitlement(status)) {
+        return deleteItem(service, key, KeychainKind::Default);
+    }
+
+    if (!useLegacyFallback(preference)) {
+        return status;
+    }
+
+    const OSStatus legacyStatus = deleteItem(service, key, KeychainKind::Default);
+
+    // Report real errors first (an entry left behind would be found again on read), then
+    // success if the entry existed in either keychain, else errSecItemNotFound.
+    if (isRealError(status)) {
+        return status;
+    }
+    if (isRealError(legacyStatus)) {
+        return legacyStatus;
+    }
+    if (status == errSecSuccess || legacyStatus == errSecSuccess) {
+        return errSecSuccess;
+    }
+    return errSecItemNotFound;
+}
+
+} // namespace
+
 static void StartReadPassword(const QString &service, const QString &key,
+                              MacOSKeychainPreference preference,
                               AppleKeychainInterface *const interface)
 {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-        NSDictionary *const query = @{
-            (__bridge NSString *)kSecClass : (__bridge NSString *)kSecClassGenericPassword,
-            (__bridge NSString *)kSecAttrService : service.toNSString(),
-            (__bridge NSString *)kSecAttrAccount : key.toNSString(),
-            (__bridge NSString *)kSecReturnData : @YES,
-        };
+        @autoreleasepool {
+            QByteArray data;
+            const OSStatus status = readPassword(service, key, preference, &data);
 
-        CFTypeRef dataRef = nil;
-        const OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, &dataRef);
-
-        if (status == errSecSuccess) {
-            const CFDataRef castedDataRef = (CFDataRef)dataRef;
-            NSData *const data = (__bridge NSData *)castedDataRef;
-            dispatchOnQtMainThread(interface, ^{
-                [interface keychainReadTaskFinished:data];
-                [interface release];
-            });
-        } else {
-            NSString *const descriptiveErrorString =
-                    @"Could not retrieve private key from keystore";
-            dispatchOnQtMainThread(interface, ^{
-                [interface keychainTaskFinishedWithError:status
-                                      descriptiveMessage:descriptiveErrorString];
-                [interface release];
-            });
-        }
-
-        if (dataRef) {
-            CFRelease(dataRef);
+            if (status == errSecSuccess) {
+                dispatchOnQtMainThread(interface, ^{
+                    [interface keychainReadTaskFinished:data];
+                    [interface release];
+                });
+            } else {
+                NSString *const descriptiveErrorString =
+                        @"Could not retrieve private key from keystore";
+                dispatchOnQtMainThread(interface, ^{
+                    [interface keychainTaskFinishedWithError:status
+                                          descriptiveMessage:descriptiveErrorString];
+                    [interface release];
+                });
+            }
         }
     });
 }
 
 static void StartWritePassword(const QString &service, const QString &key, const QByteArray &data,
+                               MacOSKeychainPreference preference,
                                AppleKeychainInterface *const interface)
 {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-        NSDictionary *const query = @{
-            (__bridge NSString *)kSecClass : (__bridge NSString *)kSecClassGenericPassword,
-            (__bridge NSString *)kSecAttrService : service.toNSString(),
-            (__bridge NSString *)kSecAttrAccount : key.toNSString(),
-        };
+        @autoreleasepool {
+            const OSStatus status = writePassword(service, key, preference, data);
 
-        OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, nil);
+            if (status == errSecSuccess) {
+                dispatchOnQtMainThread(interface, ^{
+                    [interface keychainTaskFinished];
+                    [interface release];
+                });
+            } else {
+                NSString *const descriptiveErrorString = @"Could not store data in settings";
 
-        if (status == errSecSuccess) {
-            NSDictionary *const update = @{
-                (__bridge NSString *)kSecValueData : data.toNSData(),
-            };
-
-            status = SecItemUpdate((__bridge CFDictionaryRef)query,
-                                   (__bridge CFDictionaryRef)update);
-        } else {
-            NSDictionary *const insert = @{
-                (__bridge NSString *)kSecClass : (__bridge NSString *)kSecClassGenericPassword,
-                (__bridge NSString *)kSecAttrService : service.toNSString(),
-                (__bridge NSString *)kSecAttrAccount : key.toNSString(),
-                (__bridge NSString *)kSecValueData : data.toNSData(),
-            };
-
-            status = SecItemAdd((__bridge const CFDictionaryRef)insert, nil);
-        }
-
-        if (status == errSecSuccess) {
-            dispatchOnQtMainThread(interface, ^{
-                [interface keychainTaskFinished];
-                [interface release];
-            });
-        } else {
-            NSString *const descriptiveErrorString = @"Could not store data in settings";
-
-            dispatchOnQtMainThread(interface, ^{
-                [interface keychainTaskFinishedWithError:status
-                                      descriptiveMessage:descriptiveErrorString];
-                [interface release];
-            });
+                dispatchOnQtMainThread(interface, ^{
+                    [interface keychainTaskFinishedWithError:status
+                                          descriptiveMessage:descriptiveErrorString];
+                    [interface release];
+                });
+            }
         }
     });
 }
 
 static void StartDeletePassword(const QString &service, const QString &key,
+                                MacOSKeychainPreference preference,
                                 AppleKeychainInterface *const interface)
 {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-        NSDictionary *const query = @{
-            (__bridge NSString *)kSecClass : (__bridge NSString *)kSecClassGenericPassword,
-            (__bridge NSString *)kSecAttrService : service.toNSString(),
-            (__bridge NSString *)kSecAttrAccount : key.toNSString(),
-        };
+        @autoreleasepool {
+            const OSStatus status = deletePassword(service, key, preference);
 
-        const OSStatus status = SecItemDelete((__bridge CFDictionaryRef)query);
-
-        if (status == errSecSuccess) {
-            dispatchOnQtMainThread(interface, ^{
-                [interface keychainTaskFinished];
-                [interface release];
-            });
-        } else {
-            NSString *const descriptiveErrorString = @"Could not remove private key from keystore";
-            dispatchOnQtMainThread(interface, ^{
-                [interface keychainTaskFinishedWithError:status
-                                      descriptiveMessage:descriptiveErrorString];
-                [interface release];
-            });
+            if (status == errSecSuccess) {
+                dispatchOnQtMainThread(interface, ^{
+                    [interface keychainTaskFinished];
+                    [interface release];
+                });
+            } else {
+                NSString *const descriptiveErrorString =
+                        @"Could not remove private key from keystore";
+                dispatchOnQtMainThread(interface, ^{
+                    [interface keychainTaskFinishedWithError:status
+                                          descriptiveMessage:descriptiveErrorString];
+                    [interface release];
+                });
+            }
         }
     });
 }
@@ -301,21 +503,21 @@ void ReadPasswordJobPrivate::scheduledStart()
 {
     AppleKeychainInterface *const interface = [[AppleKeychainInterface alloc] initWithJob:q
                                                                             andPrivateJob:this];
-    StartReadPassword(service, key, interface);
+    StartReadPassword(service, key, macOSKeychainPreference, interface);
 }
 
 void WritePasswordJobPrivate::scheduledStart()
 {
     AppleKeychainInterface *const interface = [[AppleKeychainInterface alloc] initWithJob:q
                                                                             andPrivateJob:this];
-    StartWritePassword(service, key, data, interface);
+    StartWritePassword(service, key, data, macOSKeychainPreference, interface);
 }
 
 void DeletePasswordJobPrivate::scheduledStart()
 {
     AppleKeychainInterface *const interface = [[AppleKeychainInterface alloc] initWithJob:q
                                                                             andPrivateJob:this];
-    StartDeletePassword(service, key, interface);
+    StartDeletePassword(service, key, macOSKeychainPreference, interface);
 }
 
 bool QKeychain::isAvailable()

@@ -38,6 +38,24 @@ enum Error {
     OtherError /**< Something else went wrong (errorString() might provide details) */
 };
 
+/**
+ * Enum to specify keychain preferences on macOS
+ *
+ * The data protection keychain requires macOS >= 10.15 and an app signed with an application
+ * identifier (App Store apps, or Developer ID apps with an embedded provisioning profile granting
+ * keychain-access-groups). If it is not usable (e.g. unsigned or ad-hoc signed development
+ * builds, which get errSecMissingEntitlement), the legacy file-based keychain is used instead.
+ *
+ * Ignored on all other platforms, including iOS (which only has the data protection keychain).
+ *
+ * @since 0.18.0
+ */
+enum class MacOSKeychainPreference {
+    DataProtectionKeychain, ///< Use data protection keychain where available (macOS >= 10.15)
+    DataProtectionKeychainWithLegacyFallback, ///< Always store credentials in protection keychain (if available), but on read, also check file-based keychain
+    LegacyKeychain ///< Enforce use of old, file-based keychain
+};
+
 class JobExecutor;
 class JobPrivate;
 
@@ -156,6 +174,31 @@ public:
 
     void emitFinished();
     void emitFinishedWithError(Error, const QString &errorString);
+
+    /**
+     * Set which keychain to use on macOS. Default is
+     * MacOSKeychainPreference::DataProtectionKeychainWithLegacyFallback.
+     *
+     * With DataProtectionKeychainWithLegacyFallback:
+     *  - ReadPasswordJob first checks the data protection keychain. If the entry is not found
+     *    there, the legacy keychain is checked; an entry found there is migrated (written to the
+     *    data protection keychain and removed from the legacy keychain).
+     *  - WritePasswordJob writes to the data protection keychain and removes the entry from the
+     *    legacy keychain, if present.
+     *  - DeletePasswordJob deletes the entry from both keychains.
+     *
+     * Has no effect on other platforms.
+     * @see macOSKeychainPreference()
+     * @since 0.18.0
+     */
+    void setMacOSKeychainPreference(MacOSKeychainPreference preference);
+
+    /**
+     * @return The keychain preference used on macOS.
+     * @see setMacOSKeychainPreference()
+     * @since 0.18.0
+     */
+    MacOSKeychainPreference macOSKeychainPreference() const;
 
 Q_SIGNALS:
     /**
