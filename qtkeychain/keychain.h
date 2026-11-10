@@ -43,8 +43,9 @@ enum Error {
  *
  * The data protection keychain requires macOS >= 10.15 and an app signed with an application
  * identifier (App Store apps, or Developer ID apps with an embedded provisioning profile granting
- * keychain-access-groups). If it is not usable (e.g. unsigned or ad-hoc signed development
- * builds, which get errSecMissingEntitlement), the legacy file-based keychain is used instead.
+ * keychain-access-groups). If the process has no entitlement granting a keychain access group
+ * (e.g. unsigned or ad-hoc signed development builds), the legacy file-based keychain is used
+ * instead, for reads, writes and deletes alike.
  *
  * Ignored on all other platforms, including iOS (which only has the data protection keychain).
  *
