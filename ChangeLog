@@ -1,6 +1,17 @@
 ChangeLog
 =========
 
+version 0.18.0 (release 2026-11-10)
+
+ - macOS: Add support for modern Data Protection Keychain (same approach as on iOS, no more popups) (Frank Osterfeld)
+ - macOS: Fix jobs not finishing when using QCoreApplication (Daniel Vrátil)
+ - KWallet: Do not block while waiting for KWalletd to answer/unlock (Nicolas Fella)
+ - libsecret: Fix deletion of entries in a locked collection (realstuffie)
+ - libsecret: Specify libsecret 0.18 as minimum version
+ - Windows: Fix leak of credentials; improve and error reporting (Eike Ziller)
+ - Fix possible crash accessing deleted job (Ivan Akulinchev)
+ - Fix some compiler warnings on Windows
+
 version 0.17.0 (release 2026-07-06)
 
  - Windows: Do not ignore "service" when storing data. **Note: This is a breaking change**. qtkeychain will fail to read
