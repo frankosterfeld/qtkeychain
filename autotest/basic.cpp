@@ -19,6 +19,16 @@ class BasicTest : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void macOSKeychainPreference()
+    {
+        QKeychain::ReadPasswordJob job(QStringLiteral("QtKeychainTest"));
+        job.setAutoDelete(false);
+        QCOMPARE(job.macOSKeychainPreference(),
+                 QKeychain::MacOSKeychainPreference::DataProtectionKeychainWithLegacyFallback);
+        job.setMacOSKeychainPreference(QKeychain::MacOSKeychainPreference::LegacyKeychain);
+        QCOMPARE(job.macOSKeychainPreference(), QKeychain::MacOSKeychainPreference::LegacyKeychain);
+    }
+
     void test_data()
     {
         QTest::addColumn<QByteArray>("password");
