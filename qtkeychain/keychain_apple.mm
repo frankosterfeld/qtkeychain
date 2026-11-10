@@ -199,10 +199,41 @@ enum class KeychainKind {
     DataProtection, // the data protection keychain on macOS
 };
 
-// Set once the data protection keychain returned errSecMissingEntitlement, which happens for
-// apps without an application identifier (unsigned/ad-hoc signed development builds, Developer
-// ID builds without provisioning profile). (Entitlements never change at runtime)
+// Set once the data protection keychain returned errSecMissingEntitlement. Second line of
+// defense in case the up-front entitlement check (hasKeychainAccessGroupEntitlement()) passes but
+// the data protection keychain still rejects the process. (Entitlements never change at runtime)
 std::atomic<bool> s_dataProtectionKeychainMissingEntitlement(false);
+
+#if defined(Q_OS_MACOS)
+// Returns true if the process has an entitlement that gives it a keychain access group, which is
+// required to use the data protection keychain. Apps without one (unsigned/ad-hoc signed
+// development builds, Developer ID builds without provisioning profile) can't use it. We can't
+// rely on errSecMissingEntitlement to detect that, as e.g. SecItemCopyMatching returns
+// errSecItemNotFound in that case.
+bool hasKeychainAccessGroupEntitlement()
+{
+    SecTaskRef task = SecTaskCreateFromSelf(kCFAllocatorDefault);
+    if (!task) {
+        return false;
+    }
+    const CFStringRef names[] = {
+        CFSTR("com.apple.application-identifier"),
+        CFSTR("keychain-access-groups"),
+        CFSTR("com.apple.security.application-groups"), // app groups are keychain access groups too
+    };
+    bool found = false;
+    for (CFStringRef name : names) {
+        CFTypeRef value = SecTaskCopyValueForEntitlement(task, name, nullptr);
+        if (value) {
+            CFRelease(value);
+            found = true;
+            break;
+        }
+    }
+    CFRelease(task);
+    return found;
+}
+#endif
 
 bool isDataProtectionKeychainAvailable()
 {
@@ -211,7 +242,16 @@ bool isDataProtectionKeychainAvailable()
         return false;
     }
     if (@available(macOS 10.15, *)) {
-        return true;
+        // Thread-safe one-time initialization (jobs run on a global dispatch queue)
+        static const bool hasEntitlement = [] {
+            const bool result = hasKeychainAccessGroupEntitlement();
+            if (!result) {
+                qDebug("QtKeychain: The application has no keychain access group entitlement "
+                       "(e.g. no application identifier); using the file-based keychain.");
+            }
+            return result;
+        }();
+        return hasEntitlement;
     }
 #endif
     return false;
