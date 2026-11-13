@@ -19,6 +19,16 @@ class BasicTest : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void macOSKeychainPreference()
+    {
+        QKeychain::ReadPasswordJob job(QStringLiteral("QtKeychainTest"));
+        job.setAutoDelete(false);
+        QCOMPARE(job.macOSKeychainPreference(),
+                 QKeychain::MacOSKeychainPreference::DataProtectionKeychainWithLegacyFallback);
+        job.setMacOSKeychainPreference(QKeychain::MacOSKeychainPreference::LegacyKeychain);
+        QCOMPARE(job.macOSKeychainPreference(), QKeychain::MacOSKeychainPreference::LegacyKeychain);
+    }
+
     void test_data()
     {
         QTest::addColumn<QByteArray>("password");
@@ -83,6 +93,9 @@ private Q_SLOTS:
             for (const auto& username : usernames)
             {
                 QKeychain::DeletePasswordJob deleteJob(serviceKey);
+                // Stack-allocated: do not let the job schedule its own deletion.
+                // The read below runs a nested event loop and would deliver it.
+                deleteJob.setAutoDelete(false);
                 deleteJob.setKey(username);
                 QSignalSpy deleteSpy(&deleteJob, &QKeychain::DeletePasswordJob::finished);
                 deleteJob.start();
@@ -90,6 +103,15 @@ private Q_SLOTS:
                 qDebug() << "[delete]" << deleteJob.error() << ": " << deleteJob.errorString();
                 const auto expected = (serviceKey.isEmpty() && username.isEmpty()) ? QKeychain::EntryNotFound : QKeychain::NoError;
                 QCOMPARE(deleteJob.error(), expected);
+                if (expected == QKeychain::NoError) {
+                    QKeychain::ReadPasswordJob verifyJob(serviceKey);
+                    verifyJob.setAutoDelete(false);
+                    verifyJob.setKey(username);
+                    QSignalSpy verifySpy(&verifyJob, &QKeychain::ReadPasswordJob::finished);
+                    verifyJob.start();
+                    verifySpy.wait();
+                    QCOMPARE(verifyJob.error(), QKeychain::EntryNotFound);
+                }
             }
         }
     }

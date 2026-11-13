@@ -38,6 +38,10 @@ typedef void (*secret_password_clear_t)(const SecretSchema *schema, GCancellable
                                         GAsyncReadyCallback callback, gpointer user_data,
                                         ...) G_GNUC_NULL_TERMINATED;
 typedef gboolean (*secret_password_clear_finish_t)(GAsyncResult *result, GError **error);
+typedef void (*secret_password_search_t)(const SecretSchema *schema, SecretSearchFlags flags,
+                                         GCancellable *cancellable, GAsyncReadyCallback callback,
+                                         gpointer user_data, ...) G_GNUC_NULL_TERMINATED;
+typedef GList *(*secret_password_search_finish_t)(GAsyncResult *result, GError **error);
 typedef void (*secret_password_free_t)(gchar *password);
 typedef GQuark (*secret_error_get_quark_t)(void) G_GNUC_CONST;
 
@@ -47,6 +51,8 @@ static secret_password_store_t secret_password_store_fn = nullptr;
 static secret_password_store_finish_t secret_password_store_finish_fn = nullptr;
 static secret_password_clear_t secret_password_clear_fn = nullptr;
 static secret_password_clear_finish_t secret_password_clear_finish_fn = nullptr;
+static secret_password_search_t secret_password_search_fn = nullptr;
+static secret_password_search_finish_t secret_password_search_finish_fn = nullptr;
 static secret_password_free_t secret_password_free_fn = nullptr;
 static secret_error_get_quark_t secret_error_get_quark_fn = nullptr;
 
@@ -156,14 +162,39 @@ static void on_password_cleared(GObject *source, GAsyncResult *result, gpointer 
     if (self) {
         if (error) {
             self->q->emitFinishedWithError(gerrorToCode(error), QString::fromUtf8(error->message));
+        } else if (!removed) {
+            self->q->emitFinishedWithError(QKeychain::CouldNotDeleteEntry,
+                                           QObject::tr("No matching unlocked entry was deleted"));
         } else {
-            Q_UNUSED(removed);
             self->q->emitFinished();
         }
     }
     if (error) {
         g_error_free(error);
     }
+}
+
+static void on_password_delete_search(GObject *source, GAsyncResult *result, gpointer inst)
+{
+    callbackArg *arg = static_cast<callbackArg *>(inst);
+    GError *error = nullptr;
+    GList *matches = secret_password_search_finish_fn(result, &error);
+
+    Q_UNUSED(source);
+    if (error) {
+        arg->self->q->emitFinishedWithError(gerrorToCode(error), QString::fromUtf8(error->message));
+        g_error_free(error);
+    } else if (!matches) {
+        arg->self->q->emitFinishedWithError(QKeychain::EntryNotFound,
+                                            QObject::tr("Entry not found"));
+    } else {
+        secret_password_clear_fn(qtkeychainSchema(), nullptr, on_password_cleared, arg->self,
+                                 "user", arg->user.toUtf8().constData(),
+                                 "server", arg->server.toUtf8().constData(), nullptr);
+    }
+
+    g_list_free_full(matches, g_object_unref);
+    delete arg;
 }
 
 static QString modeToString(QKeychain::JobPrivate::Mode mode)
@@ -277,9 +308,24 @@ bool LibSecretKeyring::deletePassword(const QString &key, const QString &service
         return false;
     }
 
-    secret_password_clear_fn(qtkeychainSchema(), nullptr, on_password_cleared, self, "user",
-                             key.toUtf8().constData(), "server", service.toUtf8().constData(),
-                             nullptr);
+    if (secret_password_search_fn != nullptr && secret_password_search_finish_fn != nullptr) {
+        callbackArg *arg = new callbackArg;
+        arg->self = self;
+        arg->user = key;
+        arg->server = service;
+        secret_password_search_fn(qtkeychainSchema(),
+                                  static_cast<SecretSearchFlags>(SECRET_SEARCH_ALL
+                                                                 | SECRET_SEARCH_UNLOCK),
+                                  nullptr, on_password_delete_search, arg, "user",
+                                  key.toUtf8().constData(), "server",
+                                  service.toUtf8().constData(), nullptr);
+    } else {
+        // libsecret < 0.19 has no secret_password_search(). Clear directly; locked
+        // entries are then reported as CouldNotDeleteEntry by on_password_cleared().
+        secret_password_clear_fn(qtkeychainSchema(), nullptr, on_password_cleared, self, "user",
+                                 key.toUtf8().constData(), "server",
+                                 service.toUtf8().constData(), nullptr);
+    }
     return true;
 #else
     Q_UNUSED(key)
@@ -302,6 +348,9 @@ LibSecretKeyring::LibSecretKeyring() : QLibrary(QLatin1String("secret-1"), 0)
         secret_password_clear_fn = (secret_password_clear_t)resolve("secret_password_clear");
         secret_password_clear_finish_fn =
                 (secret_password_clear_finish_t)resolve("secret_password_clear_finish");
+        secret_password_search_fn = (secret_password_search_t)resolve("secret_password_search");
+        secret_password_search_finish_fn =
+                (secret_password_search_finish_t)resolve("secret_password_search_finish");
         secret_password_free_fn = (secret_password_free_t)resolve("secret_password_free");
         secret_error_get_quark_fn = (secret_error_get_quark_t)resolve("secret_error_get_quark");
     }

@@ -75,6 +75,7 @@ protected:
     QString service;
     bool autoDelete;
     bool insecureFallback;
+    MacOSKeychainPreference macOSKeychainPreference;
     QPointer<QSettings> settings;
     QString key;
 

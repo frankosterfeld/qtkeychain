@@ -58,6 +58,16 @@ void Job::setInsecureFallback(bool insecureFallback)
     d->insecureFallback = insecureFallback;
 }
 
+MacOSKeychainPreference Job::macOSKeychainPreference() const
+{
+    return d->macOSKeychainPreference;
+}
+
+void Job::setMacOSKeychainPreference(MacOSKeychainPreference preference)
+{
+    d->macOSKeychainPreference = preference;
+}
+
 void Job::doStart()
 {
     JobExecutor::instance()->enqueue(this);
@@ -190,9 +200,7 @@ void JobExecutor::startNextIfNoneRunning()
 
 void JobExecutor::jobDestroyed(QObject *object)
 {
-    Job *job = static_cast<Job *>(object);
-    Q_UNUSED(object) // for release mode
-    job->disconnect(this);
+    object->disconnect(this);
     m_jobRunning = false;
     startNextIfNoneRunning();
 }
@@ -225,7 +233,8 @@ JobPrivate::JobPrivate(const QString &service_, Job *qq)
       error(NoError),
       service(service_),
       autoDelete(true),
-      insecureFallback(false)
+      insecureFallback(false),
+      macOSKeychainPreference(MacOSKeychainPreference::DataProtectionKeychainWithLegacyFallback)
 {
 }
 
