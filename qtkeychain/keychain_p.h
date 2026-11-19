@@ -76,6 +76,7 @@ protected:
     bool autoDelete;
     bool insecureFallback;
     MacOSKeychainPreference macOSKeychainPreference;
+    AppleKeychainAccessibility appleKeychainAccessibility;
     QPointer<QSettings> settings;
     QString key;
 

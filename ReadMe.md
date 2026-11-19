@@ -78,6 +78,26 @@ Notes:
    entries, except that release builds move entries from the file-based keychain to the data protection keychain
    on first read (after which development builds no longer find them).
 
+Accessing the keychain while the device is locked
+-------------------------------------------------
+
+By default, entries are only accessible while the device is unlocked. On iOS, jobs running while the device is
+locked, e.g. during background fetch or when handling push notifications, fail with `QKeychain::KeychainLocked`.
+
+To make entries accessible in the background, set a less restrictive accessibility on write jobs via
+`Job::setAppleKeychainAccessibility()`, typically `AfterFirstUnlock` (accessible after the device was unlocked once
+since boot) or `AfterFirstUnlockThisDeviceOnly` (same, but not restored to other devices from backups). Existing
+entries get the new accessibility when they are written again. This weakens the protection of the entries while the
+device is locked, so only use it for entries that are actually needed in the background.
+
+The setting applies to the data protection keychain only: it works on iOS and on macOS if the data protection
+keychain is used (see [Data protection keychain on macOS](#data-protection-keychain-on-macos)), and is ignored for
+the file-based keychain on macOS and on all other platforms.
+
+On macOS, `KeychainLocked` can also be reported for the file-based keychain, if the keychain itself (usually the
+login keychain) is locked and cannot be unlocked without user interaction, e.g. for processes started via SSH or as
+a daemon. Setting the accessibility does not help in that case.
+
 License
 -------
 

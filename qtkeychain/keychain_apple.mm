@@ -41,8 +41,11 @@ struct ErrorDescription
             return ErrorDescription(QKeychain::AccessDeniedByUser,
                                     Job::tr("User canceled the operation"));
         case errSecInteractionNotAllowed:
-            return ErrorDescription(QKeychain::AccessDenied,
-                                    Job::tr("User interaction is not allowed"));
+            return ErrorDescription(
+                    QKeychain::KeychainLocked,
+                    Job::tr("The keychain is locked and user interaction is not allowed. To "
+                            "access entries while the device is locked (e.g. in the background), "
+                            "see QKeychain::Job::setAppleKeychainAccessibility()."));
         case errSecNotAvailable:
             return ErrorDescription(
                     QKeychain::AccessDenied,
@@ -318,19 +321,54 @@ OSStatus readItem(const QString &service, const QString &key, KeychainKind kind,
     return status;
 }
 
-OSStatus writeItem(const QString &service, const QString &key, KeychainKind kind,
-                   const QByteArray &data)
+// Returns the kSecAttrAccessible value, or nullptr if the attribute is not to be set.
+CFStringRef toSecAttrAccessible(AppleKeychainAccessibility accessibility)
 {
+    switch (accessibility) {
+    case AppleKeychainAccessibility::Default:
+        return nullptr;
+    case AppleKeychainAccessibility::WhenUnlocked:
+        return kSecAttrAccessibleWhenUnlocked;
+    case AppleKeychainAccessibility::AfterFirstUnlock:
+        return kSecAttrAccessibleAfterFirstUnlock;
+    case AppleKeychainAccessibility::WhenUnlockedThisDeviceOnly:
+        return kSecAttrAccessibleWhenUnlockedThisDeviceOnly;
+    case AppleKeychainAccessibility::AfterFirstUnlockThisDeviceOnly:
+        return kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly;
+    }
+    return nullptr;
+}
+
+OSStatus writeItem(const QString &service, const QString &key, KeychainKind kind,
+                   AppleKeychainAccessibility accessibility, const QByteArray &data)
+{
+    // The query must not contain kSecAttrAccessible: it would not match existing entries with
+    // a different accessibility, and SecItemAdd would then fail with errSecDuplicateItem.
     NSMutableDictionary *const query = createQuery(service, key, kind);
-    NSDictionary *const update = @{
+    NSMutableDictionary *const attributes = [NSMutableDictionary dictionaryWithDictionary:@{
         (__bridge NSString *)kSecValueData : data.toNSData(),
-    };
+    }];
+
+    // kSecAttrAccessible only has a meaning for the data protection keychain. On macOS, that's
+    // KeychainKind::DataProtection; elsewhere, KeychainKind::Default is the data protection
+    // keychain.
+#if defined(Q_OS_MACOS)
+    const bool isDataProtectionKeychain = kind == KeychainKind::DataProtection;
+#else
+    const bool isDataProtectionKeychain = true;
+#endif
+    if (isDataProtectionKeychain) {
+        if (const CFStringRef accessible = toSecAttrAccessible(accessibility)) {
+            // Also in the update attributes, to apply it to existing entries
+            attributes[(__bridge NSString *)kSecAttrAccessible] = (__bridge NSString *)accessible;
+        }
+    }
 
     OSStatus status =
-            SecItemUpdate((__bridge CFDictionaryRef)query, (__bridge CFDictionaryRef)update);
+            SecItemUpdate((__bridge CFDictionaryRef)query, (__bridge CFDictionaryRef)attributes);
 
     if (status == errSecItemNotFound) {
-        query[(__bridge NSString *)kSecValueData] = data.toNSData();
+        [query addEntriesFromDictionary:attributes];
         status = SecItemAdd((__bridge CFDictionaryRef)query, nullptr);
     }
 
@@ -357,9 +395,11 @@ void deleteLegacyItem(const QString &service, const QString &key)
 // Copies an entry found in the legacy keychain into the data protection keychain and
 // removes the legacy entry. Failure is not fatal for the read job.
 void migrateToDataProtectionKeychain(const QString &service, const QString &key,
+                                     AppleKeychainAccessibility accessibility,
                                      const QByteArray &data)
 {
-    const OSStatus status = writeItem(service, key, KeychainKind::DataProtection, data);
+    const OSStatus status =
+            writeItem(service, key, KeychainKind::DataProtection, accessibility, data);
     if (status == errSecSuccess) {
         deleteLegacyItem(service, key);
     } else if (!handleMissingEntitlement(status)) {
@@ -381,7 +421,8 @@ bool useLegacyFallback(MacOSKeychainPreference preference)
 }
 
 OSStatus readPassword(const QString &service, const QString &key,
-                      MacOSKeychainPreference preference, QByteArray *data)
+                      MacOSKeychainPreference preference,
+                      AppleKeychainAccessibility accessibility, QByteArray *data)
 {
     if (!useDataProtectionKeychain(preference)) {
         return readItem(service, key, KeychainKind::Default, data);
@@ -396,7 +437,7 @@ OSStatus readPassword(const QString &service, const QString &key,
     if (status == errSecItemNotFound && useLegacyFallback(preference)) {
         const OSStatus legacyStatus = readItem(service, key, KeychainKind::Default, data);
         if (legacyStatus == errSecSuccess) {
-            migrateToDataProtectionKeychain(service, key, *data);
+            migrateToDataProtectionKeychain(service, key, accessibility, *data);
         }
         return legacyStatus;
     }
@@ -405,16 +446,18 @@ OSStatus readPassword(const QString &service, const QString &key,
 }
 
 OSStatus writePassword(const QString &service, const QString &key,
-                       MacOSKeychainPreference preference, const QByteArray &data)
+                       MacOSKeychainPreference preference,
+                       AppleKeychainAccessibility accessibility, const QByteArray &data)
 {
     if (!useDataProtectionKeychain(preference)) {
-        return writeItem(service, key, KeychainKind::Default, data);
+        return writeItem(service, key, KeychainKind::Default, accessibility, data);
     }
 
-    const OSStatus status = writeItem(service, key, KeychainKind::DataProtection, data);
+    const OSStatus status =
+            writeItem(service, key, KeychainKind::DataProtection, accessibility, data);
 
     if (handleMissingEntitlement(status)) {
-        return writeItem(service, key, KeychainKind::Default, data);
+        return writeItem(service, key, KeychainKind::Default, accessibility, data);
     }
 
     if (status == errSecSuccess && useLegacyFallback(preference)) {
@@ -462,12 +505,13 @@ OSStatus deletePassword(const QString &service, const QString &key,
 
 static void StartReadPassword(const QString &service, const QString &key,
                               MacOSKeychainPreference preference,
+                              AppleKeychainAccessibility accessibility,
                               AppleKeychainInterface *const interface)
 {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
         @autoreleasepool {
             QByteArray data;
-            const OSStatus status = readPassword(service, key, preference, &data);
+            const OSStatus status = readPassword(service, key, preference, accessibility, &data);
 
             if (status == errSecSuccess) {
                 dispatchOnQtMainThread(interface, ^{
@@ -489,11 +533,12 @@ static void StartReadPassword(const QString &service, const QString &key,
 
 static void StartWritePassword(const QString &service, const QString &key, const QByteArray &data,
                                MacOSKeychainPreference preference,
+                               AppleKeychainAccessibility accessibility,
                                AppleKeychainInterface *const interface)
 {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
         @autoreleasepool {
-            const OSStatus status = writePassword(service, key, preference, data);
+            const OSStatus status = writePassword(service, key, preference, accessibility, data);
 
             if (status == errSecSuccess) {
                 dispatchOnQtMainThread(interface, ^{
@@ -543,14 +588,16 @@ void ReadPasswordJobPrivate::scheduledStart()
 {
     AppleKeychainInterface *const interface = [[AppleKeychainInterface alloc] initWithJob:q
                                                                             andPrivateJob:this];
-    StartReadPassword(service, key, macOSKeychainPreference, interface);
+    StartReadPassword(service, key, macOSKeychainPreference, appleKeychainAccessibility,
+                      interface);
 }
 
 void WritePasswordJobPrivate::scheduledStart()
 {
     AppleKeychainInterface *const interface = [[AppleKeychainInterface alloc] initWithJob:q
                                                                             andPrivateJob:this];
-    StartWritePassword(service, key, data, macOSKeychainPreference, interface);
+    StartWritePassword(service, key, data, macOSKeychainPreference, appleKeychainAccessibility,
+                       interface);
 }
 
 void DeletePasswordJobPrivate::scheduledStart()

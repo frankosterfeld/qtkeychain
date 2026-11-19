@@ -68,6 +68,16 @@ void Job::setMacOSKeychainPreference(MacOSKeychainPreference preference)
     d->macOSKeychainPreference = preference;
 }
 
+AppleKeychainAccessibility Job::appleKeychainAccessibility() const
+{
+    return d->appleKeychainAccessibility;
+}
+
+void Job::setAppleKeychainAccessibility(AppleKeychainAccessibility accessibility)
+{
+    d->appleKeychainAccessibility = accessibility;
+}
+
 void Job::doStart()
 {
     JobExecutor::instance()->enqueue(this);
@@ -234,7 +244,8 @@ JobPrivate::JobPrivate(const QString &service_, Job *qq)
       service(service_),
       autoDelete(true),
       insecureFallback(false),
-      macOSKeychainPreference(MacOSKeychainPreference::DataProtectionKeychainWithLegacyFallback)
+      macOSKeychainPreference(MacOSKeychainPreference::DataProtectionKeychainWithLegacyFallback),
+      appleKeychainAccessibility(AppleKeychainAccessibility::Default)
 {
 }
 

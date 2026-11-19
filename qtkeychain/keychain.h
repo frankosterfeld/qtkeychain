@@ -35,7 +35,30 @@ enum Error {
     AccessDenied, /**< Access denied for other reasons */
     NoBackendAvailable, /**< No platform-specific keychain service available */
     NotImplemented, /**< Not implemented on platform */
-    OtherError /**< Something else went wrong (errorString() might provide details) */
+    OtherError, /**< Something else went wrong (errorString() might provide details) */
+    KeychainLocked /**< The keychain is locked and cannot be accessed without user interaction,
+                        e.g. on iOS while the device is locked. Retrying later (once unlocked) may
+                        succeed. See Job::setAppleKeychainAccessibility(). @since 0.19.0 */
+};
+
+/**
+ * Enum to specify when a keychain entry is accessible on Apple platforms (kSecAttrAccessible).
+ *
+ * Only applies to the data protection keychain, i.e. on iOS and other non-macOS Apple
+ * platforms, and on macOS if the data protection keychain is used (see MacOSKeychainPreference).
+ * Ignored on all other platforms and for the file-based keychain on macOS.
+ *
+ * @note QtKeychain does not create iCloud-synchronized entries; the @c ThisDeviceOnly classes
+ *       would be incompatible with those.
+ *
+ * @since 0.19.0
+ */
+enum class AppleKeychainAccessibility {
+    Default, ///< Don't specify the accessibility: new entries use the system default (WhenUnlocked), existing entries keep theirs
+    WhenUnlocked, ///< kSecAttrAccessibleWhenUnlocked: only accessible while the device is unlocked
+    AfterFirstUnlock, ///< kSecAttrAccessibleAfterFirstUnlock: accessible after the device was unlocked once after boot, including while it is locked again (e.g. for background tasks)
+    WhenUnlockedThisDeviceOnly, ///< kSecAttrAccessibleWhenUnlockedThisDeviceOnly: as WhenUnlocked, but not included in backups restored to other devices
+    AfterFirstUnlockThisDeviceOnly ///< kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly: as AfterFirstUnlock, but not included in backups restored to other devices
 };
 
 /**
@@ -200,6 +223,36 @@ public:
      * @since 0.18.0
      */
     MacOSKeychainPreference macOSKeychainPreference() const;
+
+    /**
+     * Set when entries written by this job are accessible on Apple platforms. Default is
+     * AppleKeychainAccessibility::Default, which leaves the attribute unspecified: new entries
+     * then get the system default (only accessible while the device is unlocked), and existing
+     * entries keep their accessibility.
+     *
+     * Any other value is applied to new entries and to existing entries when they are
+     * overwritten by a WritePasswordJob. On macOS, it is also applied when a ReadPasswordJob
+     * migrates an entry from the file-based keychain to the data protection keychain.
+     *
+     * Applications accessing the keychain in the background on iOS (e.g. background fetch or
+     * push notification handling) usually want AfterFirstUnlock or AfterFirstUnlockThisDeviceOnly,
+     * as with the default, jobs fail with KeychainLocked while the device is locked.
+     *
+     * Has no effect for DeletePasswordJob, on non-Apple platforms, or for the file-based keychain
+     * on macOS.
+     *
+     * @see appleKeychainAccessibility()
+     * @see AppleKeychainAccessibility
+     * @since 0.19.0
+     */
+    void setAppleKeychainAccessibility(AppleKeychainAccessibility accessibility);
+
+    /**
+     * @return When entries written by this job are accessible on Apple platforms.
+     * @see setAppleKeychainAccessibility()
+     * @since 0.19.0
+     */
+    AppleKeychainAccessibility appleKeychainAccessibility() const;
 
 Q_SIGNALS:
     /**
