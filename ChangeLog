@@ -1,6 +1,10 @@
 ChangeLog
 =========
 
+version 0.19.0 (unreleased)
+
+ - macOS/iOS: Support setting entry accessibility (e.g. allow access when screen is locked) (Frank Osterfeld)
+
 version 0.18.0 (release 2026-11-10)
 
  - macOS: Add support for modern Data Protection Keychain (same approach as on iOS, no more popups) (Frank Osterfeld)

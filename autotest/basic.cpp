@@ -29,6 +29,68 @@ private Q_SLOTS:
         QCOMPARE(job.macOSKeychainPreference(), QKeychain::MacOSKeychainPreference::LegacyKeychain);
     }
 
+    void appleKeychainAccessibility()
+    {
+        QKeychain::WritePasswordJob job(QStringLiteral("QtKeychainTest"));
+        job.setAutoDelete(false);
+        QCOMPARE(job.appleKeychainAccessibility(), QKeychain::AppleKeychainAccessibility::Default);
+        job.setAppleKeychainAccessibility(QKeychain::AppleKeychainAccessibility::AfterFirstUnlock);
+        QCOMPARE(job.appleKeychainAccessibility(),
+                 QKeychain::AppleKeychainAccessibility::AfterFirstUnlock);
+    }
+
+    // Writes an entry with the default accessibility, overwrites it with an explicit one (the
+    // SecItemUpdate path on Apple platforms), reads it back and deletes it. A no-op setting on
+    // non-Apple platforms, where this checks that it doesn't interfere.
+    void writeWithAccessibility()
+    {
+#ifdef Q_OS_MACOS
+        QSKIP("This test case has no access to the keychain");
+#endif
+        const QString service = QStringLiteral("QtKeychainTest-accessibility");
+        const QString key = QStringLiteral("user");
+
+        const auto write = [&](const QByteArray &data,
+                               QKeychain::AppleKeychainAccessibility accessibility) {
+            QKeychain::WritePasswordJob job(service);
+            job.setAutoDelete(false);
+            job.setKey(key);
+            job.setAppleKeychainAccessibility(accessibility);
+            job.setBinaryData(data);
+            QSignalSpy spy(&job, &QKeychain::Job::finished);
+            job.start();
+            QVERIFY(spy.wait());
+            QCOMPARE(job.error(), QKeychain::NoError);
+        };
+
+        write(QByteArrayLiteral("first"), QKeychain::AppleKeychainAccessibility::Default);
+        if (QTest::currentTestFailed()) {
+            return;
+        }
+        write(QByteArrayLiteral("second"),
+              QKeychain::AppleKeychainAccessibility::AfterFirstUnlockThisDeviceOnly);
+        if (QTest::currentTestFailed()) {
+            return;
+        }
+
+        QKeychain::ReadPasswordJob readJob(service);
+        readJob.setAutoDelete(false);
+        readJob.setKey(key);
+        QSignalSpy readSpy(&readJob, &QKeychain::Job::finished);
+        readJob.start();
+        QVERIFY(readSpy.wait());
+        QCOMPARE(readJob.error(), QKeychain::NoError);
+        QCOMPARE(readJob.binaryData(), QByteArrayLiteral("second"));
+
+        QKeychain::DeletePasswordJob deleteJob(service);
+        deleteJob.setAutoDelete(false);
+        deleteJob.setKey(key);
+        QSignalSpy deleteSpy(&deleteJob, &QKeychain::Job::finished);
+        deleteJob.start();
+        QVERIFY(deleteSpy.wait());
+        QCOMPARE(deleteJob.error(), QKeychain::NoError);
+    }
+
     void test_data()
     {
         QTest::addColumn<QByteArray>("password");
