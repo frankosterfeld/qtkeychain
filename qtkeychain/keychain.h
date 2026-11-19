@@ -37,8 +37,8 @@ enum Error {
     NotImplemented, /**< Not implemented on platform */
     OtherError, /**< Something else went wrong (errorString() might provide details) */
     KeychainLocked /**< The keychain is locked and cannot be accessed without user interaction,
-                        e.g. on iOS while the device is locked. Retrying later (once unlocked) may
-                        succeed. See Job::setAppleKeychainAccessibility(). @since 0.19.0 */
+                        e.g. on iOS/macOS while the device is locked. Retrying later (once unlocked)
+                        may succeed. See Job::setAppleKeychainAccessibility(). @since 0.19.0 */
 };
 
 /**
@@ -153,7 +153,7 @@ public:
     Error error() const;
 
     /**
-     * @return An error message that might provide details if error() returns OtherError.
+     * @return An error message to provide details for error().
      */
     QString errorString() const;
 
