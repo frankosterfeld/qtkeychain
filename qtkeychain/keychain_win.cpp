@@ -134,6 +134,18 @@ std::pair<QByteArray, QString> protectData(const QByteArray &data)
     return { encrypted, {} };
 }
 
+QByteArray textToUtf16Le(const QString &text)
+{
+    QByteArray payload;
+    payload.resize(text.size() * 2);
+    for (int i = 0; i < text.size(); ++i) {
+        const quint16 code = text.at(i).unicode();
+        payload[2 * i] = static_cast<char>(code & 0xFF);
+        payload[2 * i + 1] = static_cast<char>((code >> 8) & 0xFF);
+    }
+    return payload;
+}
+
 } // namespace
 
 #if defined(USE_CREDENTIAL_STORE)
@@ -223,15 +235,20 @@ void WritePasswordJobPrivate::scheduledStart()
     QByteArray buffer;
     std::vector<CREDENTIAL_ATTRIBUTEW> attributes;
 
-    if (data.size() < CRED_MAX_CREDENTIAL_BLOB_SIZE) {
-        cred.CredentialBlob = reinterpret_cast<uchar *>(data.data());
-        cred.CredentialBlobSize = data.size();
+    QByteArray payload = data;
+    if (mode == JobPrivate::Text) {
+        payload = textToUtf16Le(QString::fromUtf8(data));
+    }
+
+    if (payload.size() < CRED_MAX_CREDENTIAL_BLOB_SIZE) {
+        cred.CredentialBlob = reinterpret_cast<uchar *>(payload.data());
+        cred.CredentialBlobSize = payload.size();
     } else {
         // data is too big for CredentialBlob
         // we encrpyt it instead with CryptProtectData which also encrpyt the data with the users
         // credentials The data is also protected with the roaming profile
         {
-            auto result = protectData(data);
+            auto result = protectData(payload);
             if (!result.second.isEmpty()) {
                 q->emitFinishedWithError(OtherError,
                                          tr("Encryption failed: %1").arg(result.second));
@@ -333,7 +350,12 @@ void ReadPasswordJobPrivate::scheduledStart()
 
 void WritePasswordJobPrivate::scheduledStart()
 {
-    const auto result = protectData(data);
+    QByteArray payload = data;
+    if (mode == JobPrivate::Text) {
+        payload = textToUtf16Le(QString::fromUtf8(data));
+    }
+
+    const auto result = protectData(payload);
     if (!result.second.isEmpty()) {
         q->emitFinishedWithError(OtherError, tr("Encryption failed: %1").arg(result.second));
         return;
