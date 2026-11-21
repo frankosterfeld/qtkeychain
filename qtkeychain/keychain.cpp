@@ -123,9 +123,115 @@ ReadPasswordJob::ReadPasswordJob(const QString &service, QObject *parent)
 
 ReadPasswordJob::~ReadPasswordJob() { }
 
+namespace {
+
+static QString decodeTextData(const QByteArray &data)
+{
+    if (data.isEmpty())
+        return QString();
+
+    // Check for UTF-16LE BOM
+    if (data.size() >= 2 && static_cast<uchar>(data.at(0)) == 0xFF && static_cast<uchar>(data.at(1)) == 0xFE) {
+        QString result;
+        const auto len = (data.size() - 2) / 2;
+        result.reserve(len);
+        for (auto i = 0; i < len; ++i) {
+            const quint16 code = static_cast<quint8>(data.at(2 + 2 * i)) |
+                                 (static_cast<quint8>(data.at(2 + 2 * i + 1)) << 8);
+            result.append(QChar(code));
+        }
+        while (result.endsWith(QChar(0)))
+            result.chop(1);
+        return result;
+    }
+
+    // Check for UTF-16BE BOM
+    if (data.size() >= 2 && static_cast<uchar>(data.at(0)) == 0xFE && static_cast<uchar>(data.at(1)) == 0xFF) {
+        QString result;
+        const auto len = (data.size() - 2) / 2;
+        result.reserve(len);
+        for (auto i = 0; i < len; ++i) {
+            const quint16 code = (static_cast<quint8>(data.at(2 + 2 * i)) << 8) |
+                                 static_cast<quint8>(data.at(2 + 2 * i + 1));
+            result.append(QChar(code));
+        }
+        while (result.endsWith(QChar(0)))
+            result.chop(1);
+        return result;
+    }
+
+    // Check for UTF-8 BOM
+    if (data.size() >= 3 && static_cast<uchar>(data.at(0)) == 0xEF &&
+        static_cast<uchar>(data.at(1)) == 0xBB && static_cast<uchar>(data.at(2)) == 0xBF) {
+        QString result = QString::fromUtf8(data.constData() + 3, data.size() - 3);
+        while (result.endsWith(QChar(0)))
+            result.chop(1);
+        return result;
+    }
+
+    // Check for UTF-16LE without BOM (common on Windows, e.g. cmdkey / Credential Manager)
+    // In UTF-16LE for ASCII characters, odd-indexed bytes are 0x00.
+    if (data.size() % 2 == 0 && data.size() >= 2 && data.at(1) == '\0') {
+        QString result;
+        const auto len = data.size() / 2;
+        result.reserve(len);
+        for (auto i = 0; i < len; ++i) {
+            const quint16 code = static_cast<quint8>(data.at(2 * i)) |
+                                 (static_cast<quint8>(data.at(2 * i + 1)) << 8);
+            result.append(QChar(code));
+        }
+        while (result.endsWith(QChar(0)))
+            result.chop(1);
+        return result;
+    }
+
+    // Try decoding as UTF-8
+    QString result = QString::fromUtf8(data);
+
+    // If UTF-8 decoding contains replacement characters, or contains embedded control characters
+    // (indicating Cyrillic/Hebrew/Arabic in UTF-16LE without BOM), and byte length is even, try UTF-16LE.
+    bool looksLikeUtf16 = false;
+    if (data.size() % 2 == 0 && data.size() >= 2) {
+        if (result.contains(QChar::ReplacementCharacter)) {
+            looksLikeUtf16 = true;
+        } else {
+            QString stripped = result;
+            while (stripped.endsWith(QChar(0)))
+                stripped.chop(1);
+            for (int i = 0; i < stripped.size(); ++i) {
+                const ushort u = stripped.at(i).unicode();
+                if (u < 0x20 && u != 0x09 && u != 0x0A && u != 0x0D) {
+                    looksLikeUtf16 = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (looksLikeUtf16) {
+        QString utf16Result;
+        const auto len = data.size() / 2;
+        utf16Result.reserve(len);
+        for (auto i = 0; i < len; ++i) {
+            const quint16 code = static_cast<quint8>(data.at(2 * i)) |
+                                 (static_cast<quint8>(data.at(2 * i + 1)) << 8);
+            utf16Result.append(QChar(code));
+        }
+        while (utf16Result.endsWith(QChar(0)))
+            utf16Result.chop(1);
+        return utf16Result;
+    }
+
+    while (result.endsWith(QChar(0)))
+        result.chop(1);
+    return result;
+}
+
+} // namespace
+
 QString ReadPasswordJob::textData() const
 {
-    return QString::fromUtf8(d->data);
+    return decodeTextData(d->data);
 }
 
 QByteArray ReadPasswordJob::binaryData() const

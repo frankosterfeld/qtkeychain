@@ -115,6 +115,144 @@ private Q_SLOTS:
             }
         }
     }
+
+    void textDataTest()
+    {
+#ifdef Q_OS_MACOS
+        QSKIP("This test case has no access to the keychain");
+#endif
+        const QString serviceKey = QStringLiteral("QtKeychainTest-TextData");
+        const QString username = QStringLiteral("testuser");
+
+        // 1. Test setTextData() and textData() round-trip
+        const QStringList testStrings = {
+            QStringLiteral("simple_password"),
+            QStringLiteral("p@ssw0rd!#$ 123"),
+            QStringLiteral("contraseña"),
+            QString::fromUtf8("пароль"),
+            QString::fromUtf8("密码"),
+            QString::fromUtf8("Hello 🌍")
+        };
+
+        for (const auto &text : testStrings) {
+            QKeychain::WritePasswordJob writeJob(serviceKey);
+            writeJob.setAutoDelete(false);
+            writeJob.setKey(username);
+            writeJob.setTextData(text);
+            QSignalSpy writeSpy(&writeJob, &QKeychain::WritePasswordJob::finished);
+            writeJob.start();
+            writeSpy.wait();
+            QCOMPARE(writeJob.error(), QKeychain::NoError);
+
+            QKeychain::ReadPasswordJob readJob(serviceKey);
+            readJob.setAutoDelete(false);
+            readJob.setKey(username);
+            QSignalSpy readSpy(&readJob, &QKeychain::ReadPasswordJob::finished);
+            readJob.start();
+            readSpy.wait();
+            QCOMPARE(readJob.error(), QKeychain::NoError);
+            QCOMPARE(readJob.textData(), text);
+
+            QKeychain::DeletePasswordJob deleteJob(serviceKey);
+            deleteJob.setAutoDelete(false);
+            deleteJob.setKey(username);
+            QSignalSpy deleteSpy(&deleteJob, &QKeychain::DeletePasswordJob::finished);
+            deleteJob.start();
+            deleteSpy.wait();
+            QCOMPARE(deleteJob.error(), QKeychain::NoError);
+        }
+
+        // 2. Test reading UTF-16LE data (e.g. from cmdkey on Windows)
+        // 't', 0, 'e', 0, 's', 0, 't', 0
+        const QByteArray utf16leCmdkey = QByteArrayLiteral("t\x00e\x00s\x00t\x00");
+        {
+            QKeychain::WritePasswordJob writeJob(serviceKey);
+            writeJob.setAutoDelete(false);
+            writeJob.setKey(username);
+            writeJob.setBinaryData(utf16leCmdkey);
+            QSignalSpy writeSpy(&writeJob, &QKeychain::WritePasswordJob::finished);
+            writeJob.start();
+            writeSpy.wait();
+            QCOMPARE(writeJob.error(), QKeychain::NoError);
+
+            QKeychain::ReadPasswordJob readJob(serviceKey);
+            readJob.setAutoDelete(false);
+            readJob.setKey(username);
+            QSignalSpy readSpy(&readJob, &QKeychain::ReadPasswordJob::finished);
+            readJob.start();
+            readSpy.wait();
+            QCOMPARE(readJob.error(), QKeychain::NoError);
+            QCOMPARE(readJob.textData(), QStringLiteral("test"));
+
+            QKeychain::DeletePasswordJob deleteJob(serviceKey);
+            deleteJob.setAutoDelete(false);
+            deleteJob.setKey(username);
+            QSignalSpy deleteSpy(&deleteJob, &QKeychain::DeletePasswordJob::finished);
+            deleteJob.start();
+            deleteSpy.wait();
+            QCOMPARE(deleteJob.error(), QKeychain::NoError);
+        }
+
+        // 3. Test reading null-terminated UTF-16LE data
+        const QByteArray utf16leNullTerminated = QByteArrayLiteral("t\x00e\x00s\x00t\x00\x00\x00");
+        {
+            QKeychain::WritePasswordJob writeJob(serviceKey);
+            writeJob.setAutoDelete(false);
+            writeJob.setKey(username);
+            writeJob.setBinaryData(utf16leNullTerminated);
+            QSignalSpy writeSpy(&writeJob, &QKeychain::WritePasswordJob::finished);
+            writeJob.start();
+            writeSpy.wait();
+            QCOMPARE(writeJob.error(), QKeychain::NoError);
+
+            QKeychain::ReadPasswordJob readJob(serviceKey);
+            readJob.setAutoDelete(false);
+            readJob.setKey(username);
+            QSignalSpy readSpy(&readJob, &QKeychain::ReadPasswordJob::finished);
+            readJob.start();
+            readSpy.wait();
+            QCOMPARE(readJob.error(), QKeychain::NoError);
+            QCOMPARE(readJob.textData(), QStringLiteral("test"));
+
+            QKeychain::DeletePasswordJob deleteJob(serviceKey);
+            deleteJob.setAutoDelete(false);
+            deleteJob.setKey(username);
+            QSignalSpy deleteSpy(&deleteJob, &QKeychain::DeletePasswordJob::finished);
+            deleteJob.start();
+            deleteSpy.wait();
+            QCOMPARE(deleteJob.error(), QKeychain::NoError);
+        }
+
+        // 4. Test reading legacy UTF-8 data
+        const QByteArray utf8Legacy = QByteArrayLiteral("legacy_test");
+        {
+            QKeychain::WritePasswordJob writeJob(serviceKey);
+            writeJob.setAutoDelete(false);
+            writeJob.setKey(username);
+            writeJob.setBinaryData(utf8Legacy);
+            QSignalSpy writeSpy(&writeJob, &QKeychain::WritePasswordJob::finished);
+            writeJob.start();
+            writeSpy.wait();
+            QCOMPARE(writeJob.error(), QKeychain::NoError);
+
+            QKeychain::ReadPasswordJob readJob(serviceKey);
+            readJob.setAutoDelete(false);
+            readJob.setKey(username);
+            QSignalSpy readSpy(&readJob, &QKeychain::ReadPasswordJob::finished);
+            readJob.start();
+            readSpy.wait();
+            QCOMPARE(readJob.error(), QKeychain::NoError);
+            QCOMPARE(readJob.textData(), QStringLiteral("legacy_test"));
+
+            QKeychain::DeletePasswordJob deleteJob(serviceKey);
+            deleteJob.setAutoDelete(false);
+            deleteJob.setKey(username);
+            QSignalSpy deleteSpy(&deleteJob, &QKeychain::DeletePasswordJob::finished);
+            deleteJob.start();
+            deleteSpy.wait();
+            QCOMPARE(deleteJob.error(), QKeychain::NoError);
+        }
+    }
 };
 
 QTEST_MAIN(BasicTest)
